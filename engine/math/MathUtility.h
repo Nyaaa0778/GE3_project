@@ -1,0 +1,83 @@
+#pragma once
+
+#include"Vector3.h"
+#include"Matrix4x4.h"
+#include<cmath>
+
+/// <summary>
+/// ベクトル同士の計算
+/// </summary>
+/// <param name="v1"></param>
+/// <param name="v2"></param>
+/// <returns></returns>
+
+//加算
+Vector3 Add(const Vector3 &v1, const Vector3 &v2);
+//減算
+Vector3 Subtract(const Vector3 &v1, const Vector3 &v2);
+//乗算
+Vector3 Multiply(float s, const Vector3 &v1);
+
+Vector3 operator+(const Vector3 &v1, const Vector3 &v2);
+Vector3 operator-(const Vector3 &v1, const Vector3 &v2);
+Vector3 operator*(float s, const Vector3 &v2);
+
+/// <summary>
+/// 行列の積
+/// </summary>
+/// <param name="m1"></param>
+/// <param name="m2"></param>
+/// <returns></returns>
+Matrix4x4 Multiply(const Matrix4x4 &m1, const Matrix4x4 &m2);
+
+/// <summary>
+/// 単位行列の作成
+/// </summary>
+/// <returns></returns>
+Matrix4x4 MakeIdentityMatrix();
+/// <summary>
+/// 逆行列
+/// </summary>
+/// <param name="m"></param>
+/// <returns></returns>
+Matrix4x4 Inverse(const Matrix4x4 &matrix);
+
+/// <summary>
+/// 拡縮行列
+/// </summary>
+/// <param name="scale"></param>
+/// <returns></returns>
+Matrix4x4 MakeScaleMatrix(const Vector3 &scale);
+/// <summary>
+/// X軸周りの回転行列
+/// </summary>
+/// <param name="radian"></param>
+/// <returns></returns>
+Matrix4x4 MakeRotateXMatrix(float radian);
+/// <summary>
+/// Y軸周りの回転行列
+/// </summary>
+/// <param name="radian"></param>
+/// <returns></returns>
+Matrix4x4 MakeRotateYMatrix(float radian);
+/// <summary>
+/// Z軸周りの回転行列
+/// </summary>
+/// <param name="radian"></param>
+/// <returns></returns>
+Matrix4x4 MakeRotateZMatrix(float radian);
+/// <summary>
+/// 平行移動行列
+/// </summary>
+/// <param name="translate"></param>
+/// <returns></returns>
+Matrix4x4 MakeTranslateMatrix(const Vector3 &translate);
+/// <summary>
+/// アフィン変換行列
+/// </summary>
+/// <param name="scale">拡縮</param>
+/// <param name="rotate">回転</param>
+/// <param name="translate">移動</param>
+/// <returns></returns>
+Matrix4x4 MakeAffineMatrix(const Vector3 &scale, const Vector3 &rotate,
+                           const Vector3 &translate);
