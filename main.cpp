@@ -1106,7 +1106,6 @@ bool isTrigger(uint8_t keyNumber, const BYTE *keys, const BYTE *preKeys) {
   return ((keys[keyNumber] & 0x80) && !(preKeys[keyNumber] & 0x80));
 }
 
-
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
@@ -2143,17 +2142,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       // 既存の ImGui::Begin("Window"); の中あたりに…
       ImGui::Separator();
       ImGui::Text("Camera");
-      ImGui::DragFloat3("Camera translation", &transformCamera.translate.x, 0.1f);
+      ImGui::DragFloat3("Camera translation", &transformCamera.translate.x,
+                        0.1f);
       ImGui::SliderAngle("Camera rotation X", &transformCamera.rotate.x);
       ImGui::SliderAngle("Camera rotation Y", &transformCamera.rotate.y);
       ImGui::SliderAngle("Camera rotation Z", &transformCamera.rotate.z);
 
       ImGui::Separator();
       ImGui::Text("Model");
-      ImGui::DragFloat3("Modelscale", &transformModel.scale.x, 0.01f, 0.01f, 10.0f);
-      ImGui::SliderAngle("rotation X", &transformModel.rotate.x, -180.0f, 180.0f);
-      ImGui::SliderAngle("rotation Y", &transformModel.rotate.y, -180.0f, 180.0f);
-      ImGui::SliderAngle("rotation Z", &transformModel.rotate.z, -180.0f, 180.0f);
+      ImGui::DragFloat3("Modelscale", &transformModel.scale.x, 0.01f, 0.01f,
+                        10.0f);
+      ImGui::SliderAngle("rotation X", &transformModel.rotate.x, -180.0f,
+                         180.0f);
+      ImGui::SliderAngle("rotation Y", &transformModel.rotate.y, -180.0f,
+                         180.0f);
+      ImGui::SliderAngle("rotation Z", &transformModel.rotate.z, -180.0f,
+                         180.0f);
       ImGui::DragFloat3("translation", &transformModel.translate.x, 0.1f,
                         -100.0f, 100.0f);
 
@@ -2219,7 +2223,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
         }
         infoQueue->ClearStoredMessages();
       }
-
 
       ///
       /// 更新処理 ↓
@@ -2339,7 +2342,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
           3, directionalLightResource->GetGPUVirtualAddress());
 
       // 球の描画
-       commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
+      commandList->DrawInstanced(kSubdivision * kSubdivision * 6, 1, 0, 0);
 
       // マテリアルのCBufferの場所を設定
       commandList->SetGraphicsRootConstantBufferView(
@@ -2349,17 +2352,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
       // Sprite用の描画
       // 頂点データの入っているバッファ
-       commandList->IASetVertexBuffers(0, 1,
-                                       &vertexBufferViewSprite); // VBVを設定
+      commandList->IASetVertexBuffers(0, 1,
+                                      &vertexBufferViewSprite); // VBVを設定
       // インデックスバッファ
-       commandList->IASetIndexBuffer(&indexBufferViewSprite);
+      commandList->IASetIndexBuffer(&indexBufferViewSprite);
 
       // TransformationMatrixCBufferの場所を設定
-       commandList->SetGraphicsRootConstantBufferView(
-           1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
+      commandList->SetGraphicsRootConstantBufferView(
+          1, transformationMatrixResourceSprite->GetGPUVirtualAddress());
 
       // UI(2D)描画
-       commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+      commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
       commandList->SetGraphicsRootConstantBufferView(
           0, materialResource->GetGPUVirtualAddress());
@@ -2454,7 +2457,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   debugController.Reset();
 #endif
-
 
   CoUninitialize();
 
