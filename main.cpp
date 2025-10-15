@@ -17,7 +17,6 @@
 #include "externals/DirectXTex/DirectXTex.h"
 #pragma comment(lib, "DirectXTex.lib")
 #include "externals/DirectXTex/d3dx12.h"
-
 #include <xaudio2.h>
 #pragma comment(lib, "xaudio2.lib")
 
