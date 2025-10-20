@@ -60,14 +60,14 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="resources\sound\Sound.cpp">
-      <Filter>ソース ファイル\sound</Filter>
-    </ClCompile>
-    <ClCompile Include="resources\sound\SoundManager.cpp">
-      <Filter>ソース ファイル\sound</Filter>
-    </ClCompile>
     <ClCompile Include="engine\math\MathUtility.cpp">
       <Filter>ソース ファイル\math</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\sound\SoundManager.cpp">
+      <Filter>ソース ファイル\sound</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\sound\Sound.cpp">
+      <Filter>ソース ファイル\sound</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -118,10 +118,10 @@
     <ClInclude Include="engine\math\Vector4.h">
       <Filter>ヘッダー ファイル\math</Filter>
     </ClInclude>
-    <ClInclude Include="resources\sound\Sound.h">
+    <ClInclude Include="engine\sound\SoundManager.h">
       <Filter>ヘッダー ファイル\sound</Filter>
     </ClInclude>
-    <ClInclude Include="resources\sound\SoundManager.h">
+    <ClInclude Include="engine\sound\Sound.h">
       <Filter>ヘッダー ファイル\sound</Filter>
     </ClInclude>
   </ItemGroup>
