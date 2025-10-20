@@ -42,14 +42,14 @@
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
+#include "MathUtility.h"
 #include "Sound.h"
-#include"MathUtility.h"
 
-#include <wrl.h>
-#include <Vector3.h>
 #include <Matrix4x4.h>
-#include <Vector4.h>
 #include <Vector2.h>
+#include <Vector3.h>
+#include <Vector4.h>
+#include <wrl.h>
 using Microsoft::WRL::ComPtr;
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
@@ -347,8 +347,6 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device> &device,
 
   return vertexResource;
 }
-
-
 
 /// <summary>
 /// 透視投影行列
@@ -1146,12 +1144,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
   // Shaderをコンパイル
-  IDxcBlob *vertexShaderBlob = CompileShader(
-      L"resources/shaders/Object3D.VS.hlsl", L"vs_6_0", dxcUtils, dxcCompiler, includeHandler);
+  IDxcBlob *vertexShaderBlob =
+      CompileShader(L"resources/shaders/Object3D.VS.hlsl", L"vs_6_0", dxcUtils,
+                    dxcCompiler, includeHandler);
   assert(vertexShaderBlob != nullptr);
 
-  IDxcBlob *pixelShaderBlob = CompileShader(
-      L"resources/shaders/Object3D.PS.hlsl", L"ps_6_0", dxcUtils, dxcCompiler, includeHandler);
+  IDxcBlob *pixelShaderBlob =
+      CompileShader(L"resources/shaders/Object3D.PS.hlsl", L"ps_6_0", dxcUtils,
+                    dxcCompiler, includeHandler);
   assert(pixelShaderBlob != nullptr);
 
   /// =============================================
