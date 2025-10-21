@@ -11,14 +11,12 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
   HRESULT hr;
 
   // DirectInputの初期化
-  ComPtr<IDirectInput8> directInput = nullptr;
   hr = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
-                           (void **)&directInput, nullptr);
-
+                           (void **)&directInput_, nullptr);
   assert(SUCCEEDED(hr));
 
   // キーボードデバイスの生成
-  hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard_, NULL);
+  hr = directInput_->CreateDevice(GUID_SysKeyboard, &keyboard_, NULL);
   assert(SUCCEEDED(hr));
 
   // 入力データ形式セット
@@ -37,15 +35,40 @@ void Input::Update() {
   // キーボード情報の取得開始
   keyboard_->Acquire();
 
-  BYTE keys[256] = {};
-  BYTE preKeys[256] = {};
-
   // 全キー入力状態を取得する
-  memcpy(preKeys, keys, sizeof(keys));
-  keyboard_->GetDeviceState(sizeof(keys), keys);
+  memcpy(preKeys_, keys_, sizeof(keys_));
+  keyboard_->GetDeviceState(sizeof(keys_), keys_);
 
-  if (keys[DIK_SPACE]) {
+  if (TriggerKey(DIK_0)) {
     OutputDebugStringA("Hit");
   }
   
-} 
+}
+
+/// <summary>
+/// Push処理
+/// </summary>
+/// <param name="keyCode">押下状態を確認するキーコード</param>
+/// <returns></returns>
+bool Input::PushKey(BYTE keyCode) { 
+    //指定キーを押していればtrue
+  if (keys_[keyCode]) {
+      return true;
+  }
+
+  //その他のキーを押していればfalse
+    return false;
+}
+/// <summary>
+/// Trigger処理
+/// </summary>
+/// <param name="keyCode">押下状態を確認するキーコード</param>
+/// <returns></returns>
+bool Input::TriggerKey(BYTE keyCode) { 
+    //指定したキーを押していればtrue
+  if (keys_[keyCode] && !preKeys_[keyCode]) {
+      return true;
+  }
+
+    //その他のキーを押していればfalse
+    return false; }

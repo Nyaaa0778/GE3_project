@@ -12,12 +12,21 @@
 
 class Input {
 private:
-  // キーボードデバイス
-  Microsoft::WRL::ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
 
-  // namespace
+	// namespace
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
+
+  //DirectInput
+  ComPtr<IDirectInput8> directInput_ = nullptr;
+
+  // キーボードデバイス
+  ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
+
+  //現在のキー
+  BYTE keys_[256] = {};
+  //前のキー
+  BYTE preKeys_[256] = {};
 
 public:
   /// <summary>
@@ -28,4 +37,17 @@ public:
   /// 更新
   /// </summary>
   void Update();
+
+  /// <summary>
+  /// Push処理
+  /// </summary>
+  /// <param name="keyCode">押下状態を確認するキーコード</param>
+  /// <returns></returns>
+  bool PushKey(BYTE keyCode);
+  /// <summary>
+  /// Trigger処理
+  /// </summary>
+  /// <param name="keyCode">押下状態を確認するキーコード</param>
+  /// <returns></returns>
+  bool TriggerKey(BYTE keyCode);
 };
