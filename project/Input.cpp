@@ -1,10 +1,7 @@
 #include "Input.h"
 
-#include <dinput.h>
-#include <wrl.h>
 #include <cassert>
 
-using namespace Microsoft::WRL;
 
 /// <summary>
 /// 初期化
@@ -21,20 +18,34 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
   assert(SUCCEEDED(hr));
 
   // キーボードデバイスの生成
-  ComPtr < IDirectInputDevice8> keyboard = nullptr;
-  hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+  hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard_, NULL);
   assert(SUCCEEDED(hr));
 
   // 入力データ形式セット
-  hr = keyboard->SetDataFormat(&c_dfDIKeyboard);
+  hr = keyboard_->SetDataFormat(&c_dfDIKeyboard);
   assert(SUCCEEDED(hr));
 
   // 排他制御レベルのセット
-  hr = keyboard->SetCooperativeLevel(
+  hr = keyboard_->SetCooperativeLevel(
       hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
   assert(SUCCEEDED(hr));
 }
 /// <summary>
 /// 更新
 /// </summary>
-void Input::Update() {}
+void Input::Update() {
+  // キーボード情報の取得開始
+  keyboard_->Acquire();
+
+  BYTE keys[256] = {};
+  BYTE preKeys[256] = {};
+
+  // 全キー入力状態を取得する
+  memcpy(preKeys, keys, sizeof(keys));
+  keyboard_->GetDeviceState(sizeof(keys), keys);
+
+  if (keys[DIK_SPACE]) {
+    OutputDebugStringA("Hit");
+  }
+  
+} 

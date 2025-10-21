@@ -736,16 +736,16 @@ ModelData LoadObjFile(const std::string &directoryPath,
   return modelData;
 }
 
-/// <summary>
-/// トリガー処理
-/// </summary>
-/// <param name="keyNumber"></param>
-/// <param name="keys"></param>
-/// <param name="preKeys"></param>
-/// <returns></returns>
-bool isTrigger(uint8_t keyNumber, const BYTE *keys, const BYTE *preKeys) {
-  return ((keys[keyNumber] & 0x80) && !(preKeys[keyNumber] & 0x80));
-}
+///// <summary>
+///// トリガー処理
+///// </summary>
+///// <param name="keyNumber"></param>
+///// <param name="keys"></param>
+///// <param name="preKeys"></param>
+///// <returns></returns>
+//bool isTrigger(uint8_t keyNumber, const BYTE *keys, const BYTE *preKeys) {
+//  return ((keys[keyNumber] & 0x80) && !(preKeys[keyNumber] & 0x80));
+//}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -1748,8 +1748,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   MSG msg{};
 
-  BYTE keys[256] = {};
-  BYTE preKeys[256] = {};
+  /*BYTE keys[256] = {};
+  BYTE preKeys[256] = {};*/
 
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
@@ -1759,13 +1759,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       DispatchMessage(&msg);
     } else {
 
-      // キーボード情報の取得開始
-      keyboard->Acquire();
+      //// キーボード情報の取得開始
+      //keyboard->Acquire();
 
-      // 全キー入力状態を取得する
-      memcpy(preKeys, keys, sizeof(keys));
+      //// 全キー入力状態を取得する
+      //memcpy(preKeys, keys, sizeof(keys));
 
-      keyboard->GetDeviceState(sizeof(keys), keys);
+      //keyboard->GetDeviceState(sizeof(keys), keys);
+
+        //入力更新
+      input->Update();
 
       // ゲームの処理
 
@@ -1878,9 +1881,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       /// 更新処理 ↓
       ///
 
-      if (isTrigger(DIK_SPACE, keys, preKeys)) {
+      /*if (isTrigger(DIK_SPACE, keys, preKeys)) {
         transform.translate.x += 2.0f;
-      }
+      }*/
 
       // 三角形
       worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate,
