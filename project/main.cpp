@@ -1,4 +1,5 @@
 #include"Input.h"
+#include"WindowsApp.h"
 
 #include <Windows.h>
 #include <chrono>
@@ -762,45 +763,52 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ///
   /// =============================================
 
-  WNDCLASS wc{};
-  // ウィンドウプロシージャ
-  wc.lpfnWndProc = WindowProc;
-  // ウィンドウクラス名
-  wc.lpszClassName = L"CG2WindowClass";
-  // インスタンスハンドル
-  wc.hInstance = GetModuleHandle(nullptr);
-  // カーソル
-  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//  WNDCLASS wc{};
+//  // ウィンドウプロシージャ
+//  wc.lpfnWndProc = WindowProc;
+//  // ウィンドウクラス名
+//  wc.lpszClassName = L"CG2WindowClass";
+//  // インスタンスハンドル
+//  wc.hInstance = GetModuleHandle(nullptr);
+//  // カーソル
+//  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//
+//  // ウィンドウクラスを登録する
+//  RegisterClass(&wc);
+//
+//  // クライアント領域のサイズ
+//  const int32_t kClientWidth = 1280;
+//  const int32_t kClientHeight = 720;
+//
+//  // ウィンドウサイズを表す構造体にクライアント領域を入れる
+//  RECT wrc = {0, 0, kClientWidth, kClientHeight};
+//
+//  // クライアント領域をもとに実際のサイズにwrcを変更してもらう
+//  AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+//
+//  HWND hwnd =
+//      CreateWindow(wc.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+//                   CW_USEDEFAULT, wrc.right - wrc.left, wrc.bottom - wrc.top,
+//                   nullptr, nullptr, wc.hInstance, nullptr);
+//
+//#ifdef _DEBUG
+//  ComPtr<ID3D12Debug1> debugController = nullptr;
+//  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+//    // デバッグレイヤーを有効化
+//    debugController->EnableDebugLayer();
+//    // さらにGPU側でもチェック
+//    debugController->SetEnableGPUBasedValidation(TRUE);
+//  }
+//#endif
+//
+//  ShowWindow(hwnd, SW_SHOW);
 
-  // ウィンドウクラスを登録する
-  RegisterClass(&wc);
+  //WindowsAppのポインタ
+  WindowsApp *winApp = nullptr;
 
-  // クライアント領域のサイズ
-  const int32_t kClientWidth = 1280;
-  const int32_t kClientHeight = 720;
-
-  // ウィンドウサイズを表す構造体にクライアント領域を入れる
-  RECT wrc = {0, 0, kClientWidth, kClientHeight};
-
-  // クライアント領域をもとに実際のサイズにwrcを変更してもらう
-  AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
-
-  HWND hwnd =
-      CreateWindow(wc.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                   CW_USEDEFAULT, wrc.right - wrc.left, wrc.bottom - wrc.top,
-                   nullptr, nullptr, wc.hInstance, nullptr);
-
-#ifdef _DEBUG
-  ComPtr<ID3D12Debug1> debugController = nullptr;
-  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-    // デバッグレイヤーを有効化
-    debugController->EnableDebugLayer();
-    // さらにGPU側でもチェック
-    debugController->SetEnableGPUBasedValidation(TRUE);
-  }
-#endif
-
-  ShowWindow(hwnd, SW_SHOW);
+  //WindowsAppの初期化
+  winApp = new WindowsApp();
+  winApp->Initialize();
 
   // 出力ウィンドウへの文字出力
   OutputDebugStringA("Hello,DirectX!\n");
