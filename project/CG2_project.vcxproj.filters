@@ -69,6 +69,9 @@
     <ClCompile Include="engine\sound\Sound.cpp">
       <Filter>ソース ファイル\sound</Filter>
     </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -123,6 +126,9 @@
     </ClInclude>
     <ClInclude Include="engine\sound\Sound.h">
       <Filter>ヘッダー ファイル\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

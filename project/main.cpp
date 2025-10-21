@@ -1,3 +1,5 @@
+#include"Input.h"
+
 #include <Windows.h>
 #include <chrono>
 #include <cstdint>
@@ -35,11 +37,11 @@
 
 #include <sstream>
 
-#define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
+//#define DIRECTINPUT_VERSION 0x0800
+//#include <dinput.h>
 
-#pragma comment(lib, "dinput8.lib")
-#pragma comment(lib, "dxguid.lib")
+//#pragma comment(lib, "dinput8.lib")
+//#pragma comment(lib, "dxguid.lib")
 
 #include "MathUtility.h"
 #include "Sound.h"
@@ -1658,26 +1660,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ///
   /// =============================================
 
-  // DirectInputの初期化
-  IDirectInput8 *directInput = nullptr;
-  hr = DirectInput8Create(wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
-                          (void **)&directInput, nullptr);
+  //入力のポインタ
+  Input *input = nullptr;
 
-  assert(SUCCEEDED(hr));
+  //入力の初期化
+  input = new Input();
+  input->Initialize(wc.hInstance, hwnd);
 
-  // キーボードデバイスの生成
-  IDirectInputDevice8 *keyboard = nullptr;
-  hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-  assert(SUCCEEDED(hr));
+  //// DirectInputの初期化
+  //IDirectInput8 *directInput = nullptr;
+  //hr = DirectInput8Create(wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+  //                        (void **)&directInput, nullptr);
 
-  // 入力データ形式セット
-  hr = keyboard->SetDataFormat(&c_dfDIKeyboard);
-  assert(SUCCEEDED(hr));
+  //assert(SUCCEEDED(hr));
 
-  // 排他制御レベルのセット
-  hr = keyboard->SetCooperativeLevel(
-      hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-  assert(SUCCEEDED(hr));
+  //// キーボードデバイスの生成
+  //IDirectInputDevice8 *keyboard = nullptr;
+  //hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+  //assert(SUCCEEDED(hr));
+
+  //// 入力データ形式セット
+  //hr = keyboard->SetDataFormat(&c_dfDIKeyboard);
+  //assert(SUCCEEDED(hr));
+
+  //// 排他制御レベルのセット
+  //hr = keyboard->SetCooperativeLevel(
+  //    hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+  //assert(SUCCEEDED(hr));
 
   /// =============================================
   ///
@@ -2090,6 +2099,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   if (dxcUtils) {
     dxcUtils->Release();
   }
+
+  delete input;
 
 #ifdef _DEBUG
   if (debugController) {
