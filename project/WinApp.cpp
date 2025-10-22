@@ -1,22 +1,21 @@
-#include "WindowsApp.h"
+#include "WinApp.h"
 #include "externals/imgui/imgui.h"
 
 /// <summary>
 /// 初期化
 /// </summary>
-void WindowsApp::Initialize() {
-  WNDCLASS wc{};
+void WinApp::Initialize() {
   // ウィンドウプロシージャ
-  wc.lpfnWndProc = WindowProc;
+  wc_.lpfnWndProc = WindowProc;
   // ウィンドウクラス名
-  wc.lpszClassName = L"CG2WindowClass";
+  wc_.lpszClassName = L"CG2WindowClass";
   // インスタンスハンドル
-  wc.hInstance = GetModuleHandle(nullptr);
+  wc_.hInstance = GetModuleHandle(nullptr);
   // カーソル
-  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+  wc_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
   // ウィンドウクラスを登録する
-  RegisterClass(&wc);
+  RegisterClass(&wc_);
 
   // ウィンドウサイズを表す構造体にクライアント領域を入れる
   RECT wrc = {0, 0, kClientWidth, kClientHeight};
@@ -24,10 +23,10 @@ void WindowsApp::Initialize() {
   // クライアント領域をもとに実際のサイズにwrcを変更してもらう
   AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-  HWND hwnd =
-      CreateWindow(wc.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+  hwnd_ =
+      CreateWindow(wc_.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                    CW_USEDEFAULT, wrc.right - wrc.left, wrc.bottom - wrc.top,
-                   nullptr, nullptr, wc.hInstance, nullptr);
+                   nullptr, nullptr, wc_.hInstance, nullptr);
 
 #ifdef _DEBUG
   ComPtr<ID3D12Debug1> debugController = nullptr;
@@ -39,12 +38,12 @@ void WindowsApp::Initialize() {
   }
 #endif
 
-  ShowWindow(hwnd, SW_SHOW);
+  ShowWindow(hwnd_, SW_SHOW);
 }
 /// <summary>
 /// 更新
 /// </summary>
-void WindowsApp::Update() {}
+void WinApp::Update() {}
 
 /// <summary>
 /// ウィンドウに送られてくるメッセージを受け取って処理
@@ -54,7 +53,7 @@ void WindowsApp::Update() {}
 /// <param name="wparam">メッセージごとの追加情報(上位)</param>
 /// <param name="lparam">メッセージごとの追加情報(下位)</param>
 /// <returns></returns>
-LRESULT CALLBACK WindowsApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   /*if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
     return true;
   }*/

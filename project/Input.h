@@ -42,12 +42,12 @@ public:
   /// Push処理
   /// </summary>
   /// <param name="keyCode">押下状態を確認するキーコード</param>
-  /// <returns></returns>
+  /// <returns>押下状態ならtrue、それ以外ならfalse</returns>
   bool PushKey(BYTE keyCode);
   /// <summary>
   /// Trigger処理
   /// </summary>
   /// <param name="keyCode">押下状態を確認するキーコード</param>
-  /// <returns></returns>
+  /// <returns>押下状態ならtrue、それ以外ならfalse</returns>
   bool TriggerKey(BYTE keyCode);
 };
