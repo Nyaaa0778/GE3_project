@@ -1,4 +1,7 @@
-#include <Windows.h>
+#include"Input.h"
+#include"WinApp.h"
+
+//#include <Windows.h>
 #include <chrono>
 #include <cstdint>
 
@@ -35,11 +38,11 @@
 
 #include <sstream>
 
-#define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
+//#define DIRECTINPUT_VERSION 0x0800
+//#include <dinput.h>
 
-#pragma comment(lib, "dinput8.lib")
-#pragma comment(lib, "dxguid.lib")
+//#pragma comment(lib, "dinput8.lib")
+//#pragma comment(lib, "dxguid.lib")
 
 #include "MathUtility.h"
 #include "Sound.h"
@@ -734,16 +737,16 @@ ModelData LoadObjFile(const std::string &directoryPath,
   return modelData;
 }
 
-/// <summary>
-/// トリガー処理
-/// </summary>
-/// <param name="keyNumber"></param>
-/// <param name="keys"></param>
-/// <param name="preKeys"></param>
-/// <returns></returns>
-bool isTrigger(uint8_t keyNumber, const BYTE *keys, const BYTE *preKeys) {
-  return ((keys[keyNumber] & 0x80) && !(preKeys[keyNumber] & 0x80));
-}
+///// <summary>
+///// トリガー処理
+///// </summary>
+///// <param name="keyNumber"></param>
+///// <param name="keys"></param>
+///// <param name="preKeys"></param>
+///// <returns></returns>
+//bool isTrigger(uint8_t keyNumber, const BYTE *keys, const BYTE *preKeys) {
+//  return ((keys[keyNumber] & 0x80) && !(preKeys[keyNumber] & 0x80));
+//}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -760,45 +763,52 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ///
   /// =============================================
 
-  WNDCLASS wc{};
-  // ウィンドウプロシージャ
-  wc.lpfnWndProc = WindowProc;
-  // ウィンドウクラス名
-  wc.lpszClassName = L"CG2WindowClass";
-  // インスタンスハンドル
-  wc.hInstance = GetModuleHandle(nullptr);
-  // カーソル
-  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//  WNDCLASS wc{};
+//  // ウィンドウプロシージャ
+//  wc.lpfnWndProc = WindowProc;
+//  // ウィンドウクラス名
+//  wc.lpszClassName = L"CG2WindowClass";
+//  // インスタンスハンドル
+//  wc.hInstance = GetModuleHandle(nullptr);
+//  // カーソル
+//  wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+//
+//  // ウィンドウクラスを登録する
+//  RegisterClass(&wc);
+//
+//  // クライアント領域のサイズ
+//  const int32_t kClientWidth = 1280;
+//  const int32_t kClientHeight = 720;
+//
+//  // ウィンドウサイズを表す構造体にクライアント領域を入れる
+//  RECT wrc = {0, 0, kClientWidth, kClientHeight};
+//
+//  // クライアント領域をもとに実際のサイズにwrcを変更してもらう
+//  AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
+//
+//  HWND hwnd =
+//      CreateWindow(wc.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+//                   CW_USEDEFAULT, wrc.right - wrc.left, wrc.bottom - wrc.top,
+//                   nullptr, nullptr, wc.hInstance, nullptr);
+//
+//#ifdef _DEBUG
+//  ComPtr<ID3D12Debug1> debugController = nullptr;
+//  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+//    // デバッグレイヤーを有効化
+//    debugController->EnableDebugLayer();
+//    // さらにGPU側でもチェック
+//    debugController->SetEnableGPUBasedValidation(TRUE);
+//  }
+//#endif
+//
+//  ShowWindow(hwnd, SW_SHOW);
 
-  // ウィンドウクラスを登録する
-  RegisterClass(&wc);
+  //WindowsAppのポインタ
+  WinApp *winApp = nullptr;
 
-  // クライアント領域のサイズ
-  const int32_t kClientWidth = 1280;
-  const int32_t kClientHeight = 720;
-
-  // ウィンドウサイズを表す構造体にクライアント領域を入れる
-  RECT wrc = {0, 0, kClientWidth, kClientHeight};
-
-  // クライアント領域をもとに実際のサイズにwrcを変更してもらう
-  AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
-
-  HWND hwnd =
-      CreateWindow(wc.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                   CW_USEDEFAULT, wrc.right - wrc.left, wrc.bottom - wrc.top,
-                   nullptr, nullptr, wc.hInstance, nullptr);
-
-#ifdef _DEBUG
-  ComPtr<ID3D12Debug1> debugController = nullptr;
-  if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-    // デバッグレイヤーを有効化
-    debugController->EnableDebugLayer();
-    // さらにGPU側でもチェック
-    debugController->SetEnableGPUBasedValidation(TRUE);
-  }
-#endif
-
-  ShowWindow(hwnd, SW_SHOW);
+  //WindowsAppの初期化
+  winApp = new WinApp();
+  winApp->Initialize();
 
   // 出力ウィンドウへの文字出力
   OutputDebugStringA("Hello,DirectX!\n");
@@ -936,9 +946,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ComPtr<IDXGISwapChain4> swapChain = nullptr;
   DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
   swapChainDesc.Width =
-      kClientWidth; // 画面の幅、ウィンドウのクライアント領域と同じ
+      WinApp::kClientWidth; // 画面の幅、ウィンドウのクライアント領域と同じ
   swapChainDesc.Height =
-      kClientHeight; // 画面の高さ、ウィンドウのクライアント領域と同じ
+      WinApp::kClientHeight; // 画面の高さ、ウィンドウのクライアント領域と同じ
   swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
   swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない(ギザギザ)
   swapChainDesc.BufferUsage =
@@ -948,7 +958,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニタにうつしたら、中身を放棄
   // コマンドキュー、ウィンドウハンドル、設定を渡して生成
   hr = dxgiFactory->CreateSwapChainForHwnd(
-      commandQueue.Get(), hwnd, &swapChainDesc, nullptr, nullptr,
+      commandQueue.Get(), winApp->GetHwnd(), &swapChainDesc, nullptr, nullptr,
       reinterpret_cast<IDXGISwapChain1 **>(swapChain.GetAddressOf()));
   assert(SUCCEEDED(hr));
 
@@ -1162,7 +1172,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // DepthStencilTextureをウィンドウのサイズで作成
   ComPtr<ID3D12Resource> depthStencilResource =
-      CreateDepthStencilTextureResource(device, kClientWidth, kClientHeight);
+      CreateDepthStencilTextureResource(device, WinApp::kClientWidth,
+                                        WinApp::kClientHeight);
 
   // DSV用のヒープディスクリプタの数は1、ShaderVisibleはfalse
   ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap =
@@ -1624,8 +1635,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // ビューポート
   D3D12_VIEWPORT viewport{};
   // クライアント領域のサイズと一緒にして画面全体に表示
-  viewport.Width = kClientWidth;
-  viewport.Height = kClientHeight;
+  viewport.Width = WinApp::kClientWidth;
+  viewport.Height = WinApp::kClientHeight;
   viewport.TopLeftX = 0;
   viewport.TopLeftY = 0;
   viewport.MinDepth = 0.0f;
@@ -1635,9 +1646,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   D3D12_RECT scissorRect{};
   // 基本的にビューポートと同じ矩形が構成されるようにする
   scissorRect.left = 0;
-  scissorRect.right = kClientWidth;
+  scissorRect.right = WinApp::kClientWidth;
   scissorRect.top = 0;
-  scissorRect.bottom = kClientHeight;
+  scissorRect.bottom = WinApp::kClientHeight;
 
   /// =============================================
   ///
@@ -1658,26 +1669,33 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ///
   /// =============================================
 
-  // DirectInputの初期化
-  IDirectInput8 *directInput = nullptr;
-  hr = DirectInput8Create(wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
-                          (void **)&directInput, nullptr);
+  //入力のポインタ
+  Input *input = nullptr;
 
-  assert(SUCCEEDED(hr));
+  //入力の初期化
+  input = new Input();
+  input->Initialize(winApp->GetHInstance(), winApp->GetHwnd());
 
-  // キーボードデバイスの生成
-  IDirectInputDevice8 *keyboard = nullptr;
-  hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
-  assert(SUCCEEDED(hr));
+  //// DirectInputの初期化
+  //IDirectInput8 *directInput = nullptr;
+  //hr = DirectInput8Create(wc.hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
+  //                        (void **)&directInput, nullptr);
 
-  // 入力データ形式セット
-  hr = keyboard->SetDataFormat(&c_dfDIKeyboard);
-  assert(SUCCEEDED(hr));
+  //assert(SUCCEEDED(hr));
 
-  // 排他制御レベルのセット
-  hr = keyboard->SetCooperativeLevel(
-      hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
-  assert(SUCCEEDED(hr));
+  //// キーボードデバイスの生成
+  //IDirectInputDevice8 *keyboard = nullptr;
+  //hr = directInput->CreateDevice(GUID_SysKeyboard, &keyboard, NULL);
+  //assert(SUCCEEDED(hr));
+
+  //// 入力データ形式セット
+  //hr = keyboard->SetDataFormat(&c_dfDIKeyboard);
+  //assert(SUCCEEDED(hr));
+
+  //// 排他制御レベルのセット
+  //hr = keyboard->SetCooperativeLevel(
+  //    hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+  //assert(SUCCEEDED(hr));
 
   /// =============================================
   ///
@@ -1688,7 +1706,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
-  ImGui_ImplWin32_Init(hwnd);
+  ImGui_ImplWin32_Init(winApp->GetHwnd());
   ImGui_ImplDX12_Init(device.Get(), swapChainDesc.BufferCount, rtvDesc.Format,
                       srvDescriptorHeap.Get(),
                       srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
@@ -1739,8 +1757,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   MSG msg{};
 
-  BYTE keys[256] = {};
-  BYTE preKeys[256] = {};
+  /*BYTE keys[256] = {};
+  BYTE preKeys[256] = {};*/
 
   // ウィンドウの×ボタンが押されるまでループ
   while (msg.message != WM_QUIT) {
@@ -1750,13 +1768,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       DispatchMessage(&msg);
     } else {
 
-      // キーボード情報の取得開始
-      keyboard->Acquire();
+      //// キーボード情報の取得開始
+      //keyboard->Acquire();
 
-      // 全キー入力状態を取得する
-      memcpy(preKeys, keys, sizeof(keys));
+      //// 全キー入力状態を取得する
+      //memcpy(preKeys, keys, sizeof(keys));
 
-      keyboard->GetDeviceState(sizeof(keys), keys);
+      //keyboard->GetDeviceState(sizeof(keys), keys);
+
+        //入力更新
+      input->Update();
 
       // ゲームの処理
 
@@ -1869,9 +1890,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
       /// 更新処理 ↓
       ///
 
-      if (isTrigger(DIK_SPACE, keys, preKeys)) {
+      /*if (isTrigger(DIK_SPACE, keys, preKeys)) {
         transform.translate.x += 2.0f;
-      }
+      }*/
 
       // 三角形
       worldMatrix = MakeAffineMatrix(transform.scale, transform.rotate,
@@ -1881,7 +1902,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                            transformCamera.translate);
       viewMatrix = Inverse(cameraMatrix);
       projectionMatrix = MakePerspectiveFovMatrix(
-          0.45f, float(kClientWidth) / float(kClientHeight), 0.1f, 100.0f);
+          0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f,
+          100.0f);
       transformMatrixData->World = worldMatrix;
       transformMatrixData->WVP =
           Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
@@ -1892,8 +1914,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
                            transformSprite.translate);
       viewMatrixSprite = MakeIdentityMatrix();
       projectionMatrixSprite = MakeOrthographicMatrix(
-          0.0f, 0.0f, static_cast<float>(kClientWidth),
-          static_cast<float>(kClientHeight), 0.0f, 100.0f);
+          0.0f, 0.0f, static_cast<float>(WinApp::kClientWidth),
+          static_cast<float>(WinApp::kClientHeight), 0.0f, 100.0f);
       worldViewProjectionMatrixSprite =
           Multiply(worldMatrixSprite,
                    Multiply(viewMatrixSprite, projectionMatrixSprite));
@@ -2068,7 +2090,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 解放処理
   CloseHandle(fenceEvent);
 
-  CloseWindow(hwnd);
+  CloseWindow(winApp->GetHwnd());
 
   signatureBlob->Release();
 
@@ -2090,6 +2112,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   if (dxcUtils) {
     dxcUtils->Release();
   }
+
+  delete input;
+
+  delete winApp;
 
 #ifdef _DEBUG
   if (debugController) {
