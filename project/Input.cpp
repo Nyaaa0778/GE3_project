@@ -49,7 +49,7 @@ void Input::Update() {
 /// Push処理
 /// </summary>
 /// <param name="keyCode">押下状態を確認するキーコード</param>
-/// <returns></returns>
+/// <returns>押下状態ならtrue、それ以外ならfalse</returns>
 bool Input::PushKey(BYTE keyCode) { 
     //指定キーを押していればtrue
   if (keys_[keyCode]) {
@@ -63,7 +63,7 @@ bool Input::PushKey(BYTE keyCode) {
 /// Trigger処理
 /// </summary>
 /// <param name="keyCode">押下状態を確認するキーコード</param>
-/// <returns></returns>
+/// <returns>押下状態ならtrue、それ以外ならfalse</returns>
 bool Input::TriggerKey(BYTE keyCode) { 
     //指定したキーを押していればtrue
   if (keys_[keyCode] && !preKeys_[keyCode]) {

@@ -13,18 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="ソース ファイル\sound">
-      <UniqueIdentifier>{93074115-de6a-4cb7-9814-968a90c99d67}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\math">
-      <UniqueIdentifier>{98284fb1-aeeb-4b33-b5d5-d65f49fdc384}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ヘッダー ファイル\sound">
-      <UniqueIdentifier>{948c5635-10ba-4459-9448-0cca6887190c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ソース ファイル\math">
-      <UniqueIdentifier>{a8f253bb-aa9f-48b3-a88b-f08126fc888c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="externals">
       <UniqueIdentifier>{db2c50b9-1252-4213-b8ed-b916e5ec78a1}</UniqueIdentifier>
     </Filter>
@@ -33,6 +21,36 @@
     </Filter>
     <Filter Include="リソース ファイル\shaders">
       <UniqueIdentifier>{ca494e45-aee5-4eda-96f3-4e14bd1a9eff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine">
+      <UniqueIdentifier>{314706ea-ec44-4c64-87bd-f94be7fe4241}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\input">
+      <UniqueIdentifier>{832e596d-e805-4cfc-ade8-bf6098b63d4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\math">
+      <UniqueIdentifier>{a8f253bb-aa9f-48b3-a88b-f08126fc888c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine">
+      <UniqueIdentifier>{43114945-0fda-4d57-826e-8ffddc5bcdbd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\input">
+      <UniqueIdentifier>{feea10cc-ddae-4624-8589-34307135753e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\math">
+      <UniqueIdentifier>{98284fb1-aeeb-4b33-b5d5-d65f49fdc384}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\system">
+      <UniqueIdentifier>{b5077d62-7057-4ac6-bf99-1af636f36e28}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\system">
+      <UniqueIdentifier>{5e587492-236a-408d-944a-5e52f5890377}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\sound">
+      <UniqueIdentifier>{93074115-de6a-4cb7-9814-968a90c99d67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\sound">
+      <UniqueIdentifier>{948c5635-10ba-4459-9448-0cca6887190c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -61,19 +79,19 @@
       <Filter>externals\imgui</Filter>
     </ClCompile>
     <ClCompile Include="engine\math\MathUtility.cpp">
-      <Filter>ソース ファイル\math</Filter>
+      <Filter>ソース ファイル\engine\math</Filter>
     </ClCompile>
     <ClCompile Include="engine\sound\SoundManager.cpp">
-      <Filter>ソース ファイル\sound</Filter>
+      <Filter>ソース ファイル\engine\sound</Filter>
     </ClCompile>
     <ClCompile Include="engine\sound\Sound.cpp">
-      <Filter>ソース ファイル\sound</Filter>
+      <Filter>ソース ファイル\engine\sound</Filter>
     </ClCompile>
     <ClCompile Include="Input.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\engine\input</Filter>
     </ClCompile>
     <ClCompile Include="WindowsApp.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -110,31 +128,31 @@
       <Filter>externals\imgui</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\MathUtility.h">
-      <Filter>ヘッダー ファイル\math</Filter>
+      <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Matrix4x4.h">
-      <Filter>ヘッダー ファイル\math</Filter>
+      <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Vector2.h">
-      <Filter>ヘッダー ファイル\math</Filter>
+      <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Vector3.h">
-      <Filter>ヘッダー ファイル\math</Filter>
+      <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\math\Vector4.h">
-      <Filter>ヘッダー ファイル\math</Filter>
+      <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
     <ClInclude Include="engine\sound\SoundManager.h">
-      <Filter>ヘッダー ファイル\sound</Filter>
+      <Filter>ヘッダー ファイル\engine\sound</Filter>
     </ClInclude>
     <ClInclude Include="engine\sound\Sound.h">
-      <Filter>ヘッダー ファイル\sound</Filter>
+      <Filter>ヘッダー ファイル\engine\sound</Filter>
     </ClInclude>
     <ClInclude Include="Input.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ヘッダー ファイル\engine\input</Filter>
     </ClInclude>
     <ClInclude Include="WindowsApp.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

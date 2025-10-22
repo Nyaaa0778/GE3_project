@@ -1,6 +1,5 @@
 #include "WindowsApp.h"
-#include <Windows.h>
-#include <cstdint>
+#include "externals/imgui/imgui.h"
 
 /// <summary>
 /// 初期化
@@ -18,10 +17,6 @@ void WindowsApp::Initialize() {
 
   // ウィンドウクラスを登録する
   RegisterClass(&wc);
-
-  // クライアント領域のサイズ
-  const int32_t kClientWidth = 1280;
-  const int32_t kClientHeight = 720;
 
   // ウィンドウサイズを表す構造体にクライアント領域を入れる
   RECT wrc = {0, 0, kClientWidth, kClientHeight};
@@ -52,14 +47,14 @@ void WindowsApp::Initialize() {
 void WindowsApp::Update() {}
 
 /// <summary>
-/// 
+/// ウィンドウに送られてくるメッセージを受け取って処理
 /// </summary>
 /// <param name="hwnd">ウィンドウハンドル</param>
 /// <param name="msg">受信したメッセージID</param>
 /// <param name="wparam">メッセージごとの追加情報(上位)</param>
 /// <param name="lparam">メッセージごとの追加情報(下位)</param>
 /// <returns></returns>
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK WindowsApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   /*if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
     return true;
   }*/
@@ -75,3 +70,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   // 標準のメッセージ処理を行う
   return DefWindowProc(hwnd, msg, wparam, lparam);
 }
+
+/// <summary>
+/// ImGuiのメッセージ処理
+/// </summary>
+/// <param name="hwnd">ウィンドウハンドル</param>
+/// <param name="msg">受信したメッセージID</param>
+/// <param name="wParam">メッセージごとの追加情報(上位)</param>
+/// <param name="lParam">メッセージごとの追加情報(下位)</param>
+/// <returns></returns>
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
+                                                             UINT msg,
+                                                             WPARAM wParam,
+                                                             LPARAM lParam);

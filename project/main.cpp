@@ -1,7 +1,7 @@
 #include"Input.h"
 #include"WindowsApp.h"
 
-#include <Windows.h>
+//#include <Windows.h>
 #include <chrono>
 #include <cstdint>
 
@@ -2112,6 +2112,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   }
 
   delete input;
+
+  delete winApp;
 
 #ifdef _DEBUG
   if (debugController) {
