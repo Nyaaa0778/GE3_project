@@ -26,6 +26,11 @@ public:
   void Update();
 
   /// <summary>
+  /// 終了
+  /// </summary>
+  void Finalize();
+
+  /// <summary>
   /// アプリケーションハンドルを取得
   /// </summary>
   /// <returns>アプリケーションハンドル</returns>

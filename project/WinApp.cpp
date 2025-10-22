@@ -46,6 +46,14 @@ void WinApp::Initialize() {
 void WinApp::Update() {}
 
 /// <summary>
+/// 終了
+/// </summary>
+void WinApp::Finalize() {
+  CloseWindow(hwnd_);
+  CoUninitialize();
+}
+
+/// <summary>
 /// ウィンドウに送られてくるメッセージを受け取って処理
 /// </summary>
 /// <param name="hwnd">ウィンドウハンドル</param>

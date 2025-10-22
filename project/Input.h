@@ -1,5 +1,4 @@
 #pragma once
-#include <Windows.h>
 
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
@@ -7,32 +6,36 @@
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
-#include <wrl.h>
 #include <cstdint>
+#include <wrl.h>
+
+#include "WinApp.h"
 
 class Input {
 private:
+  //WinApp
+  WinApp *winApp_ = nullptr;
 
-	// namespace
+  // namespace
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
-  //DirectInput
+  // DirectInput
   ComPtr<IDirectInput8> directInput_ = nullptr;
 
   // キーボードデバイス
   ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
 
-  //現在のキー
+  // 現在のキー
   BYTE keys_[256] = {};
-  //前のキー
+  // 前のキー
   BYTE preKeys_[256] = {};
 
 public:
   /// <summary>
   /// 初期化
   /// </summary>
-  void Initialize(HINSTANCE hInstance, HWND hwnd);
+  void Initialize(WinApp* winApp);
   /// <summary>
   /// 更新
   /// </summary>

@@ -2,17 +2,19 @@
 
 #include <cassert>
 
-
 /// <summary>
 /// 初期化
 /// </summary>
-void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
+void Input::Initialize(WinApp *winApp) {
+  // メンバ変数に記録
+  winApp_ = winApp;
 
   HRESULT hr;
 
   // DirectInputの初期化
-  hr = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8,
-                           (void **)&directInput_, nullptr);
+  hr = DirectInput8Create(winApp_->GetHInstance(), DIRECTINPUT_VERSION,
+                          IID_IDirectInput8,
+                          (void **)&directInput_, nullptr);
   assert(SUCCEEDED(hr));
 
   // キーボードデバイスの生成
@@ -24,8 +26,9 @@ void Input::Initialize(HINSTANCE hInstance, HWND hwnd) {
   assert(SUCCEEDED(hr));
 
   // 排他制御レベルのセット
-  hr = keyboard_->SetCooperativeLevel(
-      hwnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE | DISCL_NOWINKEY);
+  hr = keyboard_->SetCooperativeLevel(winApp_->GetHwnd(),
+                                      DISCL_FOREGROUND | DISCL_NONEXCLUSIVE |
+                                          DISCL_NOWINKEY);
   assert(SUCCEEDED(hr));
 }
 /// <summary>
@@ -42,7 +45,6 @@ void Input::Update() {
   if (TriggerKey(DIK_0)) {
     OutputDebugStringA("Hit");
   }
-  
 }
 
 /// <summary>
@@ -50,25 +52,26 @@ void Input::Update() {
 /// </summary>
 /// <param name="keyCode">押下状態を確認するキーコード</param>
 /// <returns>押下状態ならtrue、それ以外ならfalse</returns>
-bool Input::PushKey(BYTE keyCode) { 
-    //指定キーを押していればtrue
+bool Input::PushKey(BYTE keyCode) {
+  // 指定キーを押していればtrue
   if (keys_[keyCode]) {
-      return true;
+    return true;
   }
 
-  //その他のキーを押していればfalse
-    return false;
+  // その他のキーを押していればfalse
+  return false;
 }
 /// <summary>
 /// Trigger処理
 /// </summary>
 /// <param name="keyCode">押下状態を確認するキーコード</param>
 /// <returns>押下状態ならtrue、それ以外ならfalse</returns>
-bool Input::TriggerKey(BYTE keyCode) { 
-    //指定したキーを押していればtrue
+bool Input::TriggerKey(BYTE keyCode) {
+  // 指定したキーを押していればtrue
   if (keys_[keyCode] && !preKeys_[keyCode]) {
-      return true;
+    return true;
   }
 
-    //その他のキーを押していればfalse
-    return false; }
+  // その他のキーを押していればfalse
+  return false;
+}

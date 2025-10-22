@@ -1674,7 +1674,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   //入力の初期化
   input = new Input();
-  input->Initialize(winApp->GetHInstance(), winApp->GetHwnd());
+  input->Initialize(winApp);
 
   //// DirectInputの初期化
   //IDirectInput8 *directInput = nullptr;
@@ -2090,7 +2090,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // 解放処理
   CloseHandle(fenceEvent);
 
-  CloseWindow(winApp->GetHwnd());
+  /*CloseWindow(winApp->GetHwnd());*/
 
   signatureBlob->Release();
 
@@ -2113,9 +2113,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     dxcUtils->Release();
   }
 
+  //inputを解放
   delete input;
-
-  delete winApp;
 
 #ifdef _DEBUG
   if (debugController) {
@@ -2125,7 +2124,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   debugController.Reset();
 #endif
 
-  CoUninitialize();
+  //WinodwsAPIの終了処理
+  winApp->Finalize();
+
+  //WIndowsAPIを解放
+  delete winApp;
+
+  /*CoUninitialize();*/
 
   return 0;
 }
