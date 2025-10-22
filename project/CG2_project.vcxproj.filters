@@ -87,10 +87,10 @@
     <ClCompile Include="engine\sound\Sound.cpp">
       <Filter>ソース ファイル\engine\sound</Filter>
     </ClCompile>
-    <ClCompile Include="Input.cpp">
+    <ClCompile Include="engine\input\Input.cpp">
       <Filter>ソース ファイル\engine\input</Filter>
     </ClCompile>
-    <ClCompile Include="WinApp.cpp">
+    <ClCompile Include="engine\system\WinApp.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
   </ItemGroup>
@@ -148,10 +148,10 @@
     <ClInclude Include="engine\sound\Sound.h">
       <Filter>ヘッダー ファイル\engine\sound</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
+    <ClInclude Include="engine\input\Input.h">
       <Filter>ヘッダー ファイル\engine\input</Filter>
     </ClInclude>
-    <ClInclude Include="WinApp.h">
+    <ClInclude Include="engine\system\WinApp.h">
       <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
   </ItemGroup>
