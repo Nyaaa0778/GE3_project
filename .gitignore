@@ -322,3 +322,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Custom project folders
+project/Dumps/
+project/logs/
