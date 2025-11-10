@@ -93,6 +93,9 @@
     <ClCompile Include="engine\system\WinApp.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
+    <ClCompile Include="engine\system\DirectXCommon.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -152,6 +155,9 @@
       <Filter>ヘッダー ファイル\engine\input</Filter>
     </ClInclude>
     <ClInclude Include="engine\system\WinApp.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\DirectXCommon.h">
       <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
   </ItemGroup>
