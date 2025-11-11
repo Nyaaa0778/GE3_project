@@ -2,6 +2,9 @@
 
 #include <cassert>
 
+#pragma comment(lib, "dinput8.lib")
+#pragma comment(lib, "dxguid.lib")
+
 /// <summary>
 /// 初期化
 /// </summary>
@@ -13,8 +16,7 @@ void Input::Initialize(WinApp *winApp) {
 
   // DirectInputの初期化
   hr = DirectInput8Create(winApp_->GetHInstance(), DIRECTINPUT_VERSION,
-                          IID_IDirectInput8,
-                          (void **)&directInput_, nullptr);
+                          IID_IDirectInput8, (void **)&directInput_, nullptr);
   assert(SUCCEEDED(hr));
 
   // キーボードデバイスの生成
