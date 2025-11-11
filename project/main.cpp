@@ -1669,8 +1669,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ///// 描画処理 ↓
     /////
 
+dxCommon->BeginDraw();
+
     //commandList->RSSetViewports(1, &viewport);       // Viewportを設定
     //commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定
+    
     //// RootSignatureを設定、PSOに設定しているけど別途設定が必要
     //commandList->SetGraphicsRootSignature(rootSignature.Get());
     //commandList->SetPipelineState(graphicsPipelineState.Get()); // PSOを設定
@@ -1723,6 +1726,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     //commandList->IASetVertexBuffers(0, 1, &vertexBufferViewModel);
 
     //commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
+
+dxCommon->EndDraw();
 
     /////
     ///// 描画処理 ↑

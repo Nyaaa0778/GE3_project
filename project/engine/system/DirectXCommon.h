@@ -17,6 +17,15 @@ public:
   void Initialize(WinApp *winApp);
 
   /// <summary>
+  /// 描画前処理
+  /// </summary>
+  void BeginDraw();
+  /// <summary>
+  /// 描画後処理
+  /// </summary>
+  void EndDraw();
+
+  /// <summary>
   /// SRVの指定番号のCPUデスクリプタハンドルを取得
   /// </summary>
   /// <param name="index">取得したいSRVのインデックス番号</param>
