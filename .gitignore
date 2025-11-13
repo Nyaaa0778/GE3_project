@@ -326,3 +326,4 @@ FodyWeavers.xsd
 # Custom project folders
 project/Dumps/
 project/logs/
+imgui.ini
