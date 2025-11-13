@@ -227,108 +227,6 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
-//IDxcBlob *CompileShader(
-//    // CompilerするShaderファイルへのパス
-//    const std::wstring &filePath,
-//    // Compilerに使用するProfile
-//    const wchar_t *profile,
-//    // 初期化で生成したものを3つ
-//    IDxcUtils *dxcUtils, IDxcCompiler3 *dxcCompiler,
-//    IDxcIncludeHandler *includeHandler) {
-//
-//  // シェーダーをコンパイルする旨をログに出す
-//  Log(ConvertString(std::format(L"Begin CompileShader,path:{},profile:{}\n",
-//                                filePath, profile)));
-//  // hlslファイルを読み込む
-//  IDxcBlobEncoding *shaderSource = nullptr;
-//  HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
-//  // 読めなかったら止める
-//  assert(SUCCEEDED(hr));
-//  // 読み込んだファイルの内容を設定する
-//  DxcBuffer shaderSourceBuffer;
-//  shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
-//  shaderSourceBuffer.Size = shaderSource->GetBufferSize();
-//  shaderSourceBuffer.Encoding = DXC_CP_UTF8;
-//
-//  LPCWSTR arguments[] = {
-//      filePath.c_str(), // コンパイル対象のhlslファイル名
-//      L"-E",
-//      L"main", // エントリーポイントの指定、基本的にmain以外にはしない
-//      L"-T",
-//      profile, // ShaderProfileの設定
-//      L"-Zi",
-//      L"-Qembed_debug", // デバッグ用の情報を埋め込む
-//      L"-Od",           // 最適化を外しておく
-//      L"-Zpr",          // メモリレイアウトは行優先
-//  };
-//  // 実際にShaderをコンパイルする
-//  IDxcResult *shaderResult = nullptr;
-//  hr = dxcCompiler->Compile(&shaderSourceBuffer, // 読み込んだファイル
-//                            arguments,           // コンパイルオプション
-//                            _countof(arguments), // コンパイルオプションの数
-//                            includeHandler, // incluldeが含まれたものいろいろ
-//                            IID_PPV_ARGS(&shaderResult));
-//  // コンパイルエラーではなくdxcが起動できないなど致命的な状況のとき
-//  assert(SUCCEEDED(hr));
-//
-//  // 警告、エラーが出てきたらログに出して停止
-//  IDxcBlobUtf8 *shaderError = nullptr;
-//  shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
-//  if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
-//    Log(shaderError->GetStringPointer());
-//    // 警告、エラーはだめ
-//    assert(false);
-//  }
-//
-//  // こんなピル結果から実行用のバイナリ部分を取得
-//  IDxcBlob *shaderBlob = nullptr;
-//  hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob),
-//                               nullptr);
-//  assert(SUCCEEDED(hr));
-//  // 成功したログを出す
-//  Log(ConvertString(std::format(L"Compile Succeeded, path:{}, profile:{}\n",
-//                                filePath, profile)));
-//  // もう使わないリソースを解放
-//  shaderSource->Release();
-//  shaderResult->Release();
-//  // 実行用のバイナリを返却
-//  return shaderBlob;
-//}
-
-/// <summary>
-/// Resource作成関数
-/// </summary>
-/// <param name="device"></param>
-/// <param name="sizeInBytes"></param>
-/// <returns></returns>
-ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device> &device,
-                                            size_t sizeInBytes) {
-  // 頂点リソース用のヒープの設定
-  D3D12_HEAP_PROPERTIES uploadHeapProperties{};
-  uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // UploadHeapを使用
-  // 頂点リソースの設定
-  D3D12_RESOURCE_DESC vertexResourceDesc{};
-  // バッファリソース、テクスチャの場合はまた別の設定をする
-  vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  vertexResourceDesc.Width = sizeInBytes;
-  // バッファの場合は以下は1にする
-  vertexResourceDesc.Height = 1;
-  vertexResourceDesc.DepthOrArraySize = 1;
-  vertexResourceDesc.MipLevels = 1;
-  vertexResourceDesc.SampleDesc.Count = 1;
-  // バッファの場合は以下にする
-  vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-  // 実際に頂点リソースを作る
-  ComPtr<ID3D12Resource> vertexResource = nullptr;
-  HRESULT hr = device->CreateCommittedResource(
-      &uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc,
-      D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
-      IID_PPV_ARGS(&vertexResource));
-  assert(SUCCEEDED(hr));
-
-  return vertexResource;
-}
-
 /// <summary>
 /// 透視投影行列
 /// </summary>
@@ -399,114 +297,10 @@ Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
   return result;
 }
 
-///// <summary>
-///// 画像ファイルを読み込みテクスチャに変換
-///// </summary>
-///// <param name="filePath"></param>
-///// <returns></returns>
-//DirectX::ScratchImage LoadTexture(const std::string &filePath) {
-//  // テクスチャファイルを読んでプログラムで扱えるようにする
-//  DirectX::ScratchImage image{};
-//  std::wstring filePathW = ConvertString(filePath); // Wはワイド文字列を意味する
-//  HRESULT hr = DirectX::LoadFromWICFile(
-//      filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-//  assert(SUCCEEDED(hr));
-//
-//  // ミニマップの作成
-//  // mipMap: 元画像より小さなテクスチャ群
-//  DirectX::ScratchImage mipImages{};
-//  hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
-//                                image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
-//                                0, mipImages);
-//  assert(SUCCEEDED(hr));
-//
-//  // ミニマップ付きのデータを返す
-//  return mipImages;
-//}
 
-/// <summary>
-/// テクスチャ用リソースの作成
-/// </summary>
-/// <param name="device"></param>
-/// <param name="metadata"></param>
-/// <returns></returns>
-ComPtr<ID3D12Resource>
-CreateTextureResource(const ComPtr<ID3D12Device> &device,
-                      const DirectX::TexMetadata &metadata) {
-  // metadataを基にResourceを設定
-  D3D12_RESOURCE_DESC resourceDesc{};
-  resourceDesc.Width = UINT(metadata.width);           // Textureの幅
-  resourceDesc.Height = UINT(metadata.height);         // Textureの高さ
-  resourceDesc.MipLevels = UINT16(metadata.mipLevels); // mipmapの数
-  resourceDesc.DepthOrArraySize =
-      UINT(metadata.arraySize);          // 奥行き or 配列Textureの配列数
-  resourceDesc.Format = metadata.format; // TextureのFormat
-  resourceDesc.SampleDesc.Count = 1;     // サンプリングカウント、1固定
-  resourceDesc.Dimension =
-      D3D12_RESOURCE_DIMENSION(metadata.dimension); // Textureの次元数
 
-  // 利用するHeapの設定
-  D3D12_HEAP_PROPERTIES heapProperties{};
-  heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // 細かい設定を行う
-  // heapProperties.CPUPageProperty =
-  //     D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; //
-  //     writeBackポリシーでCPUアクセス可能
-  // heapProperties.MemoryPoolPreference =
-  //     D3D12_MEMORY_POOL_L0; // プロセッサの近くに配置
 
-  // Resourceを生成
-  ComPtr<ID3D12Resource> resource = nullptr;
-  HRESULT hr = device->CreateCommittedResource(
-      &heapProperties,                // Heapの設定
-      D3D12_HEAP_FLAG_NONE,           // Heapの特殊な設定
-      &resourceDesc,                  // Resourceの設定
-      D3D12_RESOURCE_STATE_COPY_DEST, // データ転送される設定
-      nullptr,                        // Clear最適地、使わないのでnullptr
-      IID_PPV_ARGS(&resource)         // 作成するResourceポインタへのポインタ
-  );
-  assert(SUCCEEDED(hr));
-  return resource;
-}
 
-/// <summary>
-/// 画像データをCPUで書き込み、TextureResourceに転送
-/// </summary>
-/// <param name="texture"></param>
-/// <param name="mipImages"></param>
-[[nodiscard]]
-ComPtr<ID3D12Resource>
-UploadTextureData(const ComPtr<ID3D12Resource> &texture,
-                  const DirectX::ScratchImage &mipImages,
-                  const ComPtr<ID3D12Device> &device,
-                  const ComPtr<ID3D12GraphicsCommandList> commandList) {
-  // 読み込んだデータからサブリソース配列を作成
-  std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-  DirectX::PrepareUpload(device.Get(), mipImages.GetImages(),
-                         mipImages.GetImageCount(), mipImages.GetMetadata(),
-                         subresources);
-  // 必要なサイズを計算
-  uint64_t intermediateSize =
-      GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
-  // 計算したサイズでintermediateResourceを作成
-  ComPtr<ID3D12Resource> intermediateResource =
-      CreateBufferResource(device.Get(), intermediateSize);
-
-  // intermediateResourceにSubresourceのデータを書き込み、textureに転送
-  UpdateSubresources(commandList.Get(), texture.Get(),
-                     intermediateResource.Get(), 0, 0,
-                     UINT(subresources.size()), subresources.data());
-
-  // Textureへの転送後は利用できるように、STATE_COPY_DESTからSTATE_GENERIC_READへResourceStateを変更
-  D3D12_RESOURCE_BARRIER barrier{};
-  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-  barrier.Transition.pResource = texture.Get();
-  barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-  barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-  barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
-  commandList->ResourceBarrier(1, &barrier);
-  return intermediateResource;
-}
 
 ///// <summary>
 ///// 奥行情報を記録するためのバッファGPUに作る
@@ -1381,6 +1175,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   input = new Input();
   input->Initialize(winApp);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   //// DirectInputの初期化
   // IDirectInput8 *directInput = nullptr;
   // hr = DirectInput8Create(wc.hInstance, DIRECTINPUT_VERSION,
@@ -1474,13 +1285,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     // ゲームの処理
 
-    //ImGui_ImplDX12_NewFrame();
-    //ImGui_ImplWin32_NewFrame();
-    //ImGui::NewFrame();
+    ImGui_ImplDX12_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
 
-    //// ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
-    //ImGui::Begin("Window");
+    ImGui::Begin("Window");
 
     //// 色を変更
     //ImGui::ColorEdit3("Color", materialColor);
@@ -1502,15 +1313,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     //ImGui::SliderAngle("Camera rotation Y", &transformCamera.rotate.y);
     //ImGui::SliderAngle("Camera rotation Z", &transformCamera.rotate.z);
 
-    //ImGui::Separator();
-    //ImGui::Text("Model");
-    //ImGui::DragFloat3("Modelscale", &transformModel.scale.x, 0.01f, 0.01f,
-    //                  10.0f);
-    //ImGui::SliderAngle("rotation X", &transformModel.rotate.x, -180.0f, 180.0f);
-    //ImGui::SliderAngle("rotation Y", &transformModel.rotate.y, -180.0f, 180.0f);
-    //ImGui::SliderAngle("rotation Z", &transformModel.rotate.z, -180.0f, 180.0f);
-    //ImGui::DragFloat3("translation", &transformModel.translate.x, 0.1f, -100.0f,
-    //                  100.0f);
+    ImGui::Separator();
+    ImGui::Text("Model");
+    ImGui::DragFloat3("Modelscale", &transformModel.scale.x, 0.01f, 0.01f,
+                      10.0f);
+    ImGui::SliderAngle("rotation X", &transformModel.rotate.x, -180.0f, 180.0f);
+    ImGui::SliderAngle("rotation Y", &transformModel.rotate.y, -180.0f, 180.0f);
+    ImGui::SliderAngle("rotation Z", &transformModel.rotate.z, -180.0f, 180.0f);
+    ImGui::DragFloat3("translation", &transformModel.translate.x, 0.1f, -100.0f,
+                      100.0f);
 
     //// 球体の拡縮、回転、移動
     //ImGui::Separator();
@@ -1558,7 +1369,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     //ImGui::DragFloat("Intensity", &directionalLightData->intensity, 0.01f, 0.0f,
     //                 10.0f);
-    //ImGui::End();
+    ImGui::End();
 
     //ComPtr<ID3D12InfoQueue> infoQueue;
     //if (SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) {
@@ -1659,11 +1470,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     //commandList->ClearRenderTargetView(rtvHandles[backBufferIndex], clearColor,
     //                                   0, nullptr);
 
-    //ImGui::Render();
+    ImGui::Render();
 
     //// 描画用のDescriptorHeapの設定
     //ID3D12DescriptorHeap *descriptorHeaps[] = {srvDescriptorHeap.Get()};
-    //commandList->SetDescriptorHeaps(1, descriptorHeaps);
+    //commandList->SetDescriptorHeaps(1, descriptorHeaps);a
 
     /////
     ///// 描画処理 ↓
@@ -1733,8 +1544,8 @@ dxCommon->EndDraw();
     ///// 描画処理 ↑
     /////
 
-    //// 実際のcommandListのImGuiの描画コマンドを積む
-    //ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList.Get());
+    // 実際のcommandListのImGuiの描画コマンドを積む
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), dxCommon->GetCommandList());
 
     //// 今回はRenderTargetからPresentにする
     //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -1772,10 +1583,10 @@ dxCommon->EndDraw();
     //assert(SUCCEEDED(hr));
   }
 
-  //// ImGuiの終了処理、初期化と逆順に行う
-  //ImGui_ImplDX12_Shutdown();
-  //ImGui_ImplWin32_Shutdown();
-  //ImGui::DestroyContext();
+  // ImGuiの終了処理、初期化と逆順に行う
+  ImGui_ImplDX12_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+  ImGui::DestroyContext();
 
   //// 解放処理
   //CloseHandle(fenceEvent);

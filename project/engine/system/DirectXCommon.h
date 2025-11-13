@@ -2,12 +2,13 @@
 #include "WinApp.h"
 
 #include <d3d12.h>
+#include <dxcapi.h>
 #include <dxgi1_6.h>
 
+#include "../../externals/DirectXTex/DirectXTex.h"
 #include <array>
+#include <string>
 #include <wrl.h>
-#include <dxcapi.h>
-
 
 class DirectXCommon {
 public:
@@ -37,6 +38,17 @@ public:
   /// <param name="index">取得したいSRVのインデックス番号</param>
   /// <returns>SRVのCPUディスクリプタハンドル</returns>
   D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
+
+public:
+  /// <summary>
+  /// Getter
+  /// </summary>
+  ID3D12Device *GetDevice() const { return device_.Get(); }
+  ID3D12GraphicsCommandList *GetCommandList() const {
+    return commandList_.Get();
+  }
+  ID3D12DescriptorHeap *GetSRVHeap() const { return descriptorHeapSRV_.Get(); }
+  UINT GetSRVDescriptorSize() const { return descriptorSizeSRV_; }
 
 private:
   // namespace
@@ -91,16 +103,63 @@ private:
   uint64_t fenceValue_ = 0;
   HANDLE fenceEvent_;
 
-  //ビューポート矩形
+  // ビューポート矩形
   D3D12_VIEWPORT viewportRect_{};
 
   // シザー矩形
   D3D12_RECT scissorRect_{};
 
-  //DXCコンパイラ
+  // DXCコンパイラ
   IDxcUtils *dxcUtils_ = nullptr;
   IDxcCompiler3 *dxcCompiler_ = nullptr;
   IDxcIncludeHandler *includeHandler_ = nullptr;
+
+  // CPUからGPUへテクスチャデータを転送するための一時バッファ
+  ComPtr<ID3D12Resource> intermediateResource_ = nullptr;
+
+public:
+  /// <summary>
+  /// 指定されたHLSLファイルをコンパイルしてシェーダーバイナリを生成
+  /// </summary>
+  /// <param name="filePath">コンパイルするHLSLファイルのパス</param>
+  /// <param name="profile">コンパイルするシェーダープロファイル</param>
+  /// <returns>コンパイル済みシェーダーを格納したIDxcBlob*、失敗した場合はnullptr</returns>
+  ComPtr<IDxcBlob> CompileShader(const std::wstring &filePath,
+                                 const wchar_t *profile);
+
+    /// <summary>
+  /// Resource作成関数
+  /// </summary>
+  /// <param name="device"></param>
+  /// <param name="sizeInBytes"></param>
+  /// <returns></returns>
+  ComPtr<ID3D12Resource> CreateBufferResource(size_t sizeInBytes);
+
+  /// <summary>
+  /// テクスチャ用リソースの作成
+  /// </summary>
+  /// <param name="device"></param>
+  /// <param name="metadata"></param>
+  /// <returns></returns>
+  ComPtr<ID3D12Resource>
+  CreateTextureResource(const DirectX::TexMetadata &metadata);
+
+  /// <summary>
+  /// 画像データをCPUで書き込み、TextureResourceに転送
+  /// </summary>
+  /// <param
+  /// name="texture">転送先のGPUテクスチャリソース（DEFAULTヒープ想定、事前に
+  /// STATE_COPY_DEST）</param> <param
+  /// name="mipImages">DirectXTexのScratchImage</param>
+  void UploadTextureData(const ComPtr<ID3D12Resource> &texture,
+                         const DirectX::ScratchImage &mipImages);
+
+  /// <summary>
+  /// 画像ファイルを読み込みテクスチャに変換
+  /// </summary>
+  /// <param name="filePath"></param>
+  /// <returns></returns>
+  static DirectX::ScratchImage LoadTexture(const std::string &filePath);
 
 private:
   /// <summary>

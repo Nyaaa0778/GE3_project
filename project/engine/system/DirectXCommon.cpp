@@ -8,9 +8,10 @@ using namespace StringUtility;
 #include <cassert>
 #include <format>
 
+#include "../../externals/DirectXTex/d3dx12.h"
 #include <imgui.h>
-#include <imgui_impl_win32.h>
 #include <imgui_impl_dx12.h>
+#include <imgui_impl_win32.h>
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -31,23 +32,23 @@ void DirectXCommon::Initialize(WinApp *winApp) {
   InitializeCommand();
   // スワップチェーンの生成
   CreateSwapChain();
-  //深度バッファの生成
+  // 深度バッファの生成
   CreateDepthBuffer();
   // 各種でスクリプタヒープの生成
   CreateDescriptorHeaps();
-  //RTVの初期化
+  // RTVの初期化
   InitializeRenderTargetView();
-  //深度ステンシルビューの初期化
+  // 深度ステンシルビューの初期化
   InitializeDepthStencilView();
-  //フェンスの生成
+  // フェンスの生成
   CreateFence();
-  //ビューポート矩形の初期化
+  // ビューポート矩形の初期化
   InitializeViewportRect();
-  //シザー矩形の初期化
+  // シザー矩形の初期化
   InitializeScissorRect();
-  //DXCコンパイラの生成
+  // DXCコンパイラの生成
   CreateDXCCompiler();
-  //ImGuiの初期化
+  // ImGuiの初期化
   InitializeImGui();
 }
 
@@ -72,16 +73,16 @@ void DirectXCommon::BeginDraw() {
   D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle =
       descriptorHeapDSV_->GetCPUDescriptorHandleForHeapStart();
   commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex], false,
-                                  &dsvHandle);
+                                   &dsvHandle);
 
   // 画面全体の深度をクリア
-  commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0,
-                                     0, nullptr);
+  commandList_->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f,
+                                      0, 0, nullptr);
 
   // 画面全体の色をクリア
   const float clearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
-  commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor, 0,
-                                     nullptr);
+  commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor,
+                                      0, nullptr);
 
   // SRV用のデスクリプタヒープを指定する
   ID3D12DescriptorHeap *descriptorHeaps[] = {descriptorHeapSRV_.Get()};
@@ -264,28 +265,27 @@ void DirectXCommon::CreateSwapChain() {
   swapChainDesc_.SampleDesc.Count = 1; // マルチサンプルしない(ギザギザ)
   swapChainDesc_.BufferUsage =
       DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画ターゲットとして利用
-  swapChainDesc_.BufferCount = 2;       // ダブルバッファ
+  swapChainDesc_.BufferCount = 2;      // ダブルバッファ
   swapChainDesc_.SwapEffect =
       DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニタにうつしたら、中身を放棄
 
   // コマンドキュー、ウィンドウハンドル、設定を渡して生成
   HRESULT hr = dxgiFactory_->CreateSwapChainForHwnd(
-      commandQueue_.Get(), winApp_->GetHwnd(), &swapChainDesc_, nullptr, nullptr,
-      reinterpret_cast<IDXGISwapChain1 **>(swapChain_.GetAddressOf()));
+      commandQueue_.Get(), winApp_->GetHwnd(), &swapChainDesc_, nullptr,
+      nullptr, reinterpret_cast<IDXGISwapChain1 **>(swapChain_.GetAddressOf()));
   assert(SUCCEEDED(hr));
 }
 
 /// <summary>
 /// 深度バッファの生成
 /// </summary>
-DirectXCommon::ComPtr<ID3D12Resource>
-DirectXCommon::CreateDepthBuffer() {
+DirectXCommon::ComPtr<ID3D12Resource> DirectXCommon::CreateDepthBuffer() {
   // 生成するResourceの設定
   D3D12_RESOURCE_DESC resourceDesc{};
-  resourceDesc.Width = winApp_->kClientWidth;        // Textureの幅
-  resourceDesc.Height = winApp_->kClientHeight;      // Textureの高さ
-  resourceDesc.MipLevels = 1;        // mipmapの数
-  resourceDesc.DepthOrArraySize = 1; // 奥行 or 配列Textureの配列数
+  resourceDesc.Width = winApp_->kClientWidth;   // Textureの幅
+  resourceDesc.Height = winApp_->kClientHeight; // Textureの高さ
+  resourceDesc.MipLevels = 1;                   // mipmapの数
+  resourceDesc.DepthOrArraySize = 1;            // 奥行 or 配列Textureの配列数
   resourceDesc.Format =
       DXGI_FORMAT_D24_UNORM_S8_UINT; // DepthStencilとして利用可能なフォーマット
   resourceDesc.SampleDesc.Count = 1; // サンプリングカウント、1固定
@@ -340,7 +340,7 @@ DirectXCommon::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType,
                                  : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
   // ディスクリプタヒープが作れなかったので起動できない
   HRESULT hr = device_->CreateDescriptorHeap(&descriptorHeapDesc,
-                                            IID_PPV_ARGS(&descriptorHeap));
+                                             IID_PPV_ARGS(&descriptorHeap));
   return descriptorHeap;
 }
 /// <summary>
@@ -359,8 +359,8 @@ void DirectXCommon::CreateDescriptorHeaps() {
   descriptorHeapRTV_ =
       CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
   // SRV用のヒープ(ディスクリプタの数は128)、RTVはShader内で触るものなので、ShaderVisibleはtrue
-  descriptorHeapSRV_ = CreateDescriptorHeap(
-      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
+  descriptorHeapSRV_ =
+      CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
   // DSV用のヒープディスクリプタの数は1、ShaderVisibleはfalse
   descriptorHeapDSV_ =
       CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
@@ -375,8 +375,9 @@ void DirectXCommon::CreateDescriptorHeaps() {
 /// name="index">取得したいディスクリプタハンドルのインデックス番号</param>
 /// <returns>取得したCPUハンドル</returns>
 D3D12_CPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetCPUDescriptorHandle(const ComPtr<ID3D12DescriptorHeap> &descriptorHeap,
-                       uint32_t descriptorSize, uint32_t index) {
+DirectXCommon::GetCPUDescriptorHandle(
+    const ComPtr<ID3D12DescriptorHeap> &descriptorHeap, uint32_t descriptorSize,
+    uint32_t index) {
   D3D12_CPU_DESCRIPTOR_HANDLE handle =
       descriptorHeap->GetCPUDescriptorHandleForHeapStart();
   handle.ptr += (descriptorSize * index);
@@ -392,8 +393,9 @@ DirectXCommon::GetCPUDescriptorHandle(const ComPtr<ID3D12DescriptorHeap> &descri
 /// name="index">取得したいディスクリプタハンドルのインデックス番号</param>
 /// <returns>取得したGPUハンドル</returns>
 D3D12_GPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetGPUDescriptorHandle(const ComPtr<ID3D12DescriptorHeap> &descriptorHeap,
-                       uint32_t descriptorSize, uint32_t index) {
+DirectXCommon::GetGPUDescriptorHandle(
+    const ComPtr<ID3D12DescriptorHeap> &descriptorHeap, uint32_t descriptorSize,
+    uint32_t index) {
   D3D12_GPU_DESCRIPTOR_HANDLE handle =
       descriptorHeap->GetGPUDescriptorHandleForHeapStart();
   handle.ptr += (descriptorSize * index);
@@ -424,12 +426,13 @@ DirectXCommon::GetSRVGPUDescriptorHandle(uint32_t index) {
 void DirectXCommon::InitializeRenderTargetView() {
   // スワップチェーンからバックバッファを引っ張ってくる
   for (UINT i = 0; i < kBackBufferCount; ++i) {
-    HRESULT hr = swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
+    HRESULT hr =
+        swapChain_->GetBuffer(i, IID_PPV_ARGS(&swapChainResources_[i]));
     assert(SUCCEEDED(hr));
   }
 
   // RTVの設定
-  rtvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;      // 出力結果をSRGBに変換
+  rtvDesc_.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 出力結果をSRGBに変換
   rtvDesc_.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
 
   // 先頭ハンドル（参考: 直接使ってもOK、実際の作成はfor内でindexを進める）
@@ -461,7 +464,7 @@ void DirectXCommon::InitializeDepthStencilView() {
       GetCPUDescriptorHandle(descriptorHeapDSV_, descriptorSizeDSV_, 0);
 
   device_->CreateDepthStencilView(depthStencilResource_.Get(), &dsvDesc,
-                                 dsvHandle);
+                                  dsvHandle);
 
   // DepthStencilStateの設定
   D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
@@ -479,7 +482,7 @@ void DirectXCommon::InitializeDepthStencilView() {
 void DirectXCommon::CreateFence() {
   // 初期化0でFenceを作る
   HRESULT hr = device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE,
-                           IID_PPV_ARGS(&fence_));
+                                    IID_PPV_ARGS(&fence_));
   assert(SUCCEEDED(hr));
 
   // FenceのSignalを持つためのイベントを作成
@@ -536,8 +539,213 @@ void DirectXCommon::InitializeImGui() {
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
   ImGui_ImplWin32_Init(winApp_->GetHwnd());
-  ImGui_ImplDX12_Init(device_.Get(), swapChainDesc_.BufferCount, rtvDesc_.Format,
-                      descriptorHeapSRV_.Get(),
+  ImGui_ImplDX12_Init(device_.Get(), swapChainDesc_.BufferCount,
+                      rtvDesc_.Format, descriptorHeapSRV_.Get(),
                       descriptorHeapSRV_->GetCPUDescriptorHandleForHeapStart(),
                       descriptorHeapSRV_->GetGPUDescriptorHandleForHeapStart());
+}
+
+/// <summary>
+/// 指定されたHLSLファイルをコンパイルしてシェーダーバイナリを生成
+/// </summary>
+/// <param name="filePath">コンパイルするHLSLファイルのパス</param>
+/// <param name="profile">コンパイルするシェーダープロファイル</param>
+/// <returns>コンパイル済みシェーダーを格納したIDxcBlob*、失敗した場合はnullptr</returns>
+DirectXCommon::ComPtr<IDxcBlob>
+DirectXCommon::CompileShader(const std::wstring &filePath,
+                             const wchar_t *profile) {
+
+  // シェーダーをコンパイルする旨をログに出す
+  Log(ConvertString(std::format(L"Begin CompileShader,path:{},profile:{}\n",
+                                filePath, profile)));
+  // hlslファイルを読み込む
+  IDxcBlobEncoding *shaderSource = nullptr;
+  HRESULT hr = dxcUtils_->LoadFile(filePath.c_str(), nullptr, &shaderSource);
+  // 読めなかったら止める
+  assert(SUCCEEDED(hr));
+  // 読み込んだファイルの内容を設定する
+  DxcBuffer shaderSourceBuffer;
+  shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
+  shaderSourceBuffer.Size = shaderSource->GetBufferSize();
+  shaderSourceBuffer.Encoding = DXC_CP_UTF8;
+
+  LPCWSTR arguments[] = {
+      filePath.c_str(), // コンパイル対象のhlslファイル名
+      L"-E",
+      L"main", // エントリーポイントの指定、基本的にmain以外にはしない
+      L"-T",
+      profile, // ShaderProfileの設定
+      L"-Zi",
+      L"-Qembed_debug", // デバッグ用の情報を埋め込む
+      L"-Od",           // 最適化を外しておく
+      L"-Zpr",          // メモリレイアウトは行優先
+  };
+  // 実際にShaderをコンパイルする
+  IDxcResult *shaderResult = nullptr;
+  hr = dxcCompiler_->Compile(&shaderSourceBuffer, // 読み込んだファイル
+                             arguments,           // コンパイルオプション
+                             _countof(arguments), // コンパイルオプションの数
+                             includeHandler_, // incluldeが含まれたものいろいろ
+                             IID_PPV_ARGS(&shaderResult));
+  // コンパイルエラーではなくdxcが起動できないなど致命的な状況のとき
+  assert(SUCCEEDED(hr));
+
+  // 警告、エラーが出てきたらログに出して停止
+  IDxcBlobUtf8 *shaderError = nullptr;
+  shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
+  if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
+    Log(shaderError->GetStringPointer());
+    // 警告、エラーはだめ
+    assert(false);
+  }
+
+  // こんなピル結果から実行用のバイナリ部分を取得
+  IDxcBlob *shaderBlob = nullptr;
+  hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob),
+                               nullptr);
+  assert(SUCCEEDED(hr));
+  // 成功したログを出す
+  Log(ConvertString(std::format(L"Compile Succeeded, path:{}, profile:{}\n",
+                                filePath, profile)));
+  // もう使わないリソースを解放
+  shaderSource->Release();
+  shaderResult->Release();
+  // 実行用のバイナリを返却
+  return shaderBlob;
+}
+
+/// <summary>
+/// リソースの作成
+/// </summary>
+/// <param name="sizeInBytes">作成するバッファのサイズ（バイト単位）</param>
+/// <returns>生成されたID3D12ResourceのComPtr、リソース作成に失敗した場合はnullptr</returns>
+DirectXCommon::ComPtr<ID3D12Resource>
+DirectXCommon::CreateBufferResource(size_t sizeInBytes) {
+  // 頂点リソース用のヒープの設定
+  D3D12_HEAP_PROPERTIES uploadHeapProperties{};
+  uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // UploadHeapを使用
+  // 頂点リソースの設定
+  D3D12_RESOURCE_DESC vertexResourceDesc{};
+  // バッファリソース、テクスチャの場合はまた別の設定をする
+  vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+  vertexResourceDesc.Width = sizeInBytes;
+  // バッファの場合は以下は1にする
+  vertexResourceDesc.Height = 1;
+  vertexResourceDesc.DepthOrArraySize = 1;
+  vertexResourceDesc.MipLevels = 1;
+  vertexResourceDesc.SampleDesc.Count = 1;
+  // バッファの場合は以下にする
+  vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+  // 実際に頂点リソースを作る
+  ComPtr<ID3D12Resource> vertexResource = nullptr;
+  HRESULT hr = device_->CreateCommittedResource(
+      &uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc,
+      D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+      IID_PPV_ARGS(&vertexResource));
+  assert(SUCCEEDED(hr));
+
+  return vertexResource;
+}
+
+/// <summary>
+/// テクスチャ用リソースの作成
+/// </summary>
+/// <param name="metadata">DirectXTexのTexMetadata構造体</param>
+/// <returns>作成されたID3D12ResourceのComPtr、生成に失敗した場合はnullptr</returns>
+DirectXCommon::ComPtr<ID3D12Resource>
+DirectXCommon::CreateTextureResource(const DirectX::TexMetadata &metadata) {
+  // metadataを基にResourceを設定
+  D3D12_RESOURCE_DESC resourceDesc{};
+  resourceDesc.Width = UINT(metadata.width);           // Textureの幅
+  resourceDesc.Height = UINT(metadata.height);         // Textureの高さ
+  resourceDesc.MipLevels = UINT16(metadata.mipLevels); // mipmapの数
+  resourceDesc.DepthOrArraySize =
+      UINT(metadata.arraySize);          // 奥行き or 配列Textureの配列数
+  resourceDesc.Format = metadata.format; // TextureのFormat
+  resourceDesc.SampleDesc.Count = 1;     // サンプリングカウント、1固定
+  resourceDesc.Dimension =
+      D3D12_RESOURCE_DIMENSION(metadata.dimension); // Textureの次元数
+
+  // 利用するHeapの設定
+  D3D12_HEAP_PROPERTIES heapProperties{};
+  heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // 細かい設定を行う
+  // heapProperties.CPUPageProperty =
+  //     D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; //
+  //     writeBackポリシーでCPUアクセス可能
+  // heapProperties.MemoryPoolPreference =
+  //     D3D12_MEMORY_POOL_L0; // プロセッサの近くに配置
+
+  // Resourceを生成
+  ComPtr<ID3D12Resource> resource = nullptr;
+  HRESULT hr = device_->CreateCommittedResource(
+      &heapProperties,                // Heapの設定
+      D3D12_HEAP_FLAG_NONE,           // Heapの特殊な設定
+      &resourceDesc,                  // Resourceの設定
+      D3D12_RESOURCE_STATE_COPY_DEST, // データ転送される設定
+      nullptr,                        // Clear最適地、使わないのでnullptr
+      IID_PPV_ARGS(&resource)         // 作成するResourceポインタへのポインタ
+  );
+  assert(SUCCEEDED(hr));
+  return resource;
+}
+
+/// <summary>
+/// 画像データをCPUで書き込み、TextureResourceに転送
+/// </summary>
+/// <param
+/// name="texture">転送先のGPUテクスチャリソース（DEFAULTヒープ想定、事前に
+/// STATE_COPY_DEST）</param> <param
+/// name="mipImages">DirectXTexのScratchImage</param>
+void DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
+                                      const DirectX::ScratchImage &mipImages) {
+  // 読み込んだデータからサブリソース配列を作成
+  std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+  DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(),
+                         mipImages.GetImageCount(), mipImages.GetMetadata(),
+                         subresources);
+  // 必要なサイズを計算
+  uint64_t intermediateSize =
+      GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
+  // 計算したサイズでintermediateResourceを作成
+  intermediateResource_ = CreateBufferResource(intermediateSize);
+
+  // intermediateResourceにSubresourceのデータを書き込み、textureに転送
+  UpdateSubresources(commandList_.Get(), texture.Get(),
+                     intermediateResource_.Get(), 0, 0,
+                     UINT(subresources.size()), subresources.data());
+
+  // Textureへの転送後は利用できるように、STATE_COPY_DESTからSTATE_GENERIC_READへResourceStateを変更
+  D3D12_RESOURCE_BARRIER barrier{};
+  barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+  barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  barrier.Transition.pResource = texture.Get();
+  barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+  barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+  barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
+  commandList_->ResourceBarrier(1, &barrier);
+}
+
+/// <summary>
+/// 画像ファイルを読み込みテクスチャに変換
+/// </summary>
+/// <param name="filePath"></param>
+/// <returns></returns>
+DirectX::ScratchImage DirectXCommon::LoadTexture(const std::string &filePath) {
+  // テクスチャファイルを読んでプログラムで扱えるようにする
+  DirectX::ScratchImage image{};
+  std::wstring filePathW = ConvertString(filePath); // Wはワイド文字列を意味する
+  HRESULT hr = DirectX::LoadFromWICFile(
+      filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+  assert(SUCCEEDED(hr));
+
+  // ミニマップの作成
+  // mipMap: 元画像より小さなテクスチャ群
+  DirectX::ScratchImage mipImages{};
+  hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
+                                image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
+                                0, mipImages);
+  assert(SUCCEEDED(hr));
+
+  // ミニマップ付きのデータを返す
+  return mipImages;
 }
