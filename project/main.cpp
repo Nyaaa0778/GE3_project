@@ -1,6 +1,7 @@
 #include "DirectXCommon.h"
 #include "Input.h"
 #include "WinApp.h"
+#include"D3DResourceLeakChecker.h"
 
 // #include <Windows.h>
 #include <chrono>
@@ -108,18 +109,6 @@ struct RiffHeader {
 struct FormatChunk {
   ChunkHeader chunk; // fmt
   WAVEFORMATEX fmt;  // 波形フォーマット
-};
-
-struct D3DResourceLeakChecker {
-  ~D3DResourceLeakChecker() {
-    // リソースリークチェック
-    ComPtr<IDXGIDebug1> debug;
-    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debug)))) {
-      debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
-      debug->ReportLiveObjects(DXGI_DEBUG_APP, DXGI_DEBUG_RLO_ALL);
-      debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
-    }
-  }
 };
 
 ///// <summary>
@@ -1830,6 +1819,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // DirectXを解放
   delete dxCommon;
+
+  leakCheck.~D3DResourceLeakChecker();
 
   /*CoUninitialize();*/
 
