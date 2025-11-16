@@ -2,6 +2,8 @@
 #include "Input.h"
 #include "WinApp.h"
 #include"D3DResourceLeakChecker.h"
+#include"SpriteCommon.h"
+#include"Sprite.h"
 
 // #include <Windows.h>
 #include <chrono>
@@ -523,6 +525,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // DirectXの初期化
   dxCommon = new DirectXCommon();
   dxCommon->Initialize(winApp);
+
+  //ポインタ
+  SpriteCommon *spriteCommon = nullptr;
+  //スプライト共通部の初期化
+  spriteCommon = new SpriteCommon();
+  spriteCommon->Initialize();
+
+  //ポインタ
+  Sprite *sprite = nullptr;
+  //スプライトの初期化
+  sprite = new Sprite();
+  sprite->Initialize();
 
   /// =============================================
   ///
@@ -1811,14 +1825,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // inputを解放
   delete input;
 
+  //spriteを解放
+  delete sprite;
+
+  //spriteCommonを解放
+  delete spriteCommon;
+
+  // DirectXを解放
+  delete dxCommon;
+
   // WinodwsAPIの終了処理
   winApp->Finalize();
 
   // WIndowsAPIを解放
   delete winApp;
-
-  // DirectXを解放
-  delete dxCommon;
 
   leakCheck.~D3DResourceLeakChecker();
 
