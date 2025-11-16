@@ -1,6 +1,8 @@
 #include "WinApp.h"
 #include "imgui.h"
 
+#pragma comment(lib, "winmm.lib")
+
 /// <summary>
 /// ImGuiのメッセージ処理
 /// </summary>
@@ -18,6 +20,10 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
 /// 初期化
 /// </summary>
 void WinApp::Initialize() {
+
+  // FPS固定のシステムタイマーの分解能をあげる
+  timeBeginPeriod(1);
+
   // ウィンドウプロシージャ
   wc_.lpfnWndProc = WindowProc;
   // ウィンドウクラス名
@@ -36,10 +42,10 @@ void WinApp::Initialize() {
   // クライアント領域をもとに実際のサイズにwrcを変更してもらう
   AdjustWindowRect(&wrc, WS_OVERLAPPEDWINDOW, false);
 
-  hwnd_ =
-      CreateWindow(wc_.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                   CW_USEDEFAULT, wrc.right - wrc.left, wrc.bottom - wrc.top,
-                   nullptr, nullptr, wc_.hInstance, nullptr);
+  hwnd_ = CreateWindow(wc_.lpszClassName, L"CG2", WS_OVERLAPPEDWINDOW,
+                       CW_USEDEFAULT, CW_USEDEFAULT, wrc.right - wrc.left,
+                       wrc.bottom - wrc.top, nullptr, nullptr, wc_.hInstance,
+                       nullptr);
 
   ShowWindow(hwnd_, SW_SHOW);
 }
@@ -79,7 +85,8 @@ void WinApp::Finalize() {
 /// <param name="wparam">メッセージごとの追加情報(上位)</param>
 /// <param name="lparam">メッセージごとの追加情報(下位)</param>
 /// <returns></returns>
-LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK WinApp::WindowProc(HWND hwnd, UINT msg, WPARAM wparam,
+                                    LPARAM lparam) {
   if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam)) {
     return true;
   }

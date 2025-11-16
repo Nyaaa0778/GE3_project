@@ -8,13 +8,6 @@ public:
   static inline const int32_t kClientWidth = 1280;
   static inline const int32_t kClientHeight = 720;
 
-private:
-  // ウィンドウクラスの設定
-  WNDCLASS wc_{};
-
-  // ウィンドウハンドル
-  HWND hwnd_ = nullptr;
-
 public:
   /// <summary>
   /// 初期化
@@ -42,6 +35,13 @@ public:
   /// </summary>
   /// <returns>ウィンドウハンドル</returns>
   HWND GetHwnd() const { return hwnd_; }
+
+private:
+  // ウィンドウクラスの設定
+  WNDCLASS wc_{};
+
+  // ウィンドウハンドル
+  HWND hwnd_ = nullptr;
 
 private:
   /// <summary>

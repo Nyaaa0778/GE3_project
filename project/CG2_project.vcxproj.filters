@@ -93,6 +93,21 @@
     <ClCompile Include="engine\system\WinApp.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
+    <ClCompile Include="engine\system\DirectXCommon.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\system\Logger.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\system\StringUtility.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\system\D3DResourceLeakChecker.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\system\FixFPS.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -152,6 +167,21 @@
       <Filter>ヘッダー ファイル\engine\input</Filter>
     </ClInclude>
     <ClInclude Include="engine\system\WinApp.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\DirectXCommon.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\Logger.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\StringUtility.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\D3DResourceLeakChecker.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\FixFPS.h">
       <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
   </ItemGroup>
