@@ -18,9 +18,32 @@ using namespace StringUtility;
 #pragma comment(lib, "dxcompiler.lib")
 
 /// <summary>
+/// デストラクタ
+/// </summary>
+DirectXCommon::~DirectXCommon() {
+  if (includeHandler_) {
+    includeHandler_->Release();
+  }
+
+  if (dxcCompiler_) {
+    dxcCompiler_->Release();
+  }
+
+  if (dxcUtils_) {
+    dxcUtils_->Release();
+  }
+
+  CloseHandle(fenceEvent_);
+}
+
+/// <summary>
 /// 初期化
 /// </summary>
 void DirectXCommon::Initialize(WinApp *winApp) {
+
+  // FPS固定初期化
+  fixFps_.Initialize();
+
   // NULL検出
   assert(winApp);
   // メンバ変数に記録
@@ -126,6 +149,9 @@ void DirectXCommon::EndDraw() {
 
   // GPU完了シグナルを送信
   commandQueue_->Signal(fence_.Get(), fenceValue_);
+
+  // FPS固定
+  fixFps_.Update();
 
   // Fence完了待ち
   if (fence_->GetCompletedValue() < fenceValue_) {
@@ -694,8 +720,8 @@ DirectXCommon::CreateTextureResource(const DirectX::TexMetadata &metadata) {
 /// </summary>
 /// <param
 /// name="texture">転送先のGPUテクスチャリソース（DEFAULTヒープ想定、事前に
-/// STATE_COPY_DEST）</param> <param
-/// name="mipImages">DirectXTexのScratchImage</param>
+/// STATE_COPY_DEST）</param>
+/// <param name="mipImages">DirectXTexのScratchImage</param>
 void DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
                                       const DirectX::ScratchImage &mipImages) {
   // 読み込んだデータからサブリソース配列を作成

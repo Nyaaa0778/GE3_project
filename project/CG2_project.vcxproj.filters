@@ -102,7 +102,10 @@
     <ClCompile Include="engine\system\StringUtility.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
-    <ClCompile Include="D3DResourceLeakChecker.cpp">
+    <ClCompile Include="engine\system\D3DResourceLeakChecker.cpp">
+      <Filter>ソース ファイル\engine\system</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\system\FixFPS.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
   </ItemGroup>
@@ -175,8 +178,11 @@
     <ClInclude Include="engine\system\StringUtility.h">
       <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
-    <ClInclude Include="D3DResourceLeakChecker.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="engine\system\D3DResourceLeakChecker.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\system\FixFPS.h">
+      <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

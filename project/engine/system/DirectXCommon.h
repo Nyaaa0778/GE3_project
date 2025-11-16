@@ -1,5 +1,6 @@
 #pragma once
 #include "WinApp.h"
+#include"FixFPS.h"
 
 #include <d3d12.h>
 #include <dxcapi.h>
@@ -12,6 +13,11 @@
 
 class DirectXCommon {
 public:
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~DirectXCommon();
+
   /// <summary>
   /// 初期化
   /// </summary>
@@ -117,6 +123,9 @@ private:
   // CPUからGPUへテクスチャデータを転送するための一時バッファ
   ComPtr<ID3D12Resource> intermediateResource_ = nullptr;
 
+  //FPS固定
+  FixFPS fixFps_;
+
 public:
   /// <summary>
   /// 指定されたHLSLファイルをコンパイルしてシェーダーバイナリを生成
@@ -127,7 +136,7 @@ public:
   ComPtr<IDxcBlob> CompileShader(const std::wstring &filePath,
                                  const wchar_t *profile);
 
-    /// <summary>
+  /// <summary>
   /// Resource作成関数
   /// </summary>
   /// <param name="device"></param>

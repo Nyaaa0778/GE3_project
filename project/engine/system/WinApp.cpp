@@ -1,6 +1,8 @@
 #include "WinApp.h"
 #include "imgui.h"
 
+#pragma comment(lib, "winmm.lib")
+
 /// <summary>
 /// ImGuiのメッセージ処理
 /// </summary>
@@ -18,6 +20,10 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
 /// 初期化
 /// </summary>
 void WinApp::Initialize() {
+
+  // FPS固定のシステムタイマーの分解能をあげる
+  timeBeginPeriod(1);
+
   // ウィンドウプロシージャ
   wc_.lpfnWndProc = WindowProc;
   // ウィンドウクラス名
