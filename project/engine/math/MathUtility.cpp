@@ -10,24 +10,71 @@ namespace MathUtility {
 /// <returns></returns>
 
 // 加算
+Vector2 Add(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x + v2.x, v1.y + v2.y};
+}
 Vector3 Add(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
 }
 // 減算
+Vector2 Subtract(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x - v2.x, v1.y - v2.y};
+}
 Vector3 Subtract(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
 }
 // 乗算
+Vector2 Multiply(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x * v2.x, v1.y * v2.y};
+}
 Vector3 Multiply(float s, const Vector3 &v1) {
   return {s * v1.x, s * v1.y, s * v1.z};
 }
 
-Vector3 operator+(const Vector3 &v1, const Vector3 &v2) { return Add(v1, v2); }
-Vector3 operator-(const Vector3 &v1, const Vector3 &v2) {
-  return Subtract(v1, v2);
+// --------------------------
+// Vector2
+// --------------------------
+Vector2 &operator+=(Vector2 &v1, const Vector2 &v2) {
+  v1.x += v2.x;
+  v1.y += v2.y;
+  return v1;
 }
-Vector3 operator*(float s, const Vector3 &v2) { return Multiply(s, v2); }
-Vector3 operator*(const Vector3 &v2, float s) { return Multiply(s, v2); }
+
+Vector2 &operator-=(Vector2 &v1, const Vector2 &v2) {
+  v1.x -= v2.x;
+  v1.y -= v2.y;
+  return v1;
+}
+
+Vector2 &operator*=(Vector2 &v, float s) {
+  v.x *= s;
+  v.y *= s;
+  return v;
+}
+
+// --------------------------
+// Vector3
+// --------------------------
+Vector3 &operator+=(Vector3 &v1, const Vector3 &v2) {
+  v1.x += v2.x;
+  v1.y += v2.y;
+  v1.z += v2.z;
+  return v1;
+}
+
+Vector3 &operator-=(Vector3 &v1, const Vector3 &v2) {
+  v1.x -= v2.x;
+  v1.y -= v2.y;
+  v1.z -= v2.z;
+  return v1;
+}
+
+Vector3 &operator*=(Vector3 &v, float s) {
+  v.x *= s;
+  v.y *= s;
+  v.z *= s;
+  return v;
+}
 
 /// <summary>
 /// 行列の積

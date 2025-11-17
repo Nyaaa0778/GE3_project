@@ -1364,6 +1364,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //     {0.0f, 0.0f, 0.0f}  // translate
   // };
 
+  Vector2 scale = sprite->GetScale();
+
   // ウィンドウの×ボタンが押されるまでループ
   while (true) {
 
@@ -1538,6 +1540,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     /////
     ///// 更新処理 ↓
     /////
+
+    scale += Vector2(0.1f, 0.1f);
+    sprite->SetScale(scale);
 
     sprite->Update();
 

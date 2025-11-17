@@ -27,6 +27,33 @@ public:
   /// </summary>
   void Draw();
 
+public:
+  /// <summary>
+  /// Getter
+  /// </summary>
+
+  // 位置
+  const Vector2 &GetPosition() const { return position_; }
+  // 回転
+  const float &GetRotation() const { return rotation_; }
+  // 色
+  const Vector4 &GetColor() const { return materialData_->color; }
+  //拡縮
+  const Vector2 &GetScale() const { return scale_; }
+
+  /// <summary>
+  /// Setter
+  /// </summary>
+
+  // 位置
+  void SetPosition(const Vector2 &position) { position_ = position; }
+  // 回転
+  void SetRotation(float rotation) { rotation_ = rotation; }
+  // 色
+  void SetColor(const Vector4 &color) { materialData_->color = color; }
+  //拡縮
+  void SetScale(const Vector2 &scale) { scale_ = scale; }
+
 private:
   // 頂点データ
   struct VertexData {
@@ -62,8 +89,8 @@ private:
   VertexData *vertexData_ = nullptr;
   uint32_t *indexData_ = nullptr;
   // バッファリソースの使い道を補足するバッファビュー
-  D3D12_VERTEX_BUFFER_VIEW vertexBufferView_;
-  D3D12_INDEX_BUFFER_VIEW indexBufferView_;
+  D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
+  D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 
   // マテリアルリソース(定数バッファ)
   ComPtr<ID3D12Resource> materialBuffer_ = nullptr;
@@ -76,10 +103,10 @@ private:
   TransformationMatrix *transformationMatrixData_ = nullptr;
 
   // Transform
-  Transform transform_;
-  Vector3 scale_ = {1.0f, 1.0f, 1.0f};
-  Vector3 rotation_ = {0, 0, 0};
-  Vector3 translation_ = {0, 0, 0};
+  Transform transform_{};
+  Vector2 scale_ = {640.0f, 360.0f};
+  float rotation_ = 0.0f;
+  Vector2 position_ = {0.0f, 0.0f};
 
 private:
   /// <summary>

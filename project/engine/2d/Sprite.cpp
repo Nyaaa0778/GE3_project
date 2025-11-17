@@ -27,13 +27,13 @@ void Sprite::Initialize(SpriteCommon *spriteCommon) {
 void Sprite::Update() {
   // 頂点リソースにデータを書き込む
   // 左下
-  vertexData_[0] = {{0.0f, 360.0f, 0.0f, 1.0f}, {0.0f, 1.0f}};
+  vertexData_[0] = {{0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f}};
   // 左上
   vertexData_[1] = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}};
   // 右下
-  vertexData_[2] = {{640.0f, 360.0f, 0.0f, 1.0f}, {1.0f, 1.0}};
+  vertexData_[2] = {{1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0}};
   // 右上
-  vertexData_[3] = {{640.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}};
+  vertexData_[3] = {{1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}};
 
   // インデックスリソースにデータを書き込む
   indexData_[0] = 0;
@@ -44,7 +44,9 @@ void Sprite::Update() {
   indexData_[5] = 2;
 
   // Transform情報を作る
-  transform_ = {scale_, rotation_, translation_};
+  transform_ = {{scale_.x, scale_.y, 1.0f},
+                {0.0f,0.0f,rotation_},
+                {position_.x, position_.y, 0.0f}};
 
   Matrix4x4 worldMatrix;
   Matrix4x4 viewMatrix;
