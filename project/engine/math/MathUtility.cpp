@@ -1,5 +1,7 @@
 #include "MathUtility.h"
 
+namespace MathUtility {
+
 /// <summary>
 /// ベクトル同士の計算
 /// </summary>
@@ -48,7 +50,6 @@ Matrix4x4 Multiply(const Matrix4x4 &m1, const Matrix4x4 &m2) {
   return result;
 }
 
-
 /// <summary>
 /// 単位行列の作成
 /// </summary>
@@ -74,7 +75,7 @@ Matrix4x4 MakeIdentityMatrix() {
 /// </summary>
 /// <param name="m"></param>
 /// <returns></returns>
-Matrix4x4 Inverse(const Matrix4x4 &matrix) {
+Matrix4x4 MakeInverseMatrix(const Matrix4x4 &matrix) {
   Matrix4x4 result;
 
   // 2×2 の小行列式を具体的な名前で計算
@@ -303,3 +304,41 @@ Matrix4x4 MakeAffineMatrix(const Vector3 &scale, const Vector3 &rotate,
 
   return worldMatrix;
 }
+
+/// <summary>
+/// 正射影行列(3次元版)
+/// </summary>
+/// <param name="left"></param>
+/// <param name="top"></param>
+/// <param name="right"></param>
+/// <param name="bottom"></param>
+/// <param name="nearClip"></param>
+/// <param name="farClip"></param>
+/// <returns></returns>
+Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
+                                 float bottom, float nearClip, float farClip) {
+  Matrix4x4 result;
+  result.m[0][0] = 2.0f / (right - left);
+  result.m[0][1] = 0.0f;
+  result.m[0][2] = 0.0f;
+  result.m[0][3] = 0.0f;
+
+  result.m[1][0] = 0.0f;
+  result.m[1][1] = 2.0f / (top - bottom);
+  result.m[1][2] = 0.0f;
+  result.m[1][3] = 0.0f;
+
+  result.m[2][0] = 0.0f;
+  result.m[2][1] = 0.0f;
+  result.m[2][2] = 1.0f / (farClip - nearClip);
+  result.m[2][3] = 0.0f;
+
+  result.m[3][0] = (left + right) / (left - right);
+  result.m[3][1] = (top + bottom) / (bottom - top);
+  result.m[3][2] = nearClip / (nearClip - farClip);
+  result.m[3][3] = 1.0f;
+
+  return result;
+}
+
+} // namespace MathUtility

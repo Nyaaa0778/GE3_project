@@ -55,15 +55,11 @@
 #include <Vector2.h>
 #include <Vector3.h>
 #include <Vector4.h>
+#include<Transform.h>
+using namespace MathUtility;
 // #include <wrl.h>
 
 using Microsoft::WRL::ComPtr;
-
-struct Transform {
-  Vector3 scale;
-  Vector3 rotate;
-  Vector3 translate;
-};
 
 struct TransformMatrix {
   Matrix4x4 WVP;
@@ -255,41 +251,41 @@ Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
   return result;
 }
 
-/// <summary>
-/// 正射影行列(3次元版)
-/// </summary>
-/// <param name="left"></param>
-/// <param name="top"></param>
-/// <param name="right"></param>
-/// <param name="bottom"></param>
-/// <param name="nearClip"></param>
-/// <param name="farClip"></param>
-/// <returns></returns>
-Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
-                                 float bottom, float nearClip, float farClip) {
-  Matrix4x4 result;
-  result.m[0][0] = 2.0f / (right - left);
-  result.m[0][1] = 0.0f;
-  result.m[0][2] = 0.0f;
-  result.m[0][3] = 0.0f;
-
-  result.m[1][0] = 0.0f;
-  result.m[1][1] = 2.0f / (top - bottom);
-  result.m[1][2] = 0.0f;
-  result.m[1][3] = 0.0f;
-
-  result.m[2][0] = 0.0f;
-  result.m[2][1] = 0.0f;
-  result.m[2][2] = 1.0f / (farClip - nearClip);
-  result.m[2][3] = 0.0f;
-
-  result.m[3][0] = (left + right) / (left - right);
-  result.m[3][1] = (top + bottom) / (bottom - top);
-  result.m[3][2] = nearClip / (nearClip - farClip);
-  result.m[3][3] = 1.0f;
-
-  return result;
-}
+///// <summary>
+///// 正射影行列(3次元版)
+///// </summary>
+///// <param name="left"></param>
+///// <param name="top"></param>
+///// <param name="right"></param>
+///// <param name="bottom"></param>
+///// <param name="nearClip"></param>
+///// <param name="farClip"></param>
+///// <returns></returns>
+//Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
+//                                 float bottom, float nearClip, float farClip) {
+//  Matrix4x4 result;
+//  result.m[0][0] = 2.0f / (right - left);
+//  result.m[0][1] = 0.0f;
+//  result.m[0][2] = 0.0f;
+//  result.m[0][3] = 0.0f;
+//
+//  result.m[1][0] = 0.0f;
+//  result.m[1][1] = 2.0f / (top - bottom);
+//  result.m[1][2] = 0.0f;
+//  result.m[1][3] = 0.0f;
+//
+//  result.m[2][0] = 0.0f;
+//  result.m[2][1] = 0.0f;
+//  result.m[2][2] = 1.0f / (farClip - nearClip);
+//  result.m[2][3] = 0.0f;
+//
+//  result.m[3][0] = (left + right) / (left - right);
+//  result.m[3][1] = (top + bottom) / (bottom - top);
+//  result.m[3][2] = nearClip / (nearClip - farClip);
+//  result.m[3][3] = 1.0f;
+//
+//  return result;
+//}
 
 ///// <summary>
 ///// 奥行情報を記録するためのバッファGPUに作る
@@ -536,7 +532,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Sprite *sprite = nullptr;
   //スプライトの初期化
   sprite = new Sprite();
-  /*sprite->Initialize();*/
+  sprite->Initialize(spriteCommon);
+
+
+
+
 
   /// =============================================
   ///
@@ -1421,6 +1421,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     ImGui::DragFloat3("Model Pos", &transformModel.translate.x, 0.1f, -100.0f,
                       100.0f);
+
     // ─────────────────────
     // カメラ
     // ─────────────────────
@@ -1538,11 +1539,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ///// 更新処理 ↓
     /////
 
+    sprite->Update();
+
     // カメラ行列
     Matrix4x4 cameraMatrix =
         MakeAffineMatrix(transformCamera.scale, transformCamera.rotate,
                          transformCamera.translate);
-    Matrix4x4 viewMatrix = Inverse(cameraMatrix);
+    Matrix4x4 viewMatrix = MakeInverseMatrix(cameraMatrix);
     Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
         0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f,
         100.0f);
@@ -1652,6 +1655,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     /////
 
     dxCommon->BeginDraw();
+
+    sprite->Draw();
 
     // commandList->RSSetViewports(1, &viewport);       // Viewportを設定
     // commandList->RSSetScissorRects(1, &scissorRect); // Scirssorを設定

@@ -1,8 +1,10 @@
 #pragma once
 
-#include"Vector3.h"
-#include"Matrix4x4.h"
-#include<cmath>
+#include "Matrix4x4.h"
+#include "Vector3.h"
+#include <cmath>
+
+namespace MathUtility {
 
 /// <summary>
 /// ベクトル同士の計算
@@ -11,11 +13,11 @@
 /// <param name="v2"></param>
 /// <returns></returns>
 
-//加算
+// 加算
 Vector3 Add(const Vector3 &v1, const Vector3 &v2);
-//減算
+// 減算
 Vector3 Subtract(const Vector3 &v1, const Vector3 &v2);
-//乗算
+// 乗算
 Vector3 Multiply(float s, const Vector3 &v1);
 
 Vector3 operator+(const Vector3 &v1, const Vector3 &v2);
@@ -40,7 +42,7 @@ Matrix4x4 MakeIdentityMatrix();
 /// </summary>
 /// <param name="m"></param>
 /// <returns></returns>
-Matrix4x4 Inverse(const Matrix4x4 &matrix);
+Matrix4x4 MakeInverseMatrix(const Matrix4x4 &matrix);
 
 /// <summary>
 /// 拡縮行列
@@ -81,3 +83,18 @@ Matrix4x4 MakeTranslateMatrix(const Vector3 &translate);
 /// <returns></returns>
 Matrix4x4 MakeAffineMatrix(const Vector3 &scale, const Vector3 &rotate,
                            const Vector3 &translate);
+
+/// <summary>
+/// 正射影行列(3次元版)
+/// </summary>
+/// <param name="left"></param>
+/// <param name="top"></param>
+/// <param name="right"></param>
+/// <param name="bottom"></param>
+/// <param name="nearClip"></param>
+/// <param name="farClip"></param>
+/// <returns></returns>
+Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
+                                 float bottom, float nearClip, float farClip);
+
+} // namespace MathUtility

@@ -1,8 +1,8 @@
 #pragma once
+#include "DirectXCommon.h"
+
 #include <wrl.h>
 #include <d3d12.h>
-
-class DirectXCommon;
 
 class SpriteCommon {
 public:
@@ -18,6 +18,10 @@ public:
   void SetupCommonRenderState();
 
 public:
+  /// <summary>
+  /// Getter
+  /// </summary>
+  /// <returns></returns>
   DirectXCommon *GetDxCommon() const { return dxCommon_; }
 
 private:

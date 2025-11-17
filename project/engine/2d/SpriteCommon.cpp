@@ -1,12 +1,11 @@
 #include "SpriteCommon.h"
-#include "DirectXCommon.h"
 
 /// <summary>
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonの初期化</param>
 void SpriteCommon::Initialize(DirectXCommon *dxCommon) {
-  // 因数で受け取ってメンバ変数に記録する
+  // 引数で受け取ってメンバ変数に記録する
   dxCommon_ = dxCommon;
 
   // グラフィックスパイプラインの生成
@@ -113,7 +112,7 @@ void SpriteCommon::CreateGraphicsPipeline() {
   CreateRootSignature();
 
   // InputLayout
-  D3D12_INPUT_ELEMENT_DESC inputElementDescs[3] = {};
+  D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
   inputElementDescs[0].SemanticName = "POSITION";
   inputElementDescs[0].SemanticIndex = 0;
   inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -122,10 +121,6 @@ void SpriteCommon::CreateGraphicsPipeline() {
   inputElementDescs[1].SemanticIndex = 0;
   inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;
   inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-  inputElementDescs[2].SemanticName = "NORMAL";
-  inputElementDescs[2].SemanticIndex = 0;
-  inputElementDescs[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-  inputElementDescs[2].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
   D3D12_INPUT_LAYOUT_DESC inputLayOutDesc{};
   inputLayOutDesc.pInputElementDescs = inputElementDescs;
   inputLayOutDesc.NumElements = _countof(inputElementDescs);
@@ -145,11 +140,11 @@ void SpriteCommon::CreateGraphicsPipeline() {
 
   // Shaderをコンパイル
   ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Object3D.VS.hlsl", L"vs_6_0");
+      L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
   ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Object3D.PS.hlsl", L"ps_6_0");
+      L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
   //グラフィックスパイプラインステートの設定
