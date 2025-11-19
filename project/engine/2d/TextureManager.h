@@ -19,7 +19,7 @@ public:
   /// 初期化
   /// </summary>
   /// <param name="dxCommon">DirectXCommonのポインタ</param>
-  void Initialize(DirectXCommon* dxCommon);
+  void Initialize(DirectXCommon *dxCommon);
 
   /// <summary>
   /// 終了
@@ -46,11 +46,18 @@ public:
   /// 該当するテクスチャが存在しない場合はassertによりプログラムを停止する</returns>
   uint32_t GetSrvIndexByFilePath(const std::string &filePath);
   /// <summary>
-  ///
+  /// SRVハンドルの取得
   /// </summary>
-  /// <param name="textureIndex">SRVインデックス</param>
-  /// <returns></returns>
+  /// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+  /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
   D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandlGPU(uint32_t textureIndex);
+
+  /// <summary>
+  /// メタデータを取得
+  /// </summary>
+  /// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+  /// <returns>指定テクスチャの幅・高さ・フォーマットなどのメタデータ</returns>
+  const DirectX::TexMetadata &GetMetaData(uint32_t textureIndex);
 
 private:
   // namespace

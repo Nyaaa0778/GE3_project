@@ -20,11 +20,11 @@ TextureManager *TextureManager::GetInstance() {
   return instance;
 }
 
-  /// <summary>
+/// <summary>
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonのポインタ</param>
-void TextureManager::Initialize(DirectXCommon* dxCommon) {
+void TextureManager::Initialize(DirectXCommon *dxCommon) {
   dxCommon_ = dxCommon;
 
   // SRVの数と同数
@@ -137,12 +137,12 @@ uint32_t TextureManager::GetSrvIndexByFilePath(const std::string &filePath) {
 
   return 0;
 }
+
 /// <summary>
-/// テクスチャ番号から、そのテクスチャに対応する GPU 側の SRV
-/// ハンドルを取得する。
+/// SRVハンドルの取得
 /// </summary>
-/// <param name="textureIndex">テクスチャのインデックス</param>
-/// <returns>指定されたテクスチャのGPUデスクリプタハンドル(SRV)</returns>
+/// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+/// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
 D3D12_GPU_DESCRIPTOR_HANDLE
 TextureManager::GetSrvHandlGPU(uint32_t textureIndex) {
   // 範囲外指定違反チェック（テクスチャ番号が正常範囲内である）
@@ -151,6 +151,22 @@ TextureManager::GetSrvHandlGPU(uint32_t textureIndex) {
   // テクスチャデータの参照を取得
   TextureData &textureData = textureDatas_[textureIndex];
 
-  // そのテクスチャに対応する GPU の SRV ハンドルを返す
+  // そのテクスチャに対応するGPUのSRVハンドルを返す
   return textureData.srvHandleGPU;
+}
+
+/// <summary>
+/// メタデータを取得
+/// </summary>
+/// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+/// <returns>指定テクスチャの幅・高さ・フォーマットなどのメタデータ</returns>
+const DirectX::TexMetadata &TextureManager::GetMetaData(uint32_t textureIndex) {
+  // 範囲外指定違反チェック（テクスチャ番号が正常範囲内である）
+  assert(textureIndex < textureDatas_.size());
+
+  // テクスチャデータの参照を取得
+  TextureData &textureData = textureDatas_[textureIndex];
+
+  // そのテクスチャのメタデータを返す
+  return textureData.metadata;
 }

@@ -1168,12 +1168,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ///
   /// =============================================
 
-  SoundManager soundManager;
+  /*SoundManager soundManager;
   soundManager.Initialize();
 
   Sound alarmSound;
   alarmSound.LoadWav("resources/Alarm01.wav");
-  alarmSound.Play(&soundManager);
+  alarmSound.Play(&soundManager);*/
 
   /// =============================================
   ///
@@ -1364,8 +1364,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //     {0.0f, 0.0f, 0.0f}  // translate
   // };
 
-  Vector2 scale = sprite->GetScale();
-
   // ウィンドウの×ボタンが押されるまでループ
   while (true) {
 
@@ -1543,6 +1541,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     /*scale += Vector2(0.1f, 0.1f);
     sprite->SetScale(scale);*/
+
+    sprite->SetPosition(Vector2{640.0f, 360.0f});
+    sprite->SetAnchorPoint(Vector2{0.5f, 0.5f});
+    sprite->SetFlipY(false);
+    /*sprite->SetTextureLeftTop(Vector2{0.0f, 0.0f});
+    sprite->SetTextureSize(Vector2{8.0, 8.0f});*/
 
     sprite->Update();
 

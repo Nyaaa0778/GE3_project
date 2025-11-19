@@ -1,6 +1,7 @@
 #include "Sprite.h"
 #include "MathUtility.h"
 #include "SpriteCommon.h"
+#include "TextureManager.h"
 
 using namespace MathUtility;
 
@@ -32,15 +33,41 @@ void Sprite::Initialize(SpriteCommon *spriteCommon, std::string filePath) {
 /// 更新
 /// </summary>
 void Sprite::Update() {
+  // アンカーポイント
+  float left = 0.0f - anchorPoint_.x;
+  float right = 1.0f - anchorPoint_.x;
+  float top = 0.0f - anchorPoint_.y;
+  float bottom = 1.0f - anchorPoint_.y;
+
+  // 左右反転
+  if (isFlipX_) {
+    left = -left;
+    right = -right;
+  }
+  // 上下反転
+  if (isFlipY_) {
+    top = -top;
+    bottom = -bottom;
+  }
+
+  // テクスチャのメタデータを取得
+  const DirectX::TexMetadata &metadata =
+      TextureManager::GetInstance()->GetMetaData(textureIndex_);
+
+  float textureLeft = textureLeftTop_.x / metadata.width;
+  float textureRight = (textureLeftTop_.x + textureSize_.x) / metadata.width;
+  float textureTop = textureLeftTop_.y / metadata.height;
+  float textureBottom = (textureLeftTop_.y + textureSize_.y) / metadata.height;
+
   // 頂点リソースにデータを書き込む
   // 左下
-  vertexData_[0] = {{0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f}};
+  vertexData_[0] = {{left, bottom, 0.0f, 1.0f}, {textureLeft, textureBottom}};
   // 左上
-  vertexData_[1] = {{0.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}};
+  vertexData_[1] = {{left, top, 0.0f, 1.0f}, {textureLeft, textureTop}};
   // 右下
-  vertexData_[2] = {{1.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0}};
+  vertexData_[2] = {{right, bottom, 0.0f, 1.0f}, {textureRight, textureBottom}};
   // 右上
-  vertexData_[3] = {{1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}};
+  vertexData_[3] = {{right, top, 0.0f, 1.0f}, {textureRight, textureTop}};
 
   // インデックスリソースにデータを書き込む
   indexData_[0] = 0;
@@ -51,7 +78,7 @@ void Sprite::Update() {
   indexData_[5] = 2;
 
   // Transform情報を作る
-  transform_ = {{scale_.x, scale_.y, 1.0f},
+  transform_ = {{GetDisplaySize().x, GetDisplaySize().y, 1.0f},
                 {0.0f, 0.0f, rotation_},
                 {position_.x, position_.y, 0.0f}};
 
@@ -69,6 +96,8 @@ void Sprite::Update() {
   worldViewProjectionMatrix =
       Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
   transformationMatrixData_->WVP = worldViewProjectionMatrix;
+
+  AdjustTextureSize();
 }
 /// <summary>
 /// 描画
@@ -171,6 +200,21 @@ void Sprite::CreateTransformationMatrixData() {
   transformationMatrixData_->WVP = MakeIdentityMatrix();
 }
 
+/// <summary>
+/// テクスチャサイズをリソースに合わせる
+/// </summary>
+void Sprite::AdjustTextureSize() {
+  // テクスチャメタデータを取得
+  const DirectX::TexMetadata &metadata =
+      TextureManager::GetInstance()->GetMetaData(textureIndex_);
+
+  textureSize_.x = static_cast<float>(metadata.width);
+  textureSize_.y = static_cast<float>(metadata.height);
+
+  // 画像サイズをテクスチャの元のサイズに合わせる
+  size_ = textureSize_;
+}
+
 // 位置
 void Sprite::SetPosition(const Vector2 &position) { position_ = position; }
 // 回転
@@ -184,4 +228,21 @@ void Sprite::SetTexture(const std::string &filePath) {
   TextureManager *textureManager = TextureManager::GetInstance();
   textureManager->LoadTexture(filePath);
   textureIndex_ = textureManager->GetSrvIndexByFilePath(filePath);
+}
+
+// アンカーポイント
+void Sprite::SetAnchorPoint(const Vector2 &anchorPoint) {
+  anchorPoint_ = anchorPoint;
+}
+// 左右反転フラグ
+void Sprite::SetFlipX(bool isFlipX) { isFlipX_ = isFlipX; }
+// 上下反転フラグ
+void Sprite::SetFlipY(bool isFlipY) { isFlipY_ = isFlipY; }
+// テクスチャ左上座標
+void Sprite::SetTextureLeftTop(const Vector2 &textureLeftTop) {
+  textureLeftTop_ = textureLeftTop;
+}
+// テクスチャの切り抜きサイズ
+void Sprite::SetTextureSize(const Vector2 &textureSize) {
+  textureSize_ = textureSize;
 }
