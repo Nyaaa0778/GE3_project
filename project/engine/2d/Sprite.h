@@ -11,7 +11,7 @@
 #include <string>
 #include <wrl.h>
 
-class SpriteCommon;
+class SpriteRenderer;
 class TextureManager;
 
 class Sprite {
@@ -21,7 +21,7 @@ public:
   /// </summary>
   /// <param name="spriteCommon">SpriteCommonのポインタ</param>
   /// <param name="filePath">使いたいテクスチャのファイルパス</param>
-  void Initialize(SpriteCommon *spriteCommon, std::string filePath);
+  void Initialize(SpriteRenderer *spriteCommon, std::string filePath);
   /// <summary>
   /// 更新
   /// </summary>
@@ -117,7 +117,7 @@ private:
   //========================================
 
   // SpriteCommonのポインタ
-  SpriteCommon *spriteCommon_ = nullptr;
+  SpriteRenderer *spriteCommon_ = nullptr;
 
   //========================================
   // GPUリソース（頂点/インデックス）

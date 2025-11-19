@@ -1,6 +1,6 @@
 #include "Sprite.h"
 #include "MathUtility.h"
-#include "SpriteCommon.h"
+#include "SpriteRenderer.h"
 #include "TextureManager.h"
 
 using namespace MathUtility;
@@ -10,7 +10,7 @@ using namespace MathUtility;
 /// </summary>
 /// <param name="spriteCommon">SpriteCommonの初期化</param>
 /// <param name="filePath">使いたいテクスチャのファイルパス</param>
-void Sprite::Initialize(SpriteCommon *spriteCommon, std::string filePath) {
+void Sprite::Initialize(SpriteRenderer *spriteCommon, std::string filePath) {
   // 引数で受け取ってメンバ変数に記録する
   spriteCommon_ = spriteCommon;
   filePath_ = filePath;

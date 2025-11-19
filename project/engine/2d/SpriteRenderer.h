@@ -4,7 +4,7 @@
 #include <wrl.h>
 #include <d3d12.h>
 
-class SpriteCommon {
+class SpriteRenderer {
 public:
   /// <summary>
   /// 初期化

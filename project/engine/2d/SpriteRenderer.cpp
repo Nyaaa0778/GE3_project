@@ -1,10 +1,10 @@
-#include "SpriteCommon.h"
+#include "SpriteRenderer.h"
 
 /// <summary>
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonの初期化</param>
-void SpriteCommon::Initialize(DirectXCommon *dxCommon) {
+void SpriteRenderer::Initialize(DirectXCommon *dxCommon) {
   // 引数で受け取ってメンバ変数に記録する
   dxCommon_ = dxCommon;
 
@@ -15,7 +15,7 @@ void SpriteCommon::Initialize(DirectXCommon *dxCommon) {
 /// <summary>
 /// 共通描画設定
 /// </summary>
-void SpriteCommon::SetupCommonRenderState() {
+void SpriteRenderer::SetupCommonRenderState() {
   ID3D12DescriptorHeap *heaps[] = {dxCommon_->GetSrvHeap()};
   dxCommon_->GetCommandList()->SetDescriptorHeaps(1, heaps);
 
@@ -31,7 +31,7 @@ void SpriteCommon::SetupCommonRenderState() {
 /// <summary>
 /// ルートシグネチャの生成
 /// </summary>
-void SpriteCommon::CreateRootSignature() {
+void SpriteRenderer::CreateRootSignature() {
   // RootSignature作成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags =
@@ -109,7 +109,7 @@ void SpriteCommon::CreateRootSignature() {
 /// <summary>
 /// グラフィックスパイプラインの生成
 /// </summary>
-void SpriteCommon::CreateGraphicsPipeline() {
+void SpriteRenderer::CreateGraphicsPipeline() {
 
   // ルートシグネチャの生成
   CreateRootSignature();

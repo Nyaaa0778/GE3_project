@@ -2,7 +2,7 @@
 #include "Input.h"
 #include "WinApp.h"
 #include"D3DResourceLeakChecker.h"
-#include"SpriteCommon.h"
+#include"SpriteRenderer.h"
 #include"Sprite.h"
 
 // #include <Windows.h>
@@ -56,8 +56,12 @@
 #include <Vector3.h>
 #include <Vector4.h>
 #include<Transform.h>
-#include <TextureManager.h>
+#include "TextureManager.h"
+#include"Object3dRenderer.h"
+#include"Object3d.h"
+
 using namespace MathUtility;
+
 // #include <wrl.h>
 
 using Microsoft::WRL::ComPtr;
@@ -524,10 +528,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxCommon->Initialize(winApp);
 
   //ポインタ
-  SpriteCommon *spriteCommon = nullptr;
+  SpriteRenderer *spriteRenderer = nullptr;
   //スプライト共通部の初期化
-  spriteCommon = new SpriteCommon();
-  spriteCommon->Initialize(dxCommon);
+  spriteRenderer = new SpriteRenderer();
+  spriteRenderer->Initialize(dxCommon);
 
   //テクスチャマネージャの初期化
   TextureManager::GetInstance()->Initialize(dxCommon);
@@ -536,7 +540,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Sprite *sprite = nullptr;
   //スプライトの初期化
   sprite = new Sprite();
-  sprite->Initialize(spriteCommon, "resources/uvChecker.png");
+  sprite->Initialize(spriteRenderer, "resources/uvChecker.png");
+
+  //ポインタ
+  Object3dRenderer *object3dRenderer = nullptr;
+  //object3dRendererの初期化
+  object3dRenderer = new Object3dRenderer();
+  object3dRenderer->Initialize();
+
+  // ポインタ
+  Object3d *object3d = nullptr;
+  // object3dの初期化
+  object3d = new Object3d();
+  object3d->Initialize();
 
   /// =============================================
   ///
@@ -1805,11 +1821,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // inputを解放
   delete input;
 
+  // object3dを解放
+  delete object3d;
+
+  //object3dRendererを解放
+  delete object3dRenderer;
+
   //spriteを解放
   delete sprite;
 
   //spriteCommonを解放
-  delete spriteCommon;
+  delete spriteRenderer;
 
   TextureManager::GetInstance()->Finalize();
 
