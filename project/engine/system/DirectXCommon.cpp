@@ -17,9 +17,6 @@ using namespace StringUtility;
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxcompiler.lib")
 
-// 最大SRV数
-const uint32_t DirectXCommon::kMaxSRVCount = 512;
-
 /// <summary>
 /// デストラクタ
 /// </summary>
@@ -308,7 +305,7 @@ void DirectXCommon::CreateSwapChain() {
 /// <summary>
 /// 深度バッファの生成
 /// </summary>
-void DirectXCommon::CreateDepthBuffer() {
+DirectXCommon::ComPtr<ID3D12Resource> DirectXCommon::CreateDepthBuffer() {
   // 生成するResourceの設定
   D3D12_RESOURCE_DESC resourceDesc{};
   resourceDesc.Width = winApp_->kClientWidth;   // Textureの幅
@@ -343,6 +340,8 @@ void DirectXCommon::CreateDepthBuffer() {
           &depthStencilResource_) // 作成するResourceポインタへのポインタ
   );
   assert(SUCCEEDED(hr));
+
+  return depthStencilResource_;
 }
 
 /// <summary>
@@ -386,8 +385,8 @@ void DirectXCommon::CreateDescriptorHeaps() {
   descriptorHeapRTV_ =
       CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 2, false);
   // SRV用のヒープ(ディスクリプタの数は128)、RTVはShader内で触るものなので、ShaderVisibleはtrue
-  descriptorHeapSRV_ = CreateDescriptorHeap(
-      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
+  descriptorHeapSRV_ =
+      CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, true);
   // DSV用のヒープディスクリプタの数は1、ShaderVisibleはfalse
   descriptorHeapDSV_ =
       CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
@@ -435,7 +434,7 @@ DirectXCommon::GetGPUDescriptorHandle(
 /// <param name="index">取得したいSRVのインデックス番号</param>
 /// <returns>SRVのCPUディスクリプタハンドル</returns>
 D3D12_CPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetSrvCPUDescriptorHandle(uint32_t index) {
+DirectXCommon::GetSRVCPUDescriptorHandle(uint32_t index) {
   return GetCPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
 }
 /// <summary>
@@ -444,7 +443,7 @@ DirectXCommon::GetSrvCPUDescriptorHandle(uint32_t index) {
 /// <param name="index">取得したいSRVのインデックス番号</param>
 /// <returns>SRVのCPUディスクリプタハンドル</returns>
 D3D12_GPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetSrvGPUDescriptorHandle(uint32_t index) {
+DirectXCommon::GetSRVGPUDescriptorHandle(uint32_t index) {
   return GetGPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
 }
 /// <summary>
@@ -723,9 +722,7 @@ DirectXCommon::CreateTextureResource(const DirectX::TexMetadata &metadata) {
 /// name="texture">転送先のGPUテクスチャリソース（DEFAULTヒープ想定、事前に
 /// STATE_COPY_DEST）</param>
 /// <param name="mipImages">DirectXTexのScratchImage</param>
-[[nodiscard]]
-DirectXCommon::ComPtr<ID3D12Resource>
-DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
+void DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
                                       const DirectX::ScratchImage &mipImages) {
   // 読み込んだデータからサブリソース配列を作成
   std::vector<D3D12_SUBRESOURCE_DATA> subresources;
@@ -736,12 +733,11 @@ DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
   uint64_t intermediateSize =
       GetRequiredIntermediateSize(texture.Get(), 0, UINT(subresources.size()));
   // 計算したサイズでintermediateResourceを作成
-  ComPtr<ID3D12Resource> intermediateResource =
-      CreateBufferResource(intermediateSize);
+  intermediateResource_ = CreateBufferResource(intermediateSize);
 
   // intermediateResourceにSubresourceのデータを書き込み、textureに転送
   UpdateSubresources(commandList_.Get(), texture.Get(),
-                     intermediateResource.Get(), 0, 0,
+                     intermediateResource_.Get(), 0, 0,
                      UINT(subresources.size()), subresources.data());
 
   // Textureへの転送後は利用できるように、STATE_COPY_DESTからSTATE_GENERIC_READへResourceStateを変更
@@ -753,6 +749,29 @@ DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
   barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
   barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_GENERIC_READ;
   commandList_->ResourceBarrier(1, &barrier);
+}
 
-  return intermediateResource;
+/// <summary>
+/// 画像ファイルを読み込みテクスチャに変換
+/// </summary>
+/// <param name="filePath"></param>
+/// <returns></returns>
+DirectX::ScratchImage DirectXCommon::LoadTexture(const std::string &filePath) {
+  // テクスチャファイルを読んでプログラムで扱えるようにする
+  DirectX::ScratchImage image{};
+  std::wstring filePathW = ConvertString(filePath); // Wはワイド文字列を意味する
+  HRESULT hr = DirectX::LoadFromWICFile(
+      filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+  assert(SUCCEEDED(hr));
+
+  // ミニマップの作成
+  // mipMap: 元画像より小さなテクスチャ群
+  DirectX::ScratchImage mipImages{};
+  hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
+                                image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
+                                0, mipImages);
+  assert(SUCCEEDED(hr));
+
+  // ミニマップ付きのデータを返す
+  return mipImages;
 }

@@ -123,9 +123,6 @@
     <ClCompile Include="engine\2d\SpriteCommon.cpp">
       <Filter>ソース ファイル\engine\2d</Filter>
     </ClCompile>
-    <ClCompile Include="engine\2d\TextureManager.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -134,12 +131,8 @@
     <FxCompile Include="resources\shaders\Object3d.VS.hlsl">
       <Filter>リソース ファイル\shaders</Filter>
     </FxCompile>
-    <FxCompile Include="resources\shaders\Sprite.VS.hlsl">
-      <Filter>リソース ファイル\shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="resources\shaders\Sprite.PS.hlsl">
-      <Filter>リソース ファイル\shaders</Filter>
-    </FxCompile>
+    <FxCompile Include="resources\shaders\Sprite.VS.hlsl" />
+    <FxCompile Include="resources\shaders\Sprite.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -217,9 +210,6 @@
     <ClInclude Include="engine\3d\Transform.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
-    <ClInclude Include="engine\2d\TextureManager.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">
@@ -230,8 +220,6 @@
     <None Include="resources\shaders\Object3d.hlsli">
       <Filter>リソース ファイル\shaders</Filter>
     </None>
-    <None Include="resources\shaders\Sprite.hlsli">
-      <Filter>リソース ファイル\shaders</Filter>
-    </None>
+    <None Include="resources\shaders\Sprite.hlsli" />
   </ItemGroup>
 </Project>
