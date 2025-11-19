@@ -1,6 +1,6 @@
 #pragma once
+#include "FixFPS.h"
 #include "WinApp.h"
-#include"FixFPS.h"
 
 #include <d3d12.h>
 #include <dxcapi.h>
@@ -12,6 +12,10 @@
 #include <wrl.h>
 
 class DirectXCommon {
+public:
+  // SRVの個数
+  static const uint32_t kMaxSRVCount;
+
 public:
   /// <summary>
   /// デストラクタ
@@ -37,13 +41,13 @@ public:
   /// </summary>
   /// <param name="index">取得したいSRVのインデックス番号</param>
   /// <returns>SRVのCPUディスクリプタハンドル</returns>
-  D3D12_CPU_DESCRIPTOR_HANDLE GetSRVCPUDescriptorHandle(uint32_t index);
+  D3D12_CPU_DESCRIPTOR_HANDLE GetSrvCPUDescriptorHandle(uint32_t index);
   /// <summary>
   /// SRVの指定番号のGPUデスクリプタハンドルを取得
   /// </summary>
   /// <param name="index">取得したいSRVのインデックス番号</param>
   /// <returns>SRVのCPUディスクリプタハンドル</returns>
-  D3D12_GPU_DESCRIPTOR_HANDLE GetSRVGPUDescriptorHandle(uint32_t index);
+  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGPUDescriptorHandle(uint32_t index);
 
 public:
   /// <summary>
@@ -53,8 +57,8 @@ public:
   ID3D12GraphicsCommandList *GetCommandList() const {
     return commandList_.Get();
   }
-  ID3D12DescriptorHeap *GetSRVHeap() const { return descriptorHeapSRV_.Get(); }
-  UINT GetSRVDescriptorSize() const { return descriptorSizeSRV_; }
+  ID3D12DescriptorHeap *GetSrvHeap() const { return descriptorHeapSRV_.Get(); }
+  UINT GetSrvDescriptorSize() const { return descriptorSizeSRV_; }
 
 private:
   // namespace
@@ -120,10 +124,7 @@ private:
   IDxcCompiler3 *dxcCompiler_ = nullptr;
   IDxcIncludeHandler *includeHandler_ = nullptr;
 
-  // CPUからGPUへテクスチャデータを転送するための一時バッファ
-  ComPtr<ID3D12Resource> intermediateResource_ = nullptr;
-
-  //FPS固定
+  // FPS固定
   FixFPS fixFps_;
 
 public:
@@ -160,15 +161,10 @@ public:
   /// name="texture">転送先のGPUテクスチャリソース（DEFAULTヒープ想定、事前に
   /// STATE_COPY_DEST）</param> <param
   /// name="mipImages">DirectXTexのScratchImage</param>
-  void UploadTextureData(const ComPtr<ID3D12Resource> &texture,
+  [[nodiscard]]
+  ComPtr<ID3D12Resource>
+  UploadTextureData(const ComPtr<ID3D12Resource> &texture,
                          const DirectX::ScratchImage &mipImages);
-
-  /// <summary>
-  /// 画像ファイルを読み込みテクスチャに変換
-  /// </summary>
-  /// <param name="filePath"></param>
-  /// <returns></returns>
-  static DirectX::ScratchImage LoadTexture(const std::string &filePath);
 
 private:
   /// <summary>
@@ -190,7 +186,7 @@ private:
   /// 深度バッファの生成
   /// </summary>
   /// <returns>生成した深度バッファリソース</returns>
-  ComPtr<ID3D12Resource> CreateDepthBuffer();
+  void CreateDepthBuffer();
   /// <summary>
   /// デスクリプタヒープの生成
   /// </summary>

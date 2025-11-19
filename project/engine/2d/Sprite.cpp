@@ -8,9 +8,16 @@ using namespace MathUtility;
 /// 初期化
 /// </summary>
 /// <param name="spriteCommon">SpriteCommonの初期化</param>
-void Sprite::Initialize(SpriteCommon *spriteCommon) {
+/// <param name="filePath">使いたいテクスチャのファイルパス</param>
+void Sprite::Initialize(SpriteCommon *spriteCommon, std::string filePath) {
   // 引数で受け取ってメンバ変数に記録する
   spriteCommon_ = spriteCommon;
+  filePath_ = filePath;
+
+  TextureManager::GetInstance()->LoadTexture(filePath_);
+  // 単位行列を書き込んでおく
+  textureIndex_ =
+      TextureManager::GetInstance()->GetSrvIndexByFilePath(filePath_);
 
   // 頂点データの作成
   CreateVertexData();
@@ -45,7 +52,7 @@ void Sprite::Update() {
 
   // Transform情報を作る
   transform_ = {{scale_.x, scale_.y, 1.0f},
-                {0.0f,0.0f,rotation_},
+                {0.0f, 0.0f, rotation_},
                 {position_.x, position_.y, 0.0f}};
 
   Matrix4x4 worldMatrix;
@@ -89,13 +96,11 @@ void Sprite::Draw() {
       ->SetGraphicsRootConstantBufferView(
           1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
-  D3D12_GPU_DESCRIPTOR_HANDLE textureSrvGPU =
-      spriteCommon_->GetDxCommon()->GetSRVGPUDescriptorHandle(1);
-
   // SRVのデスクリプタヒープテーブルの先頭を設定
   spriteCommon_->GetDxCommon()
       ->GetCommandList()
-      ->SetGraphicsRootDescriptorTable(2, textureSrvGPU);
+      ->SetGraphicsRootDescriptorTable(
+          2, TextureManager::GetInstance()->GetSrvHandlGPU(textureIndex_));
 
   // 描画
   spriteCommon_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,
@@ -164,4 +169,19 @@ void Sprite::CreateTransformationMatrixData() {
       0, nullptr, reinterpret_cast<void **>(&transformationMatrixData_));
   // 単位行列に書き込んでおく
   transformationMatrixData_->WVP = MakeIdentityMatrix();
+}
+
+// 位置
+void Sprite::SetPosition(const Vector2 &position) { position_ = position; }
+// 回転
+void Sprite::SetRotation(float rotation) { rotation_ = rotation; }
+// 色
+void Sprite::SetColor(const Vector4 &color) { materialData_->color = color; }
+// 拡縮
+void Sprite::SetScale(const Vector2 &scale) { scale_ = scale; }
+// テクスチャ
+void Sprite::SetTexture(const std::string &filePath) {
+  TextureManager *textureManager = TextureManager::GetInstance();
+  textureManager->LoadTexture(filePath);
+  textureIndex_ = textureManager->GetSrvIndexByFilePath(filePath);
 }

@@ -1,4 +1,6 @@
 #pragma once
+#include "TextureManager.h"
+
 #include <Matrix4x4.h>
 #include <Transform.h>
 #include <Vector2.h>
@@ -7,6 +9,7 @@
 
 #include <cstdint>
 #include <d3d12.h>
+#include <string>
 #include <wrl.h>
 
 class SpriteCommon;
@@ -17,7 +20,8 @@ public:
   /// 初期化
   /// </summary>
   /// <param name="spriteCommon">SpriteCommonのポインタ</param>
-  void Initialize(SpriteCommon *spriteCommon);
+  /// <param name="filePath">使いたいテクスチャのファイルパス</param>
+  void Initialize(SpriteCommon *spriteCommon, std::string filePath);
   /// <summary>
   /// 更新
   /// </summary>
@@ -38,7 +42,7 @@ public:
   const float &GetRotation() const { return rotation_; }
   // 色
   const Vector4 &GetColor() const { return materialData_->color; }
-  //拡縮
+  // 拡縮
   const Vector2 &GetScale() const { return scale_; }
 
   /// <summary>
@@ -46,13 +50,15 @@ public:
   /// </summary>
 
   // 位置
-  void SetPosition(const Vector2 &position) { position_ = position; }
+  void SetPosition(const Vector2 &position);
   // 回転
-  void SetRotation(float rotation) { rotation_ = rotation; }
+  void SetRotation(float rotation);
   // 色
-  void SetColor(const Vector4 &color) { materialData_->color = color; }
-  //拡縮
-  void SetScale(const Vector2 &scale) { scale_ = scale; }
+  void SetColor(const Vector4 &color);
+  // 拡縮
+  void SetScale(const Vector2 &scale);
+  // テクスチャ
+  void SetTexture(const std::string &filePath);
 
 private:
   // 頂点データ
@@ -65,7 +71,6 @@ private:
   // マテリアル
   struct Material {
     Vector4 color;
-    float padding[3];
     Matrix4x4 uvTransform;
   };
 
@@ -101,6 +106,11 @@ private:
   ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
   // バッファリソース内のデータを指すポインタ
   TransformationMatrix *transformationMatrixData_ = nullptr;
+
+  // テクスチャ番号
+  uint32_t textureIndex_ = 0;
+  // ファイルパス
+  std::string filePath_;
 
   // Transform
   Transform transform_{};
