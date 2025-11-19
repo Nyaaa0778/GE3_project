@@ -538,7 +538,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   sprite = new Sprite();
   sprite->Initialize(spriteCommon, "resources/uvChecker.png");
 
-
   /// =============================================
   ///
   /// RootSignatureの初期化
