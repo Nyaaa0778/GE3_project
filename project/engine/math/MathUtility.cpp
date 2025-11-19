@@ -1,5 +1,7 @@
 #include "MathUtility.h"
 
+namespace MathUtility {
+
 /// <summary>
 /// ベクトル同士の計算
 /// </summary>
@@ -8,24 +10,71 @@
 /// <returns></returns>
 
 // 加算
+Vector2 Add(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x + v2.x, v1.y + v2.y};
+}
 Vector3 Add(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
 }
 // 減算
+Vector2 Subtract(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x - v2.x, v1.y - v2.y};
+}
 Vector3 Subtract(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
 }
 // 乗算
+Vector2 Multiply(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x * v2.x, v1.y * v2.y};
+}
 Vector3 Multiply(float s, const Vector3 &v1) {
   return {s * v1.x, s * v1.y, s * v1.z};
 }
 
-Vector3 operator+(const Vector3 &v1, const Vector3 &v2) { return Add(v1, v2); }
-Vector3 operator-(const Vector3 &v1, const Vector3 &v2) {
-  return Subtract(v1, v2);
+// --------------------------
+// Vector2
+// --------------------------
+Vector2 &operator+=(Vector2 &v1, const Vector2 &v2) {
+  v1.x += v2.x;
+  v1.y += v2.y;
+  return v1;
 }
-Vector3 operator*(float s, const Vector3 &v2) { return Multiply(s, v2); }
-Vector3 operator*(const Vector3 &v2, float s) { return Multiply(s, v2); }
+
+Vector2 &operator-=(Vector2 &v1, const Vector2 &v2) {
+  v1.x -= v2.x;
+  v1.y -= v2.y;
+  return v1;
+}
+
+Vector2 &operator*=(Vector2 &v, float s) {
+  v.x *= s;
+  v.y *= s;
+  return v;
+}
+
+// --------------------------
+// Vector3
+// --------------------------
+Vector3 &operator+=(Vector3 &v1, const Vector3 &v2) {
+  v1.x += v2.x;
+  v1.y += v2.y;
+  v1.z += v2.z;
+  return v1;
+}
+
+Vector3 &operator-=(Vector3 &v1, const Vector3 &v2) {
+  v1.x -= v2.x;
+  v1.y -= v2.y;
+  v1.z -= v2.z;
+  return v1;
+}
+
+Vector3 &operator*=(Vector3 &v, float s) {
+  v.x *= s;
+  v.y *= s;
+  v.z *= s;
+  return v;
+}
 
 /// <summary>
 /// 行列の積
@@ -47,7 +96,6 @@ Matrix4x4 Multiply(const Matrix4x4 &m1, const Matrix4x4 &m2) {
 
   return result;
 }
-
 
 /// <summary>
 /// 単位行列の作成
@@ -74,7 +122,7 @@ Matrix4x4 MakeIdentityMatrix() {
 /// </summary>
 /// <param name="m"></param>
 /// <returns></returns>
-Matrix4x4 Inverse(const Matrix4x4 &matrix) {
+Matrix4x4 MakeInverseMatrix(const Matrix4x4 &matrix) {
   Matrix4x4 result;
 
   // 2×2 の小行列式を具体的な名前で計算
@@ -303,3 +351,41 @@ Matrix4x4 MakeAffineMatrix(const Vector3 &scale, const Vector3 &rotate,
 
   return worldMatrix;
 }
+
+/// <summary>
+/// 正射影行列(3次元版)
+/// </summary>
+/// <param name="left"></param>
+/// <param name="top"></param>
+/// <param name="right"></param>
+/// <param name="bottom"></param>
+/// <param name="nearClip"></param>
+/// <param name="farClip"></param>
+/// <returns></returns>
+Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
+                                 float bottom, float nearClip, float farClip) {
+  Matrix4x4 result;
+  result.m[0][0] = 2.0f / (right - left);
+  result.m[0][1] = 0.0f;
+  result.m[0][2] = 0.0f;
+  result.m[0][3] = 0.0f;
+
+  result.m[1][0] = 0.0f;
+  result.m[1][1] = 2.0f / (top - bottom);
+  result.m[1][2] = 0.0f;
+  result.m[1][3] = 0.0f;
+
+  result.m[2][0] = 0.0f;
+  result.m[2][1] = 0.0f;
+  result.m[2][2] = 1.0f / (farClip - nearClip);
+  result.m[2][3] = 0.0f;
+
+  result.m[3][0] = (left + right) / (left - right);
+  result.m[3][1] = (top + bottom) / (bottom - top);
+  result.m[3][2] = nearClip / (nearClip - farClip);
+  result.m[3][3] = 1.0f;
+
+  return result;
+}
+
+} // namespace MathUtility
