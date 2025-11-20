@@ -9,6 +9,10 @@ class DirectXCommon;
 
 class TextureManager {
 public:
+  //========================================
+  // シングルトン管理 / 初期化・終了
+  //========================================
+
   /// <summary>
   /// シングルトンインスタンスの取得
   /// </summary>
@@ -26,6 +30,11 @@ public:
   /// </summary>
   void Finalize();
 
+public:
+  //========================================
+  // テクスチャ読み込み / 中間リソース解放
+  //========================================
+
   /// <summary>
   /// 画像ファイルを読み込みテクスチャに変換
   /// </summary>
@@ -37,6 +46,10 @@ public:
   /// 中間リソースの解放
   /// </summary>
   void ReleaseIntermediateResources();
+
+  //========================================
+  // Getter
+  //========================================
 
   /// <summary>
   /// SRVインデックスの取得
@@ -60,11 +73,19 @@ public:
   const DirectX::TexMetadata &GetMetaData(uint32_t textureIndex);
 
 private:
+  //========================================
+  // 型エイリアス
+  //========================================
+
   // namespace
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
 private:
+  //========================================
+  // 内部構造体
+  //========================================
+
   // テクスチャ一枚分のデータ
   struct TextureData {
     std::string filePath;
@@ -76,8 +97,16 @@ private:
   };
 
 private:
+  //========================================
+  // 外部参照
+  //========================================
+
   // DirectXCommonのポインタ
   DirectXCommon *dxCommon_ = nullptr;
+
+  //========================================
+  // テクスチャ管理データ（読み込み済み）
+  //========================================
 
   // テクスチャデータ
   std::vector<TextureData> textureDatas_;
@@ -86,6 +115,10 @@ private:
   static uint32_t kSRVIndexTop;
 
 private:
+  //========================================
+  // シングルトン実装詳細
+  //========================================
+
   static TextureManager *instance;
 
   /// <summary>

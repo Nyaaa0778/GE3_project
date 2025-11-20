@@ -16,6 +16,10 @@ class TextureManager;
 
 class Sprite {
 public:
+  //========================================
+  // 初期化 / 更新 / 描画
+  //========================================
+
   /// <summary>
   /// 初期化
   /// </summary>
@@ -107,6 +111,10 @@ private:
   };
 
 private:
+  //========================================
+  // 型エイリアス
+  //========================================
+
   // namespace
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
@@ -117,7 +125,7 @@ private:
   //========================================
 
   // SpriteCommonのポインタ
-  SpriteRenderer *spriteCommon_ = nullptr;
+  SpriteRenderer *spriteRenderer_ = nullptr;
 
   //========================================
   // GPUリソース（頂点/インデックス）

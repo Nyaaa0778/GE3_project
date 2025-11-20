@@ -16,7 +16,7 @@ void SpriteRenderer::Initialize(DirectXCommon *dxCommon) {
 /// 共通描画設定
 /// </summary>
 void SpriteRenderer::SetupCommonRenderState() {
-  ID3D12DescriptorHeap *heaps[] = {dxCommon_->GetSrvHeap()};
+  ID3D12DescriptorHeap *heaps[] = {dxCommon_->GetSrvDescriptorHeap()};
   dxCommon_->GetCommandList()->SetDescriptorHeaps(1, heaps);
 
   // ルートシグネチャをセット
@@ -142,15 +142,15 @@ void SpriteRenderer::CreateGraphicsPipeline() {
   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
   // Shaderをコンパイル
-  ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
+  ComPtr<IDxcBlob> vertexShaderBlob =
+      dxCommon_->CompileShader(L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
-  ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
+  ComPtr<IDxcBlob> pixelShaderBlob =
+      dxCommon_->CompileShader(L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
-  //グラフィックスパイプラインステートの設定
+  // グラフィックスパイプラインステートの設定
   D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
   graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
   graphicsPipelineStateDesc.InputLayout = inputLayOutDesc;

@@ -546,7 +546,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Object3dRenderer *object3dRenderer = nullptr;
   //object3dRendererの初期化
   object3dRenderer = new Object3dRenderer();
-  object3dRenderer->Initialize();
+  object3dRenderer->Initialize(dxCommon);
 
   // ポインタ
   Object3d *object3d = nullptr;
@@ -1738,7 +1738,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     // commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
     // ★ ImGui / 自前テクスチャ用 SRV ヒープをバインド
-    ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvHeap()};
+    ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvDescriptorHeap()};
     dxCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 
     sprite->Draw();
