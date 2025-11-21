@@ -40,6 +40,10 @@ DirectXCommon::~DirectXCommon() {
   CloseHandle(fenceEvent_);
 }
 
+//================================================================================
+// 初期化 / 更新 / 描画
+//================================================================================
+
 /// <summary>
 /// 初期化
 /// </summary>
@@ -170,8 +174,74 @@ void DirectXCommon::EndDraw() {
   assert(SUCCEEDED(hr));
 }
 
-uint32_t DirectXCommon::GetClientWidth() const { return WinApp::kClientWidth; }
-uint32_t DirectXCommon::GetClientHeight() const { return WinApp::kClientHeight; }
+//================================================================================
+// Getter
+//================================================================================
+
+// 画面サイズ
+uint32_t DirectXCommon::GetClientWidth() const { return winApp_->kClientWidth; }
+uint32_t DirectXCommon::GetClientHeight() const {
+  return winApp_->kClientHeight;
+}
+
+/// <summary>
+/// CPUの取得
+/// </summary>
+/// <param name="descriptorHeap">RTV、SRV、DSVなど</param>
+/// <param name="descriptorSize">デスクリプタヒープのサイズ</param>
+/// <param
+/// name="index">取得したいディスクリプタハンドルのインデックス番号</param>
+/// <returns>取得したCPUハンドル</returns>
+D3D12_CPU_DESCRIPTOR_HANDLE
+DirectXCommon::GetCPUDescriptorHandle(
+    const ComPtr<ID3D12DescriptorHeap> &descriptorHeap, uint32_t descriptorSize,
+    uint32_t index) {
+  D3D12_CPU_DESCRIPTOR_HANDLE handle =
+      descriptorHeap->GetCPUDescriptorHandleForHeapStart();
+  handle.ptr += (descriptorSize * index);
+
+  return handle;
+}
+/// <summary>
+/// GPUの取得
+/// </summary>
+/// <param name="descriptorHeap"></param>
+/// <param name="descriptorSize"></param>
+/// <param
+/// name="index">取得したいディスクリプタハンドルのインデックス番号</param>
+/// <returns>取得したGPUハンドル</returns>
+D3D12_GPU_DESCRIPTOR_HANDLE
+DirectXCommon::GetGPUDescriptorHandle(
+    const ComPtr<ID3D12DescriptorHeap> &descriptorHeap, uint32_t descriptorSize,
+    uint32_t index) {
+  D3D12_GPU_DESCRIPTOR_HANDLE handle =
+      descriptorHeap->GetGPUDescriptorHandleForHeapStart();
+  handle.ptr += (descriptorSize * index);
+
+  return handle;
+}
+/// <summary>
+/// SRVの指定番号のCPUデスクリプタハンドルを取得
+/// </summary>
+/// <param name="index">取得したいSRVのインデックス番号</param>
+/// <returns>SRVのCPUディスクリプタハンドル</returns>
+D3D12_CPU_DESCRIPTOR_HANDLE
+DirectXCommon::GetSrvCPUDescriptorHandle(uint32_t index) {
+  return GetCPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
+}
+/// <summary>
+/// SRVの指定番号のGPUデスクリプタハンドルを取得
+/// </summary>
+/// <param name="index">取得したいSRVのインデックス番号</param>
+/// <returns>SRVのCPUディスクリプタハンドル</returns>
+D3D12_GPU_DESCRIPTOR_HANDLE
+DirectXCommon::GetSrvGPUDescriptorHandle(uint32_t index) {
+  return GetGPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
+}
+
+//================================================================================
+// 内部初期化処理
+//================================================================================
 
 /// <summary>
 /// デバイスの初期化
@@ -398,60 +468,6 @@ void DirectXCommon::CreateDescriptorHeaps() {
 }
 
 /// <summary>
-/// CPUの取得
-/// </summary>
-/// <param name="descriptorHeap">RTV、SRV、DSVなど</param>
-/// <param name="descriptorSize">デスクリプタヒープのサイズ</param>
-/// <param
-/// name="index">取得したいディスクリプタハンドルのインデックス番号</param>
-/// <returns>取得したCPUハンドル</returns>
-D3D12_CPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetCPUDescriptorHandle(
-    const ComPtr<ID3D12DescriptorHeap> &descriptorHeap, uint32_t descriptorSize,
-    uint32_t index) {
-  D3D12_CPU_DESCRIPTOR_HANDLE handle =
-      descriptorHeap->GetCPUDescriptorHandleForHeapStart();
-  handle.ptr += (descriptorSize * index);
-
-  return handle;
-}
-/// <summary>
-/// GPUの取得
-/// </summary>
-/// <param name="descriptorHeap"></param>
-/// <param name="descriptorSize"></param>
-/// <param
-/// name="index">取得したいディスクリプタハンドルのインデックス番号</param>
-/// <returns>取得したGPUハンドル</returns>
-D3D12_GPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetGPUDescriptorHandle(
-    const ComPtr<ID3D12DescriptorHeap> &descriptorHeap, uint32_t descriptorSize,
-    uint32_t index) {
-  D3D12_GPU_DESCRIPTOR_HANDLE handle =
-      descriptorHeap->GetGPUDescriptorHandleForHeapStart();
-  handle.ptr += (descriptorSize * index);
-
-  return handle;
-}
-/// <summary>
-/// SRVの指定番号のCPUデスクリプタハンドルを取得
-/// </summary>
-/// <param name="index">取得したいSRVのインデックス番号</param>
-/// <returns>SRVのCPUディスクリプタハンドル</returns>
-D3D12_CPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetSrvCPUDescriptorHandle(uint32_t index) {
-  return GetCPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
-}
-/// <summary>
-/// SRVの指定番号のGPUデスクリプタハンドルを取得
-/// </summary>
-/// <param name="index">取得したいSRVのインデックス番号</param>
-/// <returns>SRVのCPUディスクリプタハンドル</returns>
-D3D12_GPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetSrvGPUDescriptorHandle(uint32_t index) {
-  return GetGPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
-}
-/// <summary>
 /// レンダーターゲットビューの初期化
 /// </summary>
 void DirectXCommon::InitializeRenderTargetView() {
@@ -575,6 +591,10 @@ void DirectXCommon::InitializeImGui() {
                       descriptorHeapSRV_->GetCPUDescriptorHandleForHeapStart(),
                       descriptorHeapSRV_->GetGPUDescriptorHandleForHeapStart());
 }
+
+//================================================================================
+// シェーダ / リソース生成
+//================================================================================
 
 /// <summary>
 /// 指定されたHLSLファイルをコンパイルしてシェーダーバイナリを生成
@@ -730,7 +750,7 @@ DirectXCommon::CreateTextureResource(const DirectX::TexMetadata &metadata) {
 [[nodiscard]]
 DirectXCommon::ComPtr<ID3D12Resource>
 DirectXCommon::UploadTextureData(const ComPtr<ID3D12Resource> &texture,
-                                      const DirectX::ScratchImage &mipImages) {
+                                 const DirectX::ScratchImage &mipImages) {
   // 読み込んだデータからサブリソース配列を作成
   std::vector<D3D12_SUBRESOURCE_DATA> subresources;
   DirectX::PrepareUpload(device_.Get(), mipImages.GetImages(),

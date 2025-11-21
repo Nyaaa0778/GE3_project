@@ -1,6 +1,10 @@
 #include "SpriteRenderer.h"
 #include "DirectXCommon.h"
 
+//================================================================================
+// 初期化 / 描画設定
+//================================================================================
+
 /// <summary>
 /// 初期化
 /// </summary>
@@ -28,6 +32,10 @@ void SpriteRenderer::SetupCommonRenderState() {
   dxCommon_->GetCommandList()->IASetPrimitiveTopology(
       D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
+
+//================================================================================
+// パイプライン構築（RootSignature / PSO）
+//================================================================================
 
 /// <summary>
 /// ルートシグネチャの生成

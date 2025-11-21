@@ -9,6 +9,10 @@ TextureManager *TextureManager::instance = nullptr;
 // ImGuiで0番を使用するため、1番から使用
 uint32_t TextureManager::kSRVIndexTop = 1;
 
+//================================================================================
+// シングルトン管理 / 初期化・終了
+//================================================================================
+
 /// <summary>
 /// シングルトンインスタンスの取得
 /// </summary>
@@ -39,6 +43,10 @@ void TextureManager::Finalize() {
   delete instance;
   instance = nullptr;
 }
+
+//================================================================================
+// テクスチャ読み込み / 中間リソース解放
+//================================================================================
 
 /// <summary>
 /// 画像ファイルを読み込みテクスチャに変換
@@ -115,13 +123,19 @@ void TextureManager::ReleaseIntermediateResources() {
     textureData.intermediateResource.Reset();
   }
 }
+
+//================================================================================
+// Getter
+//================================================================================
+
 /// <summary>
 /// SRVインデックスの取得
 /// </summary>
 /// <param name="filePath">検索対象となるテクスチャのファイルパス</param>
 /// <returns>見つかったテクスチャのSRVインデックス、
 /// 該当するテクスチャが存在しない場合はassertによりプログラムを停止する</returns>
-uint32_t TextureManager::GetTextureIndexByFilePath(const std::string &filePath) {
+uint32_t
+TextureManager::GetTextureIndexByFilePath(const std::string &filePath) {
   auto it = std::find_if(textureDatas_.begin(), textureDatas_.end(),
                          [&](TextureData &textureData) {
                            return textureData.filePath == filePath;
