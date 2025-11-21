@@ -1,7 +1,9 @@
 #include "Sprite.h"
+#include "DirectXCommon.h"
 #include "MathUtility.h"
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
+#include "WinApp.h"
 
 using namespace MathUtility;
 
@@ -16,9 +18,8 @@ void Sprite::Initialize(SpriteRenderer *spriteRenderer, std::string filePath) {
   filePath_ = filePath;
 
   TextureManager::GetInstance()->LoadTexture(filePath_);
-  // 単位行列を書き込んでおく
   textureIndex_ =
-      TextureManager::GetInstance()->GetSrvIndexByFilePath(filePath_);
+      TextureManager::GetInstance()->GetTextureIndexByFilePath(filePath_);
 
   // 頂点データの作成
   CreateVertexData();
@@ -82,20 +83,16 @@ void Sprite::Update() {
                 {0.0f, 0.0f, rotation_},
                 {position_.x, position_.y, 0.0f}};
 
-  Matrix4x4 worldMatrix;
-  Matrix4x4 viewMatrix;
-  Matrix4x4 projectionMatrix;
-  Matrix4x4 worldViewProjectionMatrix;
+  Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate,
+                                           transform_.translate);
+  Matrix4x4 viewMatrix = MakeIdentityMatrix();
+  Matrix4x4 projectionMatrix = MakeOrthographicMatrix(
+      0.0f, 0.0f,
+      static_cast<float>(spriteRenderer_->GetDxCommon()->GetClientWidth()),
+      static_cast<float>(spriteRenderer_->GetDxCommon()->GetClientHeight()),
+      0.0f, 100.0f);
 
-  worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate,
-                                 transform_.translate);
-  viewMatrix = MakeIdentityMatrix();
-  projectionMatrix = MakeOrthographicMatrix(
-      0.0f, 0.0f, static_cast<float>(WinApp::kClientWidth),
-      static_cast<float>(WinApp::kClientHeight), 0.0f, 100.0f);
-  worldViewProjectionMatrix =
-      Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
-  transformationMatrixData_->WVP = worldViewProjectionMatrix;
+  transformationMatrixData_->WVP = worldMatrix * viewMatrix * projectionMatrix;
 
   AdjustTextureSize();
 }
@@ -106,10 +103,10 @@ void Sprite::Draw() {
 
   spriteRenderer_->SetupCommonRenderState();
 
-  // VertexBufferViewを設定
+  // vertexBufferViewを設定
   spriteRenderer_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(
       0, 1, &vertexBufferView_);
-  // IndexBufferViewを設定
+  // indexBufferViewを設定
   spriteRenderer_->GetDxCommon()->GetCommandList()->IASetIndexBuffer(
       &indexBufferView_);
 
@@ -119,21 +116,21 @@ void Sprite::Draw() {
       ->SetGraphicsRootConstantBufferView(
           0, materialBuffer_->GetGPUVirtualAddress());
 
-  // TransformationMatrixのCBufferの場所を設定
+  // 座標変換行列のCBufferの場所を設定
   spriteRenderer_->GetDxCommon()
       ->GetCommandList()
       ->SetGraphicsRootConstantBufferView(
           1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
-  // SRVのデスクリプタヒープテーブルの先頭を設定
+  // SRVのDescriptorTableの先頭を設定
   spriteRenderer_->GetDxCommon()
       ->GetCommandList()
       ->SetGraphicsRootDescriptorTable(
           2, TextureManager::GetInstance()->GetSrvHandlGPU(textureIndex_));
 
   // 描画
-  spriteRenderer_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,
-                                                                       0, 0);
+  spriteRenderer_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(
+      6, 1, 0, 0, 0);
 }
 
 /// <summary>
@@ -141,16 +138,16 @@ void Sprite::Draw() {
 /// </summary>
 void Sprite::CreateVertexData() {
 
-  // VertexResourceを作成
+  // vertexResourceを作成
   vertexBuffer_ = spriteRenderer_->GetDxCommon()->CreateBufferResource(
       sizeof(VertexData) * 4);
 
-  // VertexBufferViewを作成する
+  // vertexBufferViewを作成する
   vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
   vertexBufferView_.SizeInBytes = sizeof(VertexData) * 4;
   vertexBufferView_.StrideInBytes = sizeof(VertexData);
 
-  // VertexResourceにデータを書き込む
+  // vertexResourceに頂点データを書き込む
   vertexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&vertexData_));
 }
 /// <summary>
@@ -158,15 +155,15 @@ void Sprite::CreateVertexData() {
 /// </summary>
 void Sprite::CreateIndexData() {
   // indexResourceを作成
-  indexBuffer_ =
-      spriteRenderer_->GetDxCommon()->CreateBufferResource(sizeof(uint32_t) * 6);
+  indexBuffer_ = spriteRenderer_->GetDxCommon()->CreateBufferResource(
+      sizeof(uint32_t) * 6);
 
   // indexBufferViewを作成する
   indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
   indexBufferView_.SizeInBytes = sizeof(uint32_t) * 6;
   indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
-  // IndexResourceにデータを書き込む
+  // indexResourceにインデックスデータを書き込む
   indexBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&indexData_));
 }
 /// <summary>
@@ -227,7 +224,7 @@ void Sprite::SetScale(const Vector2 &scale) { scale_ = scale; }
 void Sprite::SetTexture(const std::string &filePath) {
   TextureManager *textureManager = TextureManager::GetInstance();
   textureManager->LoadTexture(filePath);
-  textureIndex_ = textureManager->GetSrvIndexByFilePath(filePath);
+  textureIndex_ = textureManager->GetTextureIndexByFilePath(filePath);
 }
 
 // アンカーポイント

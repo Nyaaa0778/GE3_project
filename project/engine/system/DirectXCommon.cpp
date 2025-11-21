@@ -1,9 +1,7 @@
 #include "DirectXCommon.h"
 #include "Logger.h"
 #include "StringUtility.h"
-
-using namespace Logger;
-using namespace StringUtility;
+#include "WinApp.h"
 
 #include <cassert>
 #include <format>
@@ -16,6 +14,9 @@ using namespace StringUtility;
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxcompiler.lib")
+
+using namespace Logger;
+using namespace StringUtility;
 
 // 最大SRV数
 const uint32_t DirectXCommon::kMaxSRVCount = 512;
@@ -168,6 +169,9 @@ void DirectXCommon::EndDraw() {
   hr = commandList_->Reset(commandAllocator_.Get(), nullptr);
   assert(SUCCEEDED(hr));
 }
+
+uint32_t DirectXCommon::GetClientWidth() const { return WinApp::kClientWidth; }
+uint32_t DirectXCommon::GetClientHeight() const { return WinApp::kClientHeight; }
 
 /// <summary>
 /// デバイスの初期化

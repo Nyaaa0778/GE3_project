@@ -1,11 +1,12 @@
 #pragma once
-#include "WinApp.h"
 
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
 
 #include <cstdint>
 #include <wrl.h>
+
+class WinApp;
 
 class Input {
 public:
@@ -22,6 +23,7 @@ public:
   /// </summary>
   void Update();
 
+public:
   //========================================
   // キーの入力判定
   //========================================
@@ -41,19 +43,20 @@ public:
 
 private:
   //========================================
-  // 外部参照
-  //========================================
-
-  // WinAppのポインタ
-  WinApp *winApp_ = nullptr;
-
-  //========================================
   // 型エイリアス
   //========================================
 
   // namespace
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
+
+private:
+  //========================================
+  // 外部参照
+  //========================================
+
+  // WinAppのポインタ
+  WinApp *winApp_ = nullptr;
 
   //========================================
   // DirectInput本体 / デバイス

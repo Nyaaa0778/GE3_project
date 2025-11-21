@@ -146,11 +146,11 @@ void Object3dRenderer::CreateGraphicsPipeline() {
 
   // Shaderをコンパイル
   ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Object3D.VS.hlsl", L"vs_6_0");
+      L"resources/shaders/Object3d.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
   ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Object3D.PS.hlsl", L"ps_6_0");
+      L"resources/shaders/Object3d.PS.hlsl", L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
   D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};

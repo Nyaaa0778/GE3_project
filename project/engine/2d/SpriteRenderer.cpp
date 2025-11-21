@@ -1,4 +1,5 @@
 #include "SpriteRenderer.h"
+#include "DirectXCommon.h"
 
 /// <summary>
 /// 初期化

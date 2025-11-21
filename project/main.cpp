@@ -66,38 +66,38 @@ using namespace MathUtility;
 
 using Microsoft::WRL::ComPtr;
 
-struct TransformMatrix {
-  Matrix4x4 WVP;
-  Matrix4x4 World;
-};
+//struct TransformMatrix {
+//  Matrix4x4 WVP;
+//  Matrix4x4 World;
+//};
 
-struct VertexData {
-  Vector4 position;
-  Vector2 texcoord;
-  Vector3 normal;
-};
+//struct VertexData {
+//  Vector4 position;
+//  Vector2 texcoord;
+//  Vector3 normal;
+//};
 
-struct Material {
-  Vector4 color;
-  int32_t enableLighting;
-  float padding[3];
-  Matrix4x4 uvTransform;
-};
+//struct Material {
+//  Vector4 color;
+//  int32_t enableLighting;
+//  float padding[3];
+//  Matrix4x4 uvTransform;
+//};
 
-struct MaterialData {
-  std::string textureFilePath;
-};
+//struct MaterialData {
+//  std::string textureFilePath;
+//};
 
-struct DirectionalLight {
-  Vector4 color;     // ライトの色
-  Vector3 direction; // ライトの向き
-  float intensity;   // 輝度
-};
+//struct DirectionalLight {
+//  Vector4 color;     // ライトの色
+//  Vector3 direction; // ライトの向き
+//  float intensity;   // 輝度
+//};
 
-struct ModelData {
-  std::vector<VertexData> vertices;
-  MaterialData material;
-};
+//struct ModelData {
+//  std::vector<VertexData> vertices;
+//  MaterialData material;
+//};
 
 struct ChunkHeader {
   char id[4];   // チャンクごとのID
@@ -222,39 +222,39 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
-/// <summary>
-/// 透視投影行列
-/// </summary>
-/// <param name="fovY"></param>
-/// <param name="aspectRatio"></param>
-/// <param name="nearClip"></param>
-/// <param name="farClip"></param>
-/// <returns></returns>
-Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
-                                   float nearClip, float farClip) {
-  Matrix4x4 result;
-  result.m[0][0] = 1.0f / aspectRatio * 1.0f / std::tan(fovY / 2.0f);
-  result.m[0][1] = 0.0f;
-  result.m[0][2] = 0.0f;
-  result.m[0][3] = 0.0f;
-
-  result.m[1][0] = 0.0f;
-  result.m[1][1] = 1.0f / std::tan(fovY / 2.0f);
-  result.m[1][2] = 0.0f;
-  result.m[1][3] = 0.0f;
-
-  result.m[2][0] = 0.0f;
-  result.m[2][1] = 0.0f;
-  result.m[2][2] = farClip / (farClip - nearClip);
-  result.m[2][3] = 1.0f;
-
-  result.m[3][0] = 0.0f;
-  result.m[3][1] = 0.0f;
-  result.m[3][2] = -nearClip * farClip / (farClip - nearClip);
-  result.m[3][3] = 0.0f;
-
-  return result;
-}
+///// <summary>
+///// 透視投影行列
+///// </summary>
+///// <param name="fovY"></param>
+///// <param name="aspectRatio"></param>
+///// <param name="nearClip"></param>
+///// <param name="farClip"></param>
+///// <returns></returns>
+//Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
+//                                   float nearClip, float farClip) {
+//  Matrix4x4 result;
+//  result.m[0][0] = 1.0f / aspectRatio * 1.0f / std::tan(fovY / 2.0f);
+//  result.m[0][1] = 0.0f;
+//  result.m[0][2] = 0.0f;
+//  result.m[0][3] = 0.0f;
+//
+//  result.m[1][0] = 0.0f;
+//  result.m[1][1] = 1.0f / std::tan(fovY / 2.0f);
+//  result.m[1][2] = 0.0f;
+//  result.m[1][3] = 0.0f;
+//
+//  result.m[2][0] = 0.0f;
+//  result.m[2][1] = 0.0f;
+//  result.m[2][2] = farClip / (farClip - nearClip);
+//  result.m[2][3] = 1.0f;
+//
+//  result.m[3][0] = 0.0f;
+//  result.m[3][1] = 0.0f;
+//  result.m[3][2] = -nearClip * farClip / (farClip - nearClip);
+//  result.m[3][3] = 0.0f;
+//
+//  return result;
+//}
 
 ///// <summary>
 ///// 正射影行列(3次元版)
@@ -362,118 +362,118 @@ Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
 //   return handleGPU;
 // }
 
-/// <summary>
-/// mtlファイルを読む
-/// </summary>
-/// <param name="directoryPath"></param>
-/// <param name="filename"></param>
-/// <returns></returns>
-MaterialData LoadMaterialTemplateFile(const std::string &directoryPath,
-                                      const std::string &filename) {
-  // 構築するMaterialData
-  MaterialData materialData;
-  // ファイルから読んだ1行を格納するもの
-  std::string line;
-  // ファイルを開く
-  std::ifstream file(directoryPath + "/" + filename);
-  assert(file.is_open());
+///// <summary>
+///// mtlファイルを読む
+///// </summary>
+///// <param name="directoryPath"></param>
+///// <param name="filename"></param>
+///// <returns></returns>
+//MaterialData LoadMaterialTemplateFile(const std::string &directoryPath,
+//                                      const std::string &filename) {
+//  // 構築するMaterialData
+//  MaterialData materialData;
+//  // ファイルから読んだ1行を格納するもの
+//  std::string line;
+//  // ファイルを開く
+//  std::ifstream file(directoryPath + "/" + filename);
+//  assert(file.is_open());
+//
+//  while (std::getline(file, line)) {
+//    std::string identifier;
+//    std::stringstream s(line);
+//    s >> identifier;
+//
+//    if (identifier == "map_Kd") {
+//      std::string textureFilename;
+//      s >> textureFilename;
+//      // 凍結してファイルパスにする
+//      materialData.textureFilePath = directoryPath + "/" + textureFilename;
+//    }
+//  }
+//
+//  return materialData;
+//}
 
-  while (std::getline(file, line)) {
-    std::string identifier;
-    std::stringstream s(line);
-    s >> identifier;
-
-    if (identifier == "map_Kd") {
-      std::string textureFilename;
-      s >> textureFilename;
-      // 凍結してファイルパスにする
-      materialData.textureFilePath = directoryPath + "/" + textureFilename;
-    }
-  }
-
-  return materialData;
-}
-
-/// <summary>
-/// objファイルを読み込む
-/// </summary>
-/// <param name="directoryPath"></param>
-/// <param name="filename"></param>
-/// <returns></returns>
-ModelData LoadObjFile(const std::string &directoryPath,
-                      const std::string &filename) {
-  ModelData modelData;            // 構築するModelData
-  std::vector<Vector4> positions; // 位置
-  std::vector<Vector3> normals;   // 法線
-  std::vector<Vector2> texcoords; // テクスチャ座標
-  std::string line;               // ファイルから読んだ1行を格納するもの
-
-  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-  assert(file.is_open()); // とりあえず開けなかったら止める
-
-  while (std::getline(file, line)) {
-    std::string identifier;
-    std::istringstream s(line);
-    s >> identifier; // 先頭の識別子を読む
-
-    if (identifier == "v") {
-      Vector4 position;
-      s >> position.x >> position.y >> position.z;
-      position.w = 1.0f;
-      positions.push_back(position);
-    } else if (identifier == "vt") {
-      Vector2 texcoord;
-      s >> texcoord.x >> texcoord.y;
-      texcoords.push_back(texcoord);
-    } else if (identifier == "vn") {
-      Vector3 normal;
-      s >> normal.x >> normal.y >> normal.z;
-      normals.push_back(normal);
-    } else if (identifier == "f") {
-      VertexData triangle[3];
-
-      // 面は三角形限定
-      for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
-        std::string vertexDefinition;
-        s >> vertexDefinition;
-        // 頂点の要素のIndexは 位置 / UV / 法線
-        // で格納されているので、分解してIndexを取得
-        std::istringstream v(vertexDefinition);
-
-        uint32_t elementIndices[3];
-        for (int32_t element = 0; element < 3; ++element) {
-          std::string index;
-          std::getline(v, index, '/');
-          elementIndices[element] = std::stoi(index);
-        }
-
-        // 要素へのIndexから、実際の要素の値を取得して頂点を構築
-        Vector4 position = positions[elementIndices[0] - 1];
-        Vector2 texcoord = texcoords[elementIndices[1] - 1];
-        Vector3 normal = normals[elementIndices[2] - 1];
-
-        position.x *= -1.0f;
-        texcoord.y = 1.0f - texcoord.y;
-        normal.x *= -1.0f;
-
-        triangle[faceVertex] = {position, texcoord, normal};
-      }
-      // 頂点を逆順で登録することで周り順を逆にする
-      modelData.vertices.push_back(triangle[2]);
-      modelData.vertices.push_back(triangle[1]);
-      modelData.vertices.push_back(triangle[0]);
-    } else if (identifier == "mtllib") {
-      // materialTemolateLibraryファイルの名前を取得
-      std::string materialFilename;
-      s >> materialFilename;
-      // 基本的にobjファイルと同一階層にmtlは存在させるのでディレクトリ名とファイル名を渡す
-      modelData.material =
-          LoadMaterialTemplateFile(directoryPath, materialFilename);
-    }
-  }
-
-  return modelData;
-}
+///// <summary>
+///// objファイルを読み込む
+///// </summary>
+///// <param name="directoryPath"></param>
+///// <param name="filename"></param>
+///// <returns></returns>
+//ModelData LoadObjFile(const std::string &directoryPath,
+//                      const std::string &filename) {
+//  ModelData modelData;            // 構築するModelData
+//  std::vector<Vector4> positions; // 位置
+//  std::vector<Vector3> normals;   // 法線
+//  std::vector<Vector2> texcoords; // テクスチャ座標
+//  std::string line;               // ファイルから読んだ1行を格納するもの
+//
+//  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+//  assert(file.is_open()); // とりあえず開けなかったら止める
+//
+//  while (std::getline(file, line)) {
+//    std::string identifier;
+//    std::istringstream s(line);
+//    s >> identifier; // 先頭の識別子を読む
+//
+//    if (identifier == "v") {
+//      Vector4 position;
+//      s >> position.x >> position.y >> position.z;
+//      position.w = 1.0f;
+//      positions.push_back(position);
+//    } else if (identifier == "vt") {
+//      Vector2 texcoord;
+//      s >> texcoord.x >> texcoord.y;
+//      texcoords.push_back(texcoord);
+//    } else if (identifier == "vn") {
+//      Vector3 normal;
+//      s >> normal.x >> normal.y >> normal.z;
+//      normals.push_back(normal);
+//    } else if (identifier == "f") {
+//      VertexData triangle[3];
+//
+//      // 面は三角形限定
+//      for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+//        std::string vertexDefinition;
+//        s >> vertexDefinition;
+//        // 頂点の要素のIndexは 位置 / UV / 法線
+//        // で格納されているので、分解してIndexを取得
+//        std::istringstream v(vertexDefinition);
+//
+//        uint32_t elementIndices[3];
+//        for (int32_t element = 0; element < 3; ++element) {
+//          std::string index;
+//          std::getline(v, index, '/');
+//          elementIndices[element] = std::stoi(index);
+//        }
+//
+//        // 要素へのIndexから、実際の要素の値を取得して頂点を構築
+//        Vector4 position = positions[elementIndices[0] - 1];
+//        Vector2 texcoord = texcoords[elementIndices[1] - 1];
+//        Vector3 normal = normals[elementIndices[2] - 1];
+//
+//        position.x *= -1.0f;
+//        texcoord.y = 1.0f - texcoord.y;
+//        normal.x *= -1.0f;
+//
+//        triangle[faceVertex] = {position, texcoord, normal};
+//      }
+//      // 頂点を逆順で登録することで周り順を逆にする
+//      modelData.vertices.push_back(triangle[2]);
+//      modelData.vertices.push_back(triangle[1]);
+//      modelData.vertices.push_back(triangle[0]);
+//    } else if (identifier == "mtllib") {
+//      // materialTemolateLibraryファイルの名前を取得
+//      std::string materialFilename;
+//      s >> materialFilename;
+//      // 基本的にobjファイルと同一階層にmtlは存在させるのでディレクトリ名とファイル名を渡す
+//      modelData.material =
+//          LoadMaterialTemplateFile(directoryPath, materialFilename);
+//    }
+//  }
+//
+//  return modelData;
+//}
 
 ///// <summary>
 ///// トリガー処理
@@ -552,7 +552,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Object3d *object3d = nullptr;
   // object3dの初期化
   object3d = new Object3d();
-  object3d->Initialize();
+  object3d->Initialize(object3dRenderer);
 
   /// =============================================
   ///
@@ -1565,15 +1565,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     sprite->SetTextureSize(Vector2{8.0, 8.0f});*/
 
     sprite->Update();
+    object3d->Update();
 
-    // カメラ行列
-    Matrix4x4 cameraMatrix =
-        MakeAffineMatrix(transformCamera.scale, transformCamera.rotate,
-                         transformCamera.translate);
-    Matrix4x4 viewMatrix = MakeInverseMatrix(cameraMatrix);
-    Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
-        0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f,
-        100.0f);
+    //// カメラ行列
+    //Matrix4x4 cameraMatrix =
+    //    MakeAffineMatrix(transformCamera.scale, transformCamera.rotate,
+    //                     transformCamera.translate);
+    //Matrix4x4 viewMatrix = MakeInverseMatrix(cameraMatrix);
+    //Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
+    //    0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f,
+    //    100.0f);
 
     //// モデルの World / WVP
     //Matrix4x4 worldModel = MakeAffineMatrix(
@@ -1741,7 +1742,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvDescriptorHeap()};
     dxCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 
-    sprite->Draw();
+    //sprite->Draw();
+    object3d->Draw();
 
     // ★ パイプラインの設定
     /*dxCommon->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());

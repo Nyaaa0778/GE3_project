@@ -12,7 +12,6 @@
 #include <wrl.h>
 
 class SpriteRenderer;
-class TextureManager;
 
 class Sprite {
 public:
@@ -193,6 +192,10 @@ private:
   bool isFlipY_ = false;
 
 private:
+  //========================================
+  // データ作成処理
+  //========================================
+
   /// <summary>
   /// 頂点データの作成
   /// </summary>
@@ -209,6 +212,10 @@ private:
   /// 座標変換行列データの作成
   /// </summary>
   void CreateTransformationMatrixData();
+
+  //========================================
+  // テクスチャサイズ / 描画サイズ
+  //========================================
 
   /// <summary>
   /// テクスチャサイズをリソースに合わせる

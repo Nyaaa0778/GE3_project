@@ -1,6 +1,5 @@
 #pragma once
 #include "FixFPS.h"
-#include "WinApp.h"
 
 #include <d3d12.h>
 #include <dxcapi.h>
@@ -10,6 +9,8 @@
 #include <array>
 #include <string>
 #include <wrl.h>
+
+class WinApp;
 
 class DirectXCommon {
 public:
@@ -49,6 +50,10 @@ public:
   // Getter
   //========================================
 
+  // 画面サイズ
+  uint32_t GetClientWidth() const;
+  uint32_t GetClientHeight() const;
+
   // デバイス
   ID3D12Device *GetDevice() const { return device_.Get(); }
   // コマンドリスト
@@ -84,6 +89,7 @@ private:
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
+private:
   //========================================
   // 外部参照
   //========================================
@@ -308,6 +314,7 @@ private:
   /// </summary>
   void InitializeImGui();
 
+private:
   //========================================
   // Getter
   //========================================

@@ -1,4 +1,5 @@
 #include "Input.h"
+#include "WinApp.h"
 
 #include <cassert>
 
@@ -9,7 +10,7 @@
 /// 初期化
 /// </summary>
 void Input::Initialize(WinApp *winApp) {
-  // メンバ変数に記録
+  // 引数で受け取ってメンバ変数に保存
   winApp_ = winApp;
 
   HRESULT hr;

@@ -4,11 +4,19 @@
 
 class WinApp {
 public:
+  //========================================
+  // 画面サイズ
+  //========================================
+  
   // クライアント領域のサイズ
-  static inline const int32_t kClientWidth = 1280;
-  static inline const int32_t kClientHeight = 720;
+  static const int32_t kClientWidth = 1280;
+  static const int32_t kClientHeight = 720;
 
 public:
+  //========================================
+  // 初期化 / メッセージ処理 / 終了
+  //========================================
+
   /// <summary>
   /// 初期化
   /// </summary>
@@ -24,6 +32,10 @@ public:
   /// 終了
   /// </summary>
   void Finalize();
+
+  //========================================
+  // Getter
+  //========================================
 
   /// <summary>
   /// アプリケーションハンドルを取得

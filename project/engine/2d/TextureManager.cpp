@@ -121,7 +121,7 @@ void TextureManager::ReleaseIntermediateResources() {
 /// <param name="filePath">検索対象となるテクスチャのファイルパス</param>
 /// <returns>見つかったテクスチャのSRVインデックス、
 /// 該当するテクスチャが存在しない場合はassertによりプログラムを停止する</returns>
-uint32_t TextureManager::GetSrvIndexByFilePath(const std::string &filePath) {
+uint32_t TextureManager::GetTextureIndexByFilePath(const std::string &filePath) {
   auto it = std::find_if(textureDatas_.begin(), textureDatas_.end(),
                          [&](TextureData &textureData) {
                            return textureData.filePath == filePath;

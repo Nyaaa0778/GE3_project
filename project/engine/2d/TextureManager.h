@@ -47,6 +47,7 @@ public:
   /// </summary>
   void ReleaseIntermediateResources();
 
+public:
   //========================================
   // Getter
   //========================================
@@ -57,7 +58,7 @@ public:
   /// <param name="filePath">検索対象となるテクスチャのファイルパス</param>
   /// <returns>見つかったテクスチャのSRVインデックス、
   /// 該当するテクスチャが存在しない場合はassertによりプログラムを停止する</returns>
-  uint32_t GetSrvIndexByFilePath(const std::string &filePath);
+  uint32_t GetTextureIndexByFilePath(const std::string &filePath);
   /// <summary>
   /// SRVハンドルの取得
   /// </summary>
