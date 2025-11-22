@@ -21,9 +21,7 @@ void Sprite::Initialize(SpriteRenderer *spriteRenderer, std::string filePath) {
   spriteRenderer_ = spriteRenderer;
   filePath_ = filePath;
 
-  TextureManager::GetInstance()->LoadTexture(filePath_);
-  textureIndex_ =
-      TextureManager::GetInstance()->GetTextureIndexByFilePath(filePath_);
+  SetTexture(filePath);
 
   // 頂点データの作成
   CreateVertexData();
@@ -238,9 +236,9 @@ void Sprite::SetColor(const Vector4 &color) { materialData_->color = color; }
 void Sprite::SetScale(const Vector2 &scale) { scale_ = scale; }
 // テクスチャ
 void Sprite::SetTexture(const std::string &filePath) {
-  TextureManager *textureManager = TextureManager::GetInstance();
-  textureManager->LoadTexture(filePath);
-  textureIndex_ = textureManager->GetTextureIndexByFilePath(filePath);
+  TextureManager::GetInstance()->LoadTexture(filePath);
+  textureIndex_ =
+      TextureManager::GetInstance()->GetTextureIndexByFilePath(filePath);
 }
 
 // アンカーポイント

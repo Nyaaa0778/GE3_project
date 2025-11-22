@@ -38,8 +38,8 @@ public:
   /// <summary>
   /// モデルファイルの読み込み
   /// </summary>
-  /// <param name="filePath">モデルファイルのパス</param>
-  void LoadModel(const std::string &filePath);
+  /// <param name="ModelName">モデル名</param>
+  void LoadModel(const std::string &modelName);
 
 public:
   //================================================================================
@@ -49,9 +49,9 @@ public:
   /// <summary>
   /// モデルの検索
   /// </summary>
-  /// <param name="filePath">モデルファイルのパス</param>
+  /// <param name="ModelName">モデル名</param>
   /// <returns>モデル</returns>
-  Model *FindModel(const std::string &filePath);
+  Model *FindModel(const std::string &modelName);
 
 private:
   //================================================================================

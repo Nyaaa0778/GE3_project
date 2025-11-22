@@ -16,9 +16,9 @@ using namespace MathUtility;
 /// 初期化
 /// </summary>
 /// <param name="object3dRenderer">Object3dRendererのポインタ</param>
-/// <param name="filePath">モデルファイルのパス</param>
+/// <param name="modelName">モデル名</param>
 void Object3d::Initialize(Object3dRenderer *object3dRenderer,
-                          const std::string &filePath) {
+                          const std::string &modelName) {
   // 引数で受け取ってメンバ変数に保存
   object3dRenderer_ = object3dRenderer;
 
@@ -26,7 +26,7 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer,
   ModelManager::GetInstance()->Initialize(object3dRenderer_->GetDxCommon());
 
   // モデルをセット
-  SetModel(filePath);
+  SetModel(modelName);
 
   // 座標変換行列データの作成
   CreateTransformationMatrixData();
@@ -43,9 +43,9 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer,
 /// </summary>
 void Object3d::Update() {
 
-  transform_.scale = {scale_.x, scale_.y, 1.0f};
-  transform_.rotate = {0.0f, rotation_, 0.0f};
-  transform_.translate = {position_.x, position_.y, transform_.translate.z};
+  transform_.scale = {scale_.x, scale_.y, scale_.z};
+  transform_.rotate = {rotation_.x, rotation_.y, rotation_.z};
+  transform_.translate = {position_.x, position_.y, position_.z};
 
   // transformからworldMatrixを作成
   Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate,
@@ -137,21 +137,18 @@ void Object3d::CreateDirectionalLightData() {
 //================================================================================
 
 // 位置
-void Object3d::SetPosition(const Vector2 &position) { position_ = position; }
+void Object3d::SetPosition(const Vector3 &position) { position_ = position; }
 // 回転
-void Object3d::SetRotation(float rotation) { rotation_ = rotation; }
+void Object3d::SetRotation(Vector3 rotation) { rotation_ = rotation; }
 // 拡縮
-void Object3d::SetScale(const Vector2 &scale) { scale_ = scale; }
+void Object3d::SetScale(const Vector3 &scale) { scale_ = scale; }
 // モデル
-void Object3d::SetModel(const std::string &filePath) {
+void Object3d::SetModel(const std::string &modelName) {
   auto modelManager = ModelManager::GetInstance();
 
-  // まだなら読み込み（読み込み済みなら何もしない実装になっている）
-  modelManager->LoadModel(filePath);
-
-  // ポインタ取得
-  model_ = modelManager->FindModel(filePath);
-  assert(
-      model_ &&
-      "ModelManager::FindModel に失敗しました。filePath を確認してください。");
+  // モデルファイルを読み込む
+  modelManager->LoadModel(modelName);
+  // モデルの検索
+  model_ = modelManager->FindModel(modelName);
+  assert(model_);
 }

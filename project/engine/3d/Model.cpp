@@ -154,8 +154,8 @@ void Model::LoadObjFile(const std::string &directoryPath,
         Vector3 normal = normals[elementIndices[2] - 1];
 
         position.x *= -1.0f;
-        texcoord.y = 1.0f - texcoord.y;
         normal.x *= -1.0f;
+        texcoord.y = 1.0f - texcoord.y;
 
         triangle[faceVertex] = {position, texcoord, normal};
       }
@@ -210,6 +210,6 @@ void Model::CreateMaterialData() {
 
   // マテリアルデータの初期値を書き込む
   materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-  materialData_->enableLighting = false;
+  materialData_->enableLighting = true;
   materialData_->uvTransform = MakeIdentityMatrix();
 }

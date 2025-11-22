@@ -553,7 +553,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Object3d *object3d = nullptr;
   // object3dの初期化
   object3d = new Object3d();
-  object3d->Initialize(object3dRenderer, "plane.obj");
+  object3d->Initialize(object3dRenderer, "plane");
 
   /// =============================================
   ///
@@ -1381,6 +1381,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //     {0.0f, 0.0f, 0.0f}  // translate
   // };
 
+object3d->SetModel("axis");
+
   // ウィンドウの×ボタンが押されるまでループ
   while (true) {
 
@@ -1743,7 +1745,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvDescriptorHeap()};
     dxCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 
-    //sprite->Draw();
+    sprite->Draw();
     object3d->Draw();
 
     // ★ パイプラインの設定

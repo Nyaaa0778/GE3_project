@@ -41,24 +41,24 @@ public:
   //================================================================================
 
   // 位置
-  const Vector2 &GetPosition() const { return position_; }
+  const Vector3 &GetPosition() const { return position_; }
   // 回転
-  const float &GetRotation() const { return rotation_; }
+  const Vector3 &GetRotation() const { return rotation_; }
   // 拡縮
-  const Vector2 &GetScale() const { return scale_; }
+  const Vector3 &GetScale() const { return scale_; }
 
   //================================================================================
   // Setter
   //================================================================================
 
   // 位置
-  void SetPosition(const Vector2 &position);
+  void SetPosition(const Vector3 &position);
   // 回転
-  void SetRotation(float rotation);
+  void SetRotation(Vector3 rotation);
   // 拡縮
-  void SetScale(const Vector2 &scale);
+  void SetScale(const Vector3 &scale);
   // モデル
-  void SetModel(const std::string &filePath);
+  void SetModel(const std::string &modelName);
 
 private:
   //================================================================================
@@ -119,11 +119,11 @@ private:
   // 3DオブジェクトのTransform
   Transform transform_{};
   // 位置
-  Vector2 position_ = {0.0f, 0.0f};
+  Vector3 position_ = {0.0f, 0.0f, 0.0f};
   // 回転
-  float rotation_ = -3.14f;
+  Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
   // 拡縮
-  Vector2 scale_ = {1.0f, 1.0f};
+  Vector3 scale_ = {1.0f, 1.0f, 1.0f};
 
   // カメラのTransform
   Transform cameraTransform_{};

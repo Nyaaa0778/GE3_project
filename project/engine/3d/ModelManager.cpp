@@ -46,20 +46,23 @@ void ModelManager::Finalize() {
 /// <summary>
 /// モデルファイルの読み込み
 /// </summary>
-/// <param name="filePath">モデルファイルのパス</param>
-void ModelManager::LoadModel(const std::string &filePath) {
+/// <param name="ModelName">モデル名</param>
+void ModelManager::LoadModel(const std::string &modelName) {
   // 読み込み済みのモデルを検索
-  if (models_.contains(filePath)) {
+  if (models_.contains(modelName)) {
     // 読み込み済みなら早期return
     return;
   }
 
+  std::string directoryPath = "resources/" + modelName; 
+  std::string fileName = modelName + ".obj";
+
   // モデルの生成とファイル読み込み、初期化
   std::unique_ptr<Model> model = std::make_unique<Model>();
-  model->Initialize(modelCommon_, "resources", filePath);
+  model->Initialize(modelCommon_, directoryPath, fileName);
 
   // モデルをmapコンテナに格納する
-  models_.insert(std::make_pair(filePath, std::move(model)));
+  models_.insert(std::make_pair(modelName, std::move(model)));
 }
 
 //================================================================================
@@ -69,13 +72,13 @@ void ModelManager::LoadModel(const std::string &filePath) {
 /// <summary>
 /// モデルの検索
 /// </summary>
-/// <param name="filePath">モデルファイルのパス</param>
+/// <param name="modelName">モデル名</param>
 /// <returns>モデル</returns>
-Model *ModelManager::FindModel(const std::string &filePath) {
+Model *ModelManager::FindModel(const std::string &modelName) {
   // 読み込み済みモデルを検索
-  if (models_.contains(filePath)) {
+  if (models_.contains(modelName)) {
     // 読み込みモデルを戻り値としてreturn
-    return models_.at(filePath).get();
+    return models_.at(modelName).get();
   }
 
   // ファイル名一致なし

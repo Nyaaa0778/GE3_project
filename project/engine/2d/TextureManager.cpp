@@ -55,8 +55,6 @@ void TextureManager::Finalize() {
 /// <returns></returns>
 void TextureManager::LoadTexture(const std::string &filePath) {
 
-    OutputDebugStringA(("LoadTexture: " + filePath + "\n").c_str());
-
   // 読み込み済みテクスチャを検索
   auto it = std::find_if(textureDatas_.begin(), textureDatas_.end(),
                          [&](TextureData &textureData) {
