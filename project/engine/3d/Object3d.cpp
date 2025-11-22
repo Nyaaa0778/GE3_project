@@ -2,6 +2,7 @@
 #include "DirectXCommon.h"
 #include "MathUtility.h"
 #include "Model.h"
+#include "ModelManager.h"
 #include "Object3dRenderer.h"
 #include "TextureManager.h"
 
@@ -15,9 +16,17 @@ using namespace MathUtility;
 /// 初期化
 /// </summary>
 /// <param name="object3dRenderer">Object3dRendererのポインタ</param>
-void Object3d::Initialize(Object3dRenderer *object3dRenderer) {
+/// <param name="filePath">モデルファイルのパス</param>
+void Object3d::Initialize(Object3dRenderer *object3dRenderer,
+                          const std::string &filePath) {
   // 引数で受け取ってメンバ変数に保存
   object3dRenderer_ = object3dRenderer;
+
+  // 3Dモデルマネージャの初期化
+  ModelManager::GetInstance()->Initialize(object3dRenderer_->GetDxCommon());
+
+  // モデルをセット
+  SetModel(filePath);
 
   // 座標変換行列データの作成
   CreateTransformationMatrixData();
@@ -33,6 +42,11 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer) {
 /// 更新
 /// </summary>
 void Object3d::Update() {
+
+  transform_.scale = {scale_.x, scale_.y, 1.0f};
+  transform_.rotate = {0.0f, rotation_, 0.0f};
+  transform_.translate = {position_.x, position_.y, transform_.translate.z};
+
   // transformからworldMatrixを作成
   Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate,
                                            transform_.translate);
@@ -128,3 +142,16 @@ void Object3d::SetPosition(const Vector2 &position) { position_ = position; }
 void Object3d::SetRotation(float rotation) { rotation_ = rotation; }
 // 拡縮
 void Object3d::SetScale(const Vector2 &scale) { scale_ = scale; }
+// モデル
+void Object3d::SetModel(const std::string &filePath) {
+  auto modelManager = ModelManager::GetInstance();
+
+  // まだなら読み込み（読み込み済みなら何もしない実装になっている）
+  modelManager->LoadModel(filePath);
+
+  // ポインタ取得
+  model_ = modelManager->FindModel(filePath);
+  assert(
+      model_ &&
+      "ModelManager::FindModel に失敗しました。filePath を確認してください。");
+}

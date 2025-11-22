@@ -16,7 +16,7 @@ public:
   /// <summary>
   /// シングルトンインスタンスの取得
   /// </summary>
-  /// <returns>TextureManager の唯一のインスタンス</returns>
+  /// <returns>TextureManagerの唯一のインスタンス</returns>
   static TextureManager *GetInstance();
 
   /// <summary>

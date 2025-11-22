@@ -7,6 +7,7 @@
 #include <Vector4.h>
 
 #include <d3d12.h>
+#include <string>
 #include <wrl.h>
 
 class Object3dRenderer;
@@ -22,7 +23,9 @@ public:
   /// 初期化
   /// </summary>
   /// <param name="object3dRenderer">Object3dRendererのポインタ</param>
-  void Initialize(Object3dRenderer *object3dRenderer);
+  /// /// <param name="filePath">モデルファイルのパス</param>
+  void Initialize(Object3dRenderer *object3dRenderer,
+                  const std::string &filePath);
   /// <summary>
   /// 更新
   /// </summary>
@@ -54,6 +57,8 @@ public:
   void SetRotation(float rotation);
   // 拡縮
   void SetScale(const Vector2 &scale);
+  // モデル
+  void SetModel(const std::string &filePath);
 
 private:
   //================================================================================
@@ -116,7 +121,7 @@ private:
   // 位置
   Vector2 position_ = {0.0f, 0.0f};
   // 回転
-  float rotation_ = 0.0f;
+  float rotation_ = -3.14f;
   // 拡縮
   Vector2 scale_ = {1.0f, 1.0f};
 

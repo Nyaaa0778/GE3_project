@@ -14,10 +14,12 @@ using namespace MathUtility;
 /// 初期化
 /// </summary>
 /// <param name="modelCommon">ModelCommonのポインタ</param>
-void Model::Initialize(ModelCommon *modelCommon) {
+void Model::Initialize(ModelCommon *modelCommon,
+                       const std::string &directoryPath,
+                       const std::string &filename) {
   modelCommon_ = modelCommon;
 
-  LoadObjFile("resources", "plane.obj");
+  LoadObjFile(directoryPath, filename);
 
   //.objの参照しているテクスチャファイルを読み込む
   TextureManager::GetInstance()->LoadTexture(

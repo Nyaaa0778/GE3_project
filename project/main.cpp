@@ -4,6 +4,7 @@
 #include"D3DResourceLeakChecker.h"
 #include"SpriteRenderer.h"
 #include"Sprite.h"
+#include"ModelManager.h"
 
 // #include <Windows.h>
 #include <chrono>
@@ -552,7 +553,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Object3d *object3d = nullptr;
   // object3dの初期化
   object3d = new Object3d();
-  object3d->Initialize(object3dRenderer);
+  object3d->Initialize(object3dRenderer, "plane.obj");
 
   /// =============================================
   ///
@@ -1836,6 +1837,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   delete spriteRenderer;
 
   TextureManager::GetInstance()->Finalize();
+  ModelManager::GetInstance()->Finalize();
 
   // DirectXを解放
   delete dxCommon;
