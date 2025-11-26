@@ -1,10 +1,15 @@
-#include "SpriteCommon.h"
+#include "SpriteRenderer.h"
+#include "DirectXCommon.h"
+
+//================================================================================
+// 初期化 / 描画設定
+//================================================================================
 
 /// <summary>
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonの初期化</param>
-void SpriteCommon::Initialize(DirectXCommon *dxCommon) {
+void SpriteRenderer::Initialize(DirectXCommon *dxCommon) {
   // 引数で受け取ってメンバ変数に記録する
   dxCommon_ = dxCommon;
 
@@ -15,8 +20,8 @@ void SpriteCommon::Initialize(DirectXCommon *dxCommon) {
 /// <summary>
 /// 共通描画設定
 /// </summary>
-void SpriteCommon::SetupCommonRenderState() {
-  ID3D12DescriptorHeap *heaps[] = {dxCommon_->GetSrvHeap()};
+void SpriteRenderer::SetupCommonRenderState() {
+  ID3D12DescriptorHeap *heaps[] = {dxCommon_->GetSrvDescriptorHeap()};
   dxCommon_->GetCommandList()->SetDescriptorHeaps(1, heaps);
 
   // ルートシグネチャをセット
@@ -28,10 +33,14 @@ void SpriteCommon::SetupCommonRenderState() {
       D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
+//================================================================================
+// パイプライン構築（RootSignature / PSO）
+//================================================================================
+
 /// <summary>
 /// ルートシグネチャの生成
 /// </summary>
-void SpriteCommon::CreateRootSignature() {
+void SpriteRenderer::CreateRootSignature() {
   // RootSignature作成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags =
@@ -109,7 +118,7 @@ void SpriteCommon::CreateRootSignature() {
 /// <summary>
 /// グラフィックスパイプラインの生成
 /// </summary>
-void SpriteCommon::CreateGraphicsPipeline() {
+void SpriteRenderer::CreateGraphicsPipeline() {
 
   // ルートシグネチャの生成
   CreateRootSignature();
@@ -142,15 +151,24 @@ void SpriteCommon::CreateGraphicsPipeline() {
   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
   // Shaderをコンパイル
-  ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
+  ComPtr<IDxcBlob> vertexShaderBlob =
+      dxCommon_->CompileShader(L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
   assert(vertexShaderBlob != nullptr);
 
-  ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-      L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
+  ComPtr<IDxcBlob> pixelShaderBlob =
+      dxCommon_->CompileShader(L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
   assert(pixelShaderBlob != nullptr);
 
-  //グラフィックスパイプラインステートの設定
+  // DepthStencilStateの設定
+  D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+  // Depthの機能を有効化
+  depthStencilDesc.DepthEnable = false;
+  // 書き込む
+  depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+  // 比較関数はLessEqual、近ければ描画される
+  depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+  // グラフィックスパイプラインステートの設定
   D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
   graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
   graphicsPipelineStateDesc.InputLayout = inputLayOutDesc;

@@ -2,8 +2,9 @@
 #include "Input.h"
 #include "WinApp.h"
 #include"D3DResourceLeakChecker.h"
-#include"SpriteCommon.h"
+#include"SpriteRenderer.h"
 #include"Sprite.h"
+#include"ModelManager.h"
 
 // #include <Windows.h>
 #include <chrono>
@@ -56,44 +57,48 @@
 #include <Vector3.h>
 #include <Vector4.h>
 #include<Transform.h>
-#include <TextureManager.h>
+#include "TextureManager.h"
+#include"Object3dRenderer.h"
+#include"Object3d.h"
+
 using namespace MathUtility;
+
 // #include <wrl.h>
 
 using Microsoft::WRL::ComPtr;
 
-struct TransformMatrix {
-  Matrix4x4 WVP;
-  Matrix4x4 World;
-};
+//struct TransformMatrix {
+//  Matrix4x4 WVP;
+//  Matrix4x4 World;
+//};
 
-struct VertexData {
-  Vector4 position;
-  Vector2 texcoord;
-  Vector3 normal;
-};
+//struct VertexData {
+//  Vector4 position;
+//  Vector2 texcoord;
+//  Vector3 normal;
+//};
 
-struct Material {
-  Vector4 color;
-  int32_t enableLighting;
-  float padding[3];
-  Matrix4x4 uvTransform;
-};
+//struct Material {
+//  Vector4 color;
+//  int32_t enableLighting;
+//  float padding[3];
+//  Matrix4x4 uvTransform;
+//};
 
-struct MaterialData {
-  std::string textureFilePath;
-};
+//struct MaterialData {
+//  std::string textureFilePath;
+//};
 
-struct DirectionalLight {
-  Vector4 color;     // ライトの色
-  Vector3 direction; // ライトの向き
-  float intensity;   // 輝度
-};
+//struct DirectionalLight {
+//  Vector4 color;     // ライトの色
+//  Vector3 direction; // ライトの向き
+//  float intensity;   // 輝度
+//};
 
-struct ModelData {
-  std::vector<VertexData> vertices;
-  MaterialData material;
-};
+//struct ModelData {
+//  std::vector<VertexData> vertices;
+//  MaterialData material;
+//};
 
 struct ChunkHeader {
   char id[4];   // チャンクごとのID
@@ -218,39 +223,39 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
-/// <summary>
-/// 透視投影行列
-/// </summary>
-/// <param name="fovY"></param>
-/// <param name="aspectRatio"></param>
-/// <param name="nearClip"></param>
-/// <param name="farClip"></param>
-/// <returns></returns>
-Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
-                                   float nearClip, float farClip) {
-  Matrix4x4 result;
-  result.m[0][0] = 1.0f / aspectRatio * 1.0f / std::tan(fovY / 2.0f);
-  result.m[0][1] = 0.0f;
-  result.m[0][2] = 0.0f;
-  result.m[0][3] = 0.0f;
-
-  result.m[1][0] = 0.0f;
-  result.m[1][1] = 1.0f / std::tan(fovY / 2.0f);
-  result.m[1][2] = 0.0f;
-  result.m[1][3] = 0.0f;
-
-  result.m[2][0] = 0.0f;
-  result.m[2][1] = 0.0f;
-  result.m[2][2] = farClip / (farClip - nearClip);
-  result.m[2][3] = 1.0f;
-
-  result.m[3][0] = 0.0f;
-  result.m[3][1] = 0.0f;
-  result.m[3][2] = -nearClip * farClip / (farClip - nearClip);
-  result.m[3][3] = 0.0f;
-
-  return result;
-}
+///// <summary>
+///// 透視投影行列
+///// </summary>
+///// <param name="fovY"></param>
+///// <param name="aspectRatio"></param>
+///// <param name="nearClip"></param>
+///// <param name="farClip"></param>
+///// <returns></returns>
+//Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
+//                                   float nearClip, float farClip) {
+//  Matrix4x4 result;
+//  result.m[0][0] = 1.0f / aspectRatio * 1.0f / std::tan(fovY / 2.0f);
+//  result.m[0][1] = 0.0f;
+//  result.m[0][2] = 0.0f;
+//  result.m[0][3] = 0.0f;
+//
+//  result.m[1][0] = 0.0f;
+//  result.m[1][1] = 1.0f / std::tan(fovY / 2.0f);
+//  result.m[1][2] = 0.0f;
+//  result.m[1][3] = 0.0f;
+//
+//  result.m[2][0] = 0.0f;
+//  result.m[2][1] = 0.0f;
+//  result.m[2][2] = farClip / (farClip - nearClip);
+//  result.m[2][3] = 1.0f;
+//
+//  result.m[3][0] = 0.0f;
+//  result.m[3][1] = 0.0f;
+//  result.m[3][2] = -nearClip * farClip / (farClip - nearClip);
+//  result.m[3][3] = 0.0f;
+//
+//  return result;
+//}
 
 ///// <summary>
 ///// 正射影行列(3次元版)
@@ -358,118 +363,118 @@ Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
 //   return handleGPU;
 // }
 
-/// <summary>
-/// mtlファイルを読む
-/// </summary>
-/// <param name="directoryPath"></param>
-/// <param name="filename"></param>
-/// <returns></returns>
-MaterialData LoadMaterialTemplateFile(const std::string &directoryPath,
-                                      const std::string &filename) {
-  // 構築するMaterialData
-  MaterialData materialData;
-  // ファイルから読んだ1行を格納するもの
-  std::string line;
-  // ファイルを開く
-  std::ifstream file(directoryPath + "/" + filename);
-  assert(file.is_open());
+///// <summary>
+///// mtlファイルを読む
+///// </summary>
+///// <param name="directoryPath"></param>
+///// <param name="filename"></param>
+///// <returns></returns>
+//MaterialData LoadMaterialTemplateFile(const std::string &directoryPath,
+//                                      const std::string &filename) {
+//  // 構築するMaterialData
+//  MaterialData materialData;
+//  // ファイルから読んだ1行を格納するもの
+//  std::string line;
+//  // ファイルを開く
+//  std::ifstream file(directoryPath + "/" + filename);
+//  assert(file.is_open());
+//
+//  while (std::getline(file, line)) {
+//    std::string identifier;
+//    std::stringstream s(line);
+//    s >> identifier;
+//
+//    if (identifier == "map_Kd") {
+//      std::string textureFilename;
+//      s >> textureFilename;
+//      // 凍結してファイルパスにする
+//      materialData.textureFilePath = directoryPath + "/" + textureFilename;
+//    }
+//  }
+//
+//  return materialData;
+//}
 
-  while (std::getline(file, line)) {
-    std::string identifier;
-    std::stringstream s(line);
-    s >> identifier;
-
-    if (identifier == "map_Kd") {
-      std::string textureFilename;
-      s >> textureFilename;
-      // 凍結してファイルパスにする
-      materialData.textureFilePath = directoryPath + "/" + textureFilename;
-    }
-  }
-
-  return materialData;
-}
-
-/// <summary>
-/// objファイルを読み込む
-/// </summary>
-/// <param name="directoryPath"></param>
-/// <param name="filename"></param>
-/// <returns></returns>
-ModelData LoadObjFile(const std::string &directoryPath,
-                      const std::string &filename) {
-  ModelData modelData;            // 構築するModelData
-  std::vector<Vector4> positions; // 位置
-  std::vector<Vector3> normals;   // 法線
-  std::vector<Vector2> texcoords; // テクスチャ座標
-  std::string line;               // ファイルから読んだ1行を格納するもの
-
-  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
-  assert(file.is_open()); // とりあえず開けなかったら止める
-
-  while (std::getline(file, line)) {
-    std::string identifier;
-    std::istringstream s(line);
-    s >> identifier; // 先頭の識別子を読む
-
-    if (identifier == "v") {
-      Vector4 position;
-      s >> position.x >> position.y >> position.z;
-      position.w = 1.0f;
-      positions.push_back(position);
-    } else if (identifier == "vt") {
-      Vector2 texcoord;
-      s >> texcoord.x >> texcoord.y;
-      texcoords.push_back(texcoord);
-    } else if (identifier == "vn") {
-      Vector3 normal;
-      s >> normal.x >> normal.y >> normal.z;
-      normals.push_back(normal);
-    } else if (identifier == "f") {
-      VertexData triangle[3];
-
-      // 面は三角形限定
-      for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
-        std::string vertexDefinition;
-        s >> vertexDefinition;
-        // 頂点の要素のIndexは 位置 / UV / 法線
-        // で格納されているので、分解してIndexを取得
-        std::istringstream v(vertexDefinition);
-
-        uint32_t elementIndices[3];
-        for (int32_t element = 0; element < 3; ++element) {
-          std::string index;
-          std::getline(v, index, '/');
-          elementIndices[element] = std::stoi(index);
-        }
-
-        // 要素へのIndexから、実際の要素の値を取得して頂点を構築
-        Vector4 position = positions[elementIndices[0] - 1];
-        Vector2 texcoord = texcoords[elementIndices[1] - 1];
-        Vector3 normal = normals[elementIndices[2] - 1];
-
-        position.x *= -1.0f;
-        texcoord.y = 1.0f - texcoord.y;
-        normal.x *= -1.0f;
-
-        triangle[faceVertex] = {position, texcoord, normal};
-      }
-      // 頂点を逆順で登録することで周り順を逆にする
-      modelData.vertices.push_back(triangle[2]);
-      modelData.vertices.push_back(triangle[1]);
-      modelData.vertices.push_back(triangle[0]);
-    } else if (identifier == "mtllib") {
-      // materialTemolateLibraryファイルの名前を取得
-      std::string materialFilename;
-      s >> materialFilename;
-      // 基本的にobjファイルと同一階層にmtlは存在させるのでディレクトリ名とファイル名を渡す
-      modelData.material =
-          LoadMaterialTemplateFile(directoryPath, materialFilename);
-    }
-  }
-
-  return modelData;
-}
+///// <summary>
+///// objファイルを読み込む
+///// </summary>
+///// <param name="directoryPath"></param>
+///// <param name="filename"></param>
+///// <returns></returns>
+//ModelData LoadObjFile(const std::string &directoryPath,
+//                      const std::string &filename) {
+//  ModelData modelData;            // 構築するModelData
+//  std::vector<Vector4> positions; // 位置
+//  std::vector<Vector3> normals;   // 法線
+//  std::vector<Vector2> texcoords; // テクスチャ座標
+//  std::string line;               // ファイルから読んだ1行を格納するもの
+//
+//  std::ifstream file(directoryPath + "/" + filename); // ファイルを開く
+//  assert(file.is_open()); // とりあえず開けなかったら止める
+//
+//  while (std::getline(file, line)) {
+//    std::string identifier;
+//    std::istringstream s(line);
+//    s >> identifier; // 先頭の識別子を読む
+//
+//    if (identifier == "v") {
+//      Vector4 position;
+//      s >> position.x >> position.y >> position.z;
+//      position.w = 1.0f;
+//      positions.push_back(position);
+//    } else if (identifier == "vt") {
+//      Vector2 texcoord;
+//      s >> texcoord.x >> texcoord.y;
+//      texcoords.push_back(texcoord);
+//    } else if (identifier == "vn") {
+//      Vector3 normal;
+//      s >> normal.x >> normal.y >> normal.z;
+//      normals.push_back(normal);
+//    } else if (identifier == "f") {
+//      VertexData triangle[3];
+//
+//      // 面は三角形限定
+//      for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
+//        std::string vertexDefinition;
+//        s >> vertexDefinition;
+//        // 頂点の要素のIndexは 位置 / UV / 法線
+//        // で格納されているので、分解してIndexを取得
+//        std::istringstream v(vertexDefinition);
+//
+//        uint32_t elementIndices[3];
+//        for (int32_t element = 0; element < 3; ++element) {
+//          std::string index;
+//          std::getline(v, index, '/');
+//          elementIndices[element] = std::stoi(index);
+//        }
+//
+//        // 要素へのIndexから、実際の要素の値を取得して頂点を構築
+//        Vector4 position = positions[elementIndices[0] - 1];
+//        Vector2 texcoord = texcoords[elementIndices[1] - 1];
+//        Vector3 normal = normals[elementIndices[2] - 1];
+//
+//        position.x *= -1.0f;
+//        texcoord.y = 1.0f - texcoord.y;
+//        normal.x *= -1.0f;
+//
+//        triangle[faceVertex] = {position, texcoord, normal};
+//      }
+//      // 頂点を逆順で登録することで周り順を逆にする
+//      modelData.vertices.push_back(triangle[2]);
+//      modelData.vertices.push_back(triangle[1]);
+//      modelData.vertices.push_back(triangle[0]);
+//    } else if (identifier == "mtllib") {
+//      // materialTemolateLibraryファイルの名前を取得
+//      std::string materialFilename;
+//      s >> materialFilename;
+//      // 基本的にobjファイルと同一階層にmtlは存在させるのでディレクトリ名とファイル名を渡す
+//      modelData.material =
+//          LoadMaterialTemplateFile(directoryPath, materialFilename);
+//    }
+//  }
+//
+//  return modelData;
+//}
 
 ///// <summary>
 ///// トリガー処理
@@ -524,10 +529,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxCommon->Initialize(winApp);
 
   //ポインタ
-  SpriteCommon *spriteCommon = nullptr;
+  SpriteRenderer *spriteRenderer = nullptr;
   //スプライト共通部の初期化
-  spriteCommon = new SpriteCommon();
-  spriteCommon->Initialize(dxCommon);
+  spriteRenderer = new SpriteRenderer();
+  spriteRenderer->Initialize(dxCommon);
 
   //テクスチャマネージャの初期化
   TextureManager::GetInstance()->Initialize(dxCommon);
@@ -536,7 +541,19 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Sprite *sprite = nullptr;
   //スプライトの初期化
   sprite = new Sprite();
-  sprite->Initialize(spriteCommon, "resources/uvChecker.png");
+  sprite->Initialize(spriteRenderer, "resources/uvChecker.png");
+
+  //ポインタ
+  Object3dRenderer *object3dRenderer = nullptr;
+  //object3dRendererの初期化
+  object3dRenderer = new Object3dRenderer();
+  object3dRenderer->Initialize(dxCommon);
+
+  // ポインタ
+  Object3d *object3d = nullptr;
+  // object3dの初期化
+  object3d = new Object3d();
+  object3d->Initialize(object3dRenderer, "plane");
 
   /// =============================================
   ///
@@ -1364,6 +1381,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //     {0.0f, 0.0f, 0.0f}  // translate
   // };
 
+//object3d->SetModel("axis");
+
   // ウィンドウの×ボタンが押されるまでループ
   while (true) {
 
@@ -1385,48 +1404,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     ImGui::Begin("Window");
 
-    //// 色を変更
-    // ImGui::ColorEdit3("Color", materialColor);
-    //// 変更後の materialColorを定数バッファに書き戻す
-    // materialData->color = Vector4{
-    //     materialColor[0], materialColor[1], materialColor[2],
-    //     materialData->color.w // αは前のまま残すか、1.0f にしちゃってもOK
-    // };
-    //// ライティングのON/OFFもImGuiでいじりたいなら…
-    // static bool lightingOn = true;
-    // ImGui::Checkbox("Enable Lighting", &lightingOn);
-    // materialData->enableLighting = lightingOn ? 1 : 0;
-
-    //// 既存の ImGui::Begin("Window"); の中あたりに…
-    // ImGui::Separator();
-    // ImGui::Text("Camera");
-    // ImGui::DragFloat3("Camera translation", &transformCamera.translate.x,
-    // 0.1f); ImGui::SliderAngle("Camera rotation X",
-    // &transformCamera.rotate.x); ImGui::SliderAngle("Camera rotation Y",
-    // &transformCamera.rotate.y); ImGui::SliderAngle("Camera rotation Z",
-    // &transformCamera.rotate.z);
-
-    //ImGui::Separator();
-    //ImGui::Text("Model");
-
-    //ImGui::DragFloat3("Model Scale", &transformModel.scale.x, 0.01f, 0.01f,
-    //                  10.0f);
-
-    //ImGui::SliderAngle("Model Rot X", &transformModel.rotate.x, -180.0f,
-    //                   180.0f);
-    //ImGui::SliderAngle("Model Rot Y", &transformModel.rotate.y, -180.0f,
-    //                   180.0f);
-    //ImGui::SliderAngle("Model Rot Z", &transformModel.rotate.z, -180.0f,
-    //                   180.0f);
-
-    //ImGui::DragFloat3("Model Pos", &transformModel.translate.x, 0.1f, -100.0f,
-    //                  100.0f);
-
     // ─────────────────────
     // カメラ
     // ─────────────────────
-    ImGui::Separator();
-    ImGui::Text("Camera");
+    ImGui::SeparatorText("Camera");
 
     ImGui::DragFloat3("Camera Pos", &transformCamera.translate.x, 0.1f, -100.0f,
                       100.0f);
@@ -1438,86 +1419,70 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ImGui::SliderAngle("Camera Rot Z", &transformCamera.rotate.z, -180.0f,
                        180.0f);
 
-    //// ─────────────────────
-    //// マテリアル・ライト
-    //// ─────────────────────
-    //ImGui::Separator();
-    //ImGui::Text("Material / Light");
+    // ─────────────────────
+    // ライト
+    // ─────────────────────
 
-    //static float materialColor[4] = {1, 1, 1, 1};
-    //ImGui::ColorEdit4("Color", materialColor);
-    //materialData->color = {materialColor[0], materialColor[1], materialColor[2],
-    //                       materialColor[3]};
+    ImGui::SeparatorText("Directional Light");
 
-    //static bool lightingOn = true;
-    //ImGui::Checkbox("Enable Lighting", &lightingOn);
-    //materialData->enableLighting = lightingOn ? 1 : 0;
+    Vector4 color = object3d->GetLightColor();
+    if (ImGui::ColorEdit3("Color", &color.x)) {
+      object3d->SetLightColor({color.x, color.y, color.z, 1.0f});
+    }
 
-    //ImGui::ColorEdit3("Light Color", &directionalLightData->color.x);
-    //ImGui::DragFloat3("Light Dir", &directionalLightData->direction.x, 0.01f,
-    //                  -1.0f, 1.0f);
-    //ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f,
-    //                 0.0f, 10.0f);
+    Vector3 dir = object3d->GetLightDirection();
+    if (ImGui::SliderFloat3("Direction", &dir.x, -1.0f, 1.0f)) {
+      object3d->SetLightDirection(dir); // ← そのまま渡す
+    }
 
-    //// ライトの方向正規化（方向ベクトルが変な長さにならないように）
-    //{
-    //  Vector3 &d = directionalLightData->direction;
-    //  float len = std::sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
-    //  if (len > 0.0f) {
-    //    d.x /= len;
-    //    d.y /= len;
-    //    d.z /= len;
-    //  }
-    //}
+    float intensity = object3d->GetLightIntensity();
+    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 5.0f)) {
+      object3d->SetLightIntensity(intensity);
+    }
 
-    //// 球体の拡縮、回転、移動
-    // ImGui::Separator();
-    // ImGui::Text("Sphere");
-    // ImGui::DragFloat3("scale", &transform.scale.x, 0.01f);
-    // ImGui::DragFloat3("rotate", &transform.rotate.x, 0.01f);
-    // ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
+    // ─────────────────────
+    // Obj
+    // ─────────────────────
 
-    // ImGui::Spacing();
+    ImGui::SeparatorText("Object");
 
-    //// UIの移動
-    // ImGui::Text("UI");
-    // ImGui::SliderFloat3("translationSprite", &transformSprite.translate.x,
-    // 0.0f,
-    //                     1280.0f);
-    // ImGui::DragFloat3("scaleSprite", &transformSprite.scale.x, 0.01f);
-    // ImGui::DragFloat3("rotationSprite", &transformSprite.rotate.x, 0.01f);
+    {
+      Vector3 pos = object3d->GetPosition();
+      if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
+        object3d->SetPosition(pos);
+      }
+    }
 
-    ///*ImGui::Checkbox("useMonsterBall", &useMonsterBall);*/
+    {
+      Vector3 scale = object3d->GetScale();
+      if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, -10.0f, 10.0f)) {
+        object3d->SetScale(scale);
+      }
+    }
 
-    // ImGui::Separator();
-    // ImGui::Text("UVTransform");
-    // ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f,
-    //                   -10.0f, 10.0f);
-    // ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f,
-    //                   10.0f);
-    // ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+    {
+      Vector3 rot = object3d->GetRotation(); // ← 正しい！
+      if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f, -6.28f, 6.28f)) {
+        object3d->SetRotation(rot);
+      }
+    }
 
-    //// ライト
-    // ImGui::Separator();
-    // ImGui::Text("Directional Light");
-    // ImGui::ColorEdit3("Light Color", &directionalLightData->color.x);
-    // ImGui::DragFloat3("Direction", &directionalLightData->direction.x, 0.01f,
-    //                   -1.0f, 1.0f);
+    {
+      Vector4 color = object3d->GetColor();
+      float col[4] = {color.x, color.y, color.z, color.w};
 
-    //// ライトの正規化
-    // Vector3 &direction = directionalLightData->direction;
-    // float length =
-    //     std::sqrt(direction.x * direction.x + direction.y * direction.y +
-    //               direction.z * direction.z);
-    // if (length > 0.0f) {
-    //   direction.x /= length;
-    //   direction.y /= length;
-    //   direction.z /= length;
-    // }
+      // ImGui カラーピッカー
+      if (ImGui::ColorEdit4("Color", col)) {
 
-    // ImGui::DragFloat("Intensity", &directionalLightData->intensity, 0.01f,
-    // 0.0f,
-    //                  10.0f);
+        // float[4] → Vector4 に戻す
+        Vector4 newColor(col[0], col[1], col[2], col[3]);
+
+        // Object3d 経由で Model に反映
+        object3d->SetColor(newColor);
+      }
+    }
+
+
     ImGui::End();
 
     // ComPtr<ID3D12InfoQueue> infoQueue;
@@ -1549,15 +1514,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     sprite->SetTextureSize(Vector2{8.0, 8.0f});*/
 
     sprite->Update();
+    object3d->Update();
 
-    // カメラ行列
-    Matrix4x4 cameraMatrix =
-        MakeAffineMatrix(transformCamera.scale, transformCamera.rotate,
-                         transformCamera.translate);
-    Matrix4x4 viewMatrix = MakeInverseMatrix(cameraMatrix);
-    Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
-        0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f,
-        100.0f);
+    //// カメラ行列
+    //Matrix4x4 cameraMatrix =
+    //    MakeAffineMatrix(transformCamera.scale, transformCamera.rotate,
+    //                     transformCamera.translate);
+    //Matrix4x4 viewMatrix = MakeInverseMatrix(cameraMatrix);
+    //Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
+    //    0.45f, float(WinApp::kClientWidth) / float(WinApp::kClientHeight), 0.1f,
+    //    100.0f);
 
     //// モデルの World / WVP
     //Matrix4x4 worldModel = MakeAffineMatrix(
@@ -1722,10 +1688,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     // commandList->DrawInstanced(UINT(modelData.vertices.size()), 1, 0, 0);
 
     // ★ ImGui / 自前テクスチャ用 SRV ヒープをバインド
-    ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvHeap()};
+    ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvDescriptorHeap()};
     dxCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 
-    sprite->Draw();
+    //sprite->Draw();
+    object3d->Draw();
 
     // ★ パイプラインの設定
     /*dxCommon->GetCommandList()->SetGraphicsRootSignature(rootSignature.Get());
@@ -1805,13 +1772,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   // inputを解放
   delete input;
 
+  // object3dを解放
+  delete object3d;
+
+  //object3dRendererを解放
+  delete object3dRenderer;
+
   //spriteを解放
   delete sprite;
 
   //spriteCommonを解放
-  delete spriteCommon;
+  delete spriteRenderer;
 
   TextureManager::GetInstance()->Finalize();
+  ModelManager::GetInstance()->Finalize();
 
   // DirectXを解放
   delete dxCommon;

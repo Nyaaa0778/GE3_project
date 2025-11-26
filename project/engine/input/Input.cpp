@@ -1,15 +1,20 @@
 #include "Input.h"
+#include "WinApp.h"
 
 #include <cassert>
 
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
+//================================================================================
+// 初期化 / 更新
+//================================================================================
+
 /// <summary>
 /// 初期化
 /// </summary>
 void Input::Initialize(WinApp *winApp) {
-  // メンバ変数に記録
+  // 引数で受け取ってメンバ変数に保存
   winApp_ = winApp;
 
   HRESULT hr;
@@ -43,11 +48,11 @@ void Input::Update() {
   // 全キー入力状態を取得する
   memcpy(preKeys_, keys_, sizeof(keys_));
   keyboard_->GetDeviceState(sizeof(keys_), keys_);
-
-  if (TriggerKey(DIK_0)) {
-    OutputDebugStringA("Hit");
-  }
 }
+
+//================================================================================
+// キーの入力判定
+//================================================================================
 
 /// <summary>
 /// Push処理

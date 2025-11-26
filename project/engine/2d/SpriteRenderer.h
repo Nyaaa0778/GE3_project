@@ -1,45 +1,34 @@
 #pragma once
 
-#define DIRECTINPUT_VERSION 0x0800
-#include <dinput.h>
-
-#include <cstdint>
+#include <d3d12.h>
 #include <wrl.h>
 
-class WinApp;
+class DirectXCommon;
 
-class Input {
+class SpriteRenderer {
 public:
   //================================================================================
-  // 初期化 / 更新
+  // 初期化 / 描画設定
   //================================================================================
 
   /// <summary>
   /// 初期化
   /// </summary>
-  void Initialize(WinApp *winApp);
+  /// <param name="dxCommon">DirectXCommonのポインタ</param>
+  void Initialize(DirectXCommon *dxCommon);
+
   /// <summary>
-  /// 更新
+  /// 共通描画設定
   /// </summary>
-  void Update();
+  void SetupCommonRenderState();
 
 public:
   //================================================================================
-  // キーの入力判定
+  // Getter
   //================================================================================
 
-  /// <summary>
-  /// Push処理
-  /// </summary>
-  /// <param name="keyCode">押下状態を確認するキーコード</param>
-  /// <returns>押下状態ならtrue、それ以外ならfalse</returns>
-  bool PushKey(BYTE keyCode);
-  /// <summary>
-  /// Trigger処理
-  /// </summary>
-  /// <param name="keyCode">押下状態を確認するキーコード</param>
-  /// <returns>押下状態ならtrue、それ以外ならfalse</returns>
-  bool TriggerKey(BYTE keyCode);
+  // DirectXCommon
+  DirectXCommon *GetDxCommon() const { return dxCommon_; }
 
 private:
   //================================================================================
@@ -50,30 +39,34 @@ private:
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
-private:
   //================================================================================
   // 外部参照
   //================================================================================
 
-  // WinAppのポインタ
-  WinApp *winApp_ = nullptr;
+  // DirectXCommonのポインタ
+  DirectXCommon *dxCommon_ = nullptr;
 
   //================================================================================
-  // DirectInput本体 / デバイス
+  // GPU リソース
   //================================================================================
 
-  // DirectInput
-  ComPtr<IDirectInput8> directInput_ = nullptr;
+  // ルートシグネチャ
+  ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+  // グラフィックスパイプラインステート
+  ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
 
-  // キーボードデバイス
-  ComPtr<IDirectInputDevice8> keyboard_ = nullptr;
-
+private:
   //================================================================================
-  // キーボード入力状態
+  // パイプライン構築（RootSignature / PSO）
   //================================================================================
 
-  // 現在のキー
-  BYTE keys_[256] = {};
-  // 前のキー
-  BYTE preKeys_[256] = {};
+  /// <summary>
+  /// ルートシグネチャの生成
+  /// </summary>
+  void CreateRootSignature();
+
+  /// <summary>
+  /// グラフィックスパイプラインの生成
+  /// </summary>
+  void CreateGraphicsPipeline();
 };
