@@ -35,6 +35,13 @@ void ModelManager::Initialize(DirectXCommon *dxCommon) {
 /// 終了
 /// </summary>
 void ModelManager::Finalize() {
+  // 読み込んだModelを全部破棄
+  models_.clear();
+
+  // ModelCommonを解放
+  delete modelCommon_;
+  modelCommon_ = nullptr;
+
   delete instance;
   instance = nullptr;
 }
@@ -54,7 +61,7 @@ void ModelManager::LoadModel(const std::string &modelName) {
     return;
   }
 
-  std::string directoryPath = "resources/" + modelName; 
+  std::string directoryPath = "resources/" + modelName;
   std::string fileName = modelName + ".obj";
 
   // モデルの生成とファイル読み込み、初期化
