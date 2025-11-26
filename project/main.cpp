@@ -549,6 +549,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   object3dRenderer = new Object3dRenderer();
   object3dRenderer->Initialize(dxCommon);
 
+  // 3Dモデルマネージャの初期化
+  ModelManager::GetInstance()->Initialize(object3dRenderer->GetDxCommon());
+
   // ポインタ
   Object3d *object3d = nullptr;
   // object3dの初期化

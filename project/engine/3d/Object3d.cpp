@@ -22,9 +22,6 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer,
   // 引数で受け取ってメンバ変数に保存
   object3dRenderer_ = object3dRenderer;
 
-  // 3Dモデルマネージャの初期化
-  ModelManager::GetInstance()->Initialize(object3dRenderer_->GetDxCommon());
-
   // モデルをセット
   SetModel(modelName);
 
