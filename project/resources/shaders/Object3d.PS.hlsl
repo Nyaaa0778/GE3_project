@@ -1,11 +1,10 @@
 #include "Object3d.hlsli"
 
-// 一般的な型名に統一（好み）
 struct Material
 {
     float32_t4 color;
-    int32_t enableLighting; // cbuffer では 16B アラインされる。C++側で padding[3] を入れてるのは正解
-    float4x4 uvTransform; // CPU と列/行優先を合わせること
+    int32_t enableLighting;
+    float4x4 uvTransform;
 };
 ConstantBuffer<Material> gMaterial : register(b0);
 
@@ -15,7 +14,7 @@ SamplerState gSampler : register(s0);
 struct DirectionalLight
 {
     float4 color; //色
-    float3 direction; // 「光の向き
+    float3 direction; // 光の向き
     float intensity;
 };
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
@@ -36,11 +35,21 @@ PixelShaderOutput main(VertexShaderOutput input)
 
     float3 base = gMaterial.color.rgb * texColor.rgb;
     float alpha = gMaterial.color.a * texColor.a;
+    
+    if (texColor.a == 0.0)
+    {
+        discard;
+    }
+    
+    if (texColor.a <= 0.5)
+    {
+        discard;
+    }
 
     if (gMaterial.enableLighting != 0)
     {
         float3 N = normalize(input.normal);
-        float3 L = normalize(-gDirectionalLight.direction); 
+        float3 L = normalize(-gDirectionalLight.direction);
 
         float lambert = saturate(dot(N, L)); // 拡散
         float ambient = 0.1f;
@@ -55,6 +64,11 @@ PixelShaderOutput main(VertexShaderOutput input)
     else
     {
         o.color = float4(base, alpha);
+    }
+    
+    if (o.color.a == 0.0)
+    {
+        discard;
     }
 
     return o;

@@ -3,7 +3,6 @@
 #include <Matrix4x4.h>
 #include <Vector2.h>
 #include <Vector3.h>
-#include <cmath>
 
 namespace MathUtility {
 
@@ -11,37 +10,48 @@ namespace MathUtility {
 // ベクトル演算
 //================================================================================
 
-/// <summary>
-/// ベクトル同士の加算
-/// </summary>
+// 加算
 Vector2 Add(const Vector2 &v1, const Vector2 &v2);
 Vector3 Add(const Vector3 &v1, const Vector3 &v2);
 
-/// <summary>
-/// ベクトル同士の減算
-/// </summary>
+// 減算
 Vector2 Subtract(const Vector2 &v1, const Vector2 &v2);
 Vector3 Subtract(const Vector3 &v1, const Vector3 &v2);
 
-/// <summary>
-/// スカラー倍
-/// </summary>
+// 乗算
 Vector2 Multiply(float s, const Vector2 &v);
 Vector3 Multiply(float s, const Vector3 &v);
+
+// 外積
+Vector3 Cross(const Vector3 &a, const Vector3 &b);
+
+// 内積
+float Dot(const Vector3 &a, const Vector3 &b);
+
+// 正規化
+Vector3 Normalize(const Vector3 &v);
 
 //================================================================================
 // ベクトル演算子オーバーロード
 //================================================================================
 
 //---------- Vector2 ----------
+Vector2 operator+(const Vector2 &v1, const Vector2 &v2);
+Vector2 operator-(const Vector2 &v1, const Vector2 &v2);
+
 Vector2 &operator+=(Vector2 &v1, const Vector2 &v2);
 Vector2 &operator-=(Vector2 &v1, const Vector2 &v2);
 Vector2 &operator*=(Vector2 &v, float s);
+Vector2 &operator*=(float s, Vector2 &v);
 
 //---------- Vector3 ----------
+Vector3 operator+(const Vector3 &v1, const Vector3 &v2);
+Vector3 operator-(const Vector3 &v1, const Vector3 &v2);
+
 Vector3 &operator+=(Vector3 &v1, const Vector3 &v2);
 Vector3 &operator-=(Vector3 &v1, const Vector3 &v2);
 Vector3 &operator*=(Vector3 &v, float s);
+Vector3 &operator*=(float s, Vector3 &v);
 
 //================================================================================
 // 行列演算

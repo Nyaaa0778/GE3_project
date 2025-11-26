@@ -1381,7 +1381,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   //     {0.0f, 0.0f, 0.0f}  // translate
   // };
 
-object3d->SetModel("axis");
+//object3d->SetModel("axis");
 
   // ウィンドウの×ボタンが押されるまでループ
   while (true) {
@@ -1404,48 +1404,10 @@ object3d->SetModel("axis");
 
     ImGui::Begin("Window");
 
-    //// 色を変更
-    // ImGui::ColorEdit3("Color", materialColor);
-    //// 変更後の materialColorを定数バッファに書き戻す
-    // materialData->color = Vector4{
-    //     materialColor[0], materialColor[1], materialColor[2],
-    //     materialData->color.w // αは前のまま残すか、1.0f にしちゃってもOK
-    // };
-    //// ライティングのON/OFFもImGuiでいじりたいなら…
-    // static bool lightingOn = true;
-    // ImGui::Checkbox("Enable Lighting", &lightingOn);
-    // materialData->enableLighting = lightingOn ? 1 : 0;
-
-    //// 既存の ImGui::Begin("Window"); の中あたりに…
-    // ImGui::Separator();
-    // ImGui::Text("Camera");
-    // ImGui::DragFloat3("Camera translation", &transformCamera.translate.x,
-    // 0.1f); ImGui::SliderAngle("Camera rotation X",
-    // &transformCamera.rotate.x); ImGui::SliderAngle("Camera rotation Y",
-    // &transformCamera.rotate.y); ImGui::SliderAngle("Camera rotation Z",
-    // &transformCamera.rotate.z);
-
-    //ImGui::Separator();
-    //ImGui::Text("Model");
-
-    //ImGui::DragFloat3("Model Scale", &transformModel.scale.x, 0.01f, 0.01f,
-    //                  10.0f);
-
-    //ImGui::SliderAngle("Model Rot X", &transformModel.rotate.x, -180.0f,
-    //                   180.0f);
-    //ImGui::SliderAngle("Model Rot Y", &transformModel.rotate.y, -180.0f,
-    //                   180.0f);
-    //ImGui::SliderAngle("Model Rot Z", &transformModel.rotate.z, -180.0f,
-    //                   180.0f);
-
-    //ImGui::DragFloat3("Model Pos", &transformModel.translate.x, 0.1f, -100.0f,
-    //                  100.0f);
-
     // ─────────────────────
     // カメラ
     // ─────────────────────
-    ImGui::Separator();
-    ImGui::Text("Camera");
+    ImGui::SeparatorText("Camera");
 
     ImGui::DragFloat3("Camera Pos", &transformCamera.translate.x, 0.1f, -100.0f,
                       100.0f);
@@ -1457,86 +1419,70 @@ object3d->SetModel("axis");
     ImGui::SliderAngle("Camera Rot Z", &transformCamera.rotate.z, -180.0f,
                        180.0f);
 
-    //// ─────────────────────
-    //// マテリアル・ライト
-    //// ─────────────────────
-    //ImGui::Separator();
-    //ImGui::Text("Material / Light");
+    // ─────────────────────
+    // ライト
+    // ─────────────────────
 
-    //static float materialColor[4] = {1, 1, 1, 1};
-    //ImGui::ColorEdit4("Color", materialColor);
-    //materialData->color = {materialColor[0], materialColor[1], materialColor[2],
-    //                       materialColor[3]};
+    ImGui::SeparatorText("Directional Light");
 
-    //static bool lightingOn = true;
-    //ImGui::Checkbox("Enable Lighting", &lightingOn);
-    //materialData->enableLighting = lightingOn ? 1 : 0;
+    Vector4 color = object3d->GetLightColor();
+    if (ImGui::ColorEdit3("Color", &color.x)) {
+      object3d->SetLightColor({color.x, color.y, color.z, 1.0f});
+    }
 
-    //ImGui::ColorEdit3("Light Color", &directionalLightData->color.x);
-    //ImGui::DragFloat3("Light Dir", &directionalLightData->direction.x, 0.01f,
-    //                  -1.0f, 1.0f);
-    //ImGui::DragFloat("Light Intensity", &directionalLightData->intensity, 0.01f,
-    //                 0.0f, 10.0f);
+    Vector3 dir = object3d->GetLightDirection();
+    if (ImGui::SliderFloat3("Direction", &dir.x, -1.0f, 1.0f)) {
+      object3d->SetLightDirection(dir); // ← そのまま渡す
+    }
 
-    //// ライトの方向正規化（方向ベクトルが変な長さにならないように）
-    //{
-    //  Vector3 &d = directionalLightData->direction;
-    //  float len = std::sqrt(d.x * d.x + d.y * d.y + d.z * d.z);
-    //  if (len > 0.0f) {
-    //    d.x /= len;
-    //    d.y /= len;
-    //    d.z /= len;
-    //  }
-    //}
+    float intensity = object3d->GetLightIntensity();
+    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 5.0f)) {
+      object3d->SetLightIntensity(intensity);
+    }
 
-    //// 球体の拡縮、回転、移動
-    // ImGui::Separator();
-    // ImGui::Text("Sphere");
-    // ImGui::DragFloat3("scale", &transform.scale.x, 0.01f);
-    // ImGui::DragFloat3("rotate", &transform.rotate.x, 0.01f);
-    // ImGui::DragFloat3("translate", &transform.translate.x, 0.01f);
+    // ─────────────────────
+    // Obj
+    // ─────────────────────
 
-    // ImGui::Spacing();
+    ImGui::SeparatorText("Object");
 
-    //// UIの移動
-    // ImGui::Text("UI");
-    // ImGui::SliderFloat3("translationSprite", &transformSprite.translate.x,
-    // 0.0f,
-    //                     1280.0f);
-    // ImGui::DragFloat3("scaleSprite", &transformSprite.scale.x, 0.01f);
-    // ImGui::DragFloat3("rotationSprite", &transformSprite.rotate.x, 0.01f);
+    {
+      Vector3 pos = object3d->GetPosition();
+      if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
+        object3d->SetPosition(pos);
+      }
+    }
 
-    ///*ImGui::Checkbox("useMonsterBall", &useMonsterBall);*/
+    {
+      Vector3 scale = object3d->GetScale();
+      if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, -10.0f, 10.0f)) {
+        object3d->SetScale(scale);
+      }
+    }
 
-    // ImGui::Separator();
-    // ImGui::Text("UVTransform");
-    // ImGui::DragFloat2("UVTranslate", &uvTransformSprite.translate.x, 0.01f,
-    //                   -10.0f, 10.0f);
-    // ImGui::DragFloat2("UVScale", &uvTransformSprite.scale.x, 0.01f, -10.0f,
-    //                   10.0f);
-    // ImGui::SliderAngle("UVRotate", &uvTransformSprite.rotate.z);
+    {
+      Vector3 rot = object3d->GetRotation(); // ← 正しい！
+      if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f, -6.28f, 6.28f)) {
+        object3d->SetRotation(rot);
+      }
+    }
 
-    //// ライト
-    // ImGui::Separator();
-    // ImGui::Text("Directional Light");
-    // ImGui::ColorEdit3("Light Color", &directionalLightData->color.x);
-    // ImGui::DragFloat3("Direction", &directionalLightData->direction.x, 0.01f,
-    //                   -1.0f, 1.0f);
+    {
+      Vector4 color = object3d->GetColor();
+      float col[4] = {color.x, color.y, color.z, color.w};
 
-    //// ライトの正規化
-    // Vector3 &direction = directionalLightData->direction;
-    // float length =
-    //     std::sqrt(direction.x * direction.x + direction.y * direction.y +
-    //               direction.z * direction.z);
-    // if (length > 0.0f) {
-    //   direction.x /= length;
-    //   direction.y /= length;
-    //   direction.z /= length;
-    // }
+      // ImGui カラーピッカー
+      if (ImGui::ColorEdit4("Color", col)) {
 
-    // ImGui::DragFloat("Intensity", &directionalLightData->intensity, 0.01f,
-    // 0.0f,
-    //                  10.0f);
+        // float[4] → Vector4 に戻す
+        Vector4 newColor(col[0], col[1], col[2], col[3]);
+
+        // Object3d 経由で Model に反映
+        object3d->SetColor(newColor);
+      }
+    }
+
+
     ImGui::End();
 
     // ComPtr<ID3D12InfoQueue> infoQueue;
@@ -1745,7 +1691,7 @@ object3d->SetModel("axis");
     ID3D12DescriptorHeap *descriptorHeaps[] = {dxCommon->GetSrvDescriptorHeap()};
     dxCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
 
-    sprite->Draw();
+    //sprite->Draw();
     object3d->Draw();
 
     // ★ パイプラインの設定

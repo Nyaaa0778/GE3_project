@@ -1,14 +1,14 @@
 #include "MathUtility.h"
 
+#include <cmath>
+
 namespace MathUtility {
 
 //================================================================================
 // ベクトル演算
 //================================================================================
 
-/// <summary>
-/// ベクトル同士の加算
-/// </summary>
+// 加算
 Vector2 Add(const Vector2 &v1, const Vector2 &v2) {
   return {v1.x + v2.x, v1.y + v2.y};
 }
@@ -16,9 +16,7 @@ Vector3 Add(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
 }
 
-/// <summary>
-/// ベクトル同士の減算
-/// </summary>
+// 減算
 Vector2 Subtract(const Vector2 &v1, const Vector2 &v2) {
   return {v1.x - v2.x, v1.y - v2.y};
 }
@@ -26,9 +24,7 @@ Vector3 Subtract(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
 }
 
-/// <summary>
-/// スカラー倍
-/// </summary>
+// 乗算
 Vector2 Multiply(const Vector2 &v1, const Vector2 &v2) {
   return {v1.x * v2.x, v1.y * v2.y};
 }
@@ -36,11 +32,38 @@ Vector3 Multiply(float s, const Vector3 &v1) {
   return {s * v1.x, s * v1.y, s * v1.z};
 }
 
+// 外積
+Vector3 Cross(const Vector3 &a, const Vector3 &b) {
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+// 内積
+float Dot(const Vector3 &a, const Vector3 &b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// 正規化
+Vector3 Normalize(const Vector3 &v) {
+  float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+  if (len == 0.0f) {
+    return {0.0f, 0.0f, 0.0f}; // ゼロ割り防止
+  }
+  return {v.x / len, v.y / len, v.z / len};
+}
+
 //================================================================================
 // ベクトル演算子オーバーロード
 //================================================================================
 
 //---------- Vector2 ----------
+
+Vector2 operator+(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x + v2.x, v1.y + v2.y};
+}
+
+Vector2 operator-(const Vector2 &v1, const Vector2 &v2) {
+  return {v1.x - v2.x, v1.y - v2.y};
+}
 
 Vector2 &operator+=(Vector2 &v1, const Vector2 &v2) {
   v1.x += v2.x;
@@ -59,8 +82,21 @@ Vector2 &operator*=(Vector2 &v, float s) {
   v.y *= s;
   return v;
 }
+Vector2 &operator*=(float s, Vector2 &v) {
+  v.x *= s;
+  v.y *= s;
+  return v;
+}
 
 //---------- Vector3 ----------
+
+Vector3 operator+(const Vector3 &v1, const Vector3 &v2) {
+  return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
+}
+
+Vector3 operator-(const Vector3 &v1, const Vector3 &v2) {
+  return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
+}
 
 Vector3 &operator+=(Vector3 &v1, const Vector3 &v2) {
   v1.x += v2.x;
@@ -77,6 +113,12 @@ Vector3 &operator-=(Vector3 &v1, const Vector3 &v2) {
 }
 
 Vector3 &operator*=(Vector3 &v, float s) {
+  v.x *= s;
+  v.y *= s;
+  v.z *= s;
+  return v;
+}
+Vector3 &operator*=(float s, Vector3 &v) {
   v.x *= s;
   v.y *= s;
   v.z *= s;
@@ -289,7 +331,6 @@ Matrix4x4 MakeScaleMatrix(const Vector3 &scale) {
 
   return result;
 }
-Matrix4x4 MakeScaleMatrix(const Vector3 &scale);
 /// <summary>
 /// X軸周りの回転行列
 /// </summary>

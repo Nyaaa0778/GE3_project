@@ -46,19 +46,45 @@ public:
   const Vector3 &GetRotation() const { return rotation_; }
   // 拡縮
   const Vector3 &GetScale() const { return scale_; }
+  // 色
+  const Vector4 &GetColor() const;
+
+  // ライトの色
+  const Vector4 &GetLightColor() const { return directionalLightData_->color; }
+  // ライトの向き
+  const Vector3 &GetLightDirection() const {
+    return directionalLightData_->direction;
+  }
+  // ライトの輝度
+  float GetLightIntensity() const { return directionalLightData_->intensity; }
 
   //================================================================================
   // Setter
   //================================================================================
 
   // 位置
-  void SetPosition(const Vector3 &position);
+  void SetPosition(const Vector3 &position) { position_ = position; }
   // 回転
-  void SetRotation(Vector3 rotation);
+  void SetRotation(Vector3 rotation) { rotation_ = rotation; }
   // 拡縮
-  void SetScale(const Vector3 &scale);
+  void SetScale(const Vector3 &scale) { scale_ = scale; }
+  // 色
+  void SetColor(const Vector4 &color);
   // モデル
   void SetModel(const std::string &modelName);
+
+  // ライトの色
+  void SetLightColor(const Vector4 &color) {
+    directionalLightData_->color = color;
+  }
+  // ライトの向き
+  void SetLightDirection(const Vector3 &direction) {
+    directionalLightData_->direction = direction;
+  }
+  // ライトの輝度
+  void SetLightIntensity(float intensity) {
+    directionalLightData_->intensity = intensity;
+  }
 
 private:
   //================================================================================
@@ -121,7 +147,7 @@ private:
   // 位置
   Vector3 position_ = {0.0f, 0.0f, 0.0f};
   // 回転
-  Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
+  Vector3 rotation_ = {0.0f, 3.14f, 0.0f};
   // 拡縮
   Vector3 scale_ = {1.0f, 1.0f, 1.0f};
 

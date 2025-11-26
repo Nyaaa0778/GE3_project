@@ -133,15 +133,18 @@ void Object3d::CreateDirectionalLightData() {
 }
 
 //================================================================================
+// Getter
+//================================================================================
+
+// 色
+const Vector4 &Object3d::GetColor() const { return model_->GetColor(); }
+
+//================================================================================
 // Setter
 //================================================================================
 
-// 位置
-void Object3d::SetPosition(const Vector3 &position) { position_ = position; }
-// 回転
-void Object3d::SetRotation(Vector3 rotation) { rotation_ = rotation; }
-// 拡縮
-void Object3d::SetScale(const Vector3 &scale) { scale_ = scale; }
+// 色
+void Object3d::SetColor(const Vector4 &color) { model_->SetColor(color); }
 // モデル
 void Object3d::SetModel(const std::string &modelName) {
   auto modelManager = ModelManager::GetInstance();

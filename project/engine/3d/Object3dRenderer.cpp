@@ -92,9 +92,8 @@ void Object3dRenderer::CreateRootSignature() {
   staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
   staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
   staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX; // たくさんのMipmapを使う
-  staticSamplers[0].ShaderRegister = 0;
-  // レジスタ番号0を使う staticSamplers[0].ShaderVisibility =
-  D3D12_SHADER_VISIBILITY_PIXEL;
+  staticSamplers[0].ShaderRegister = 0; // レジスタ番号0を使う
+  staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
   descriptionRootSignature.pStaticSamplers = staticSamplers;
   descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
@@ -144,6 +143,13 @@ void Object3dRenderer::CreateGraphicsPipeline() {
   // すべての色要素を書き込む
   blendDesc.RenderTarget[0].RenderTargetWriteMask =
       D3D12_COLOR_WRITE_ENABLE_ALL;
+  blendDesc.RenderTarget[0].BlendEnable = TRUE;
+  blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+  blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+  blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+  blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+  blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+  blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 
   // RasterizerStateの設定
   D3D12_RASTERIZER_DESC rasterizerDesc{};
@@ -181,6 +187,7 @@ void Object3dRenderer::CreateGraphicsPipeline() {
   graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 
   // DepthStencilの設定
+  graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
   graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
   // 書き込むRTVの情報
