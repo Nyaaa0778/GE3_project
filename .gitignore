@@ -327,3 +327,6 @@ FodyWeavers.xsd
 project/Dumps/
 project/logs/
 imgui.ini
+
+# Debug symbols
+*.pdb
