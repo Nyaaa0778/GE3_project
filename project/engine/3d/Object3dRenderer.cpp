@@ -92,14 +92,14 @@ void Object3dRenderer::CreateRootSignature() {
   staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
   staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER; // 比較しない
   staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX; // たくさんのMipmapを使う
-  staticSamplers[0].ShaderRegister = 0; // レジスタ番号0を使う
+  staticSamplers[0].ShaderRegister = 0;         // レジスタ番号0を使う
   staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
   descriptionRootSignature.pStaticSamplers = staticSamplers;
   descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
   // シリアライズしてバイナリする
-  ID3DBlob *signatureBlob = nullptr;
-  ID3DBlob *errorBlob = nullptr;
+  ComPtr<ID3DBlob> signatureBlob = nullptr;
+  ComPtr<ID3DBlob> errorBlob = nullptr;
   HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature,
                                            D3D_ROOT_SIGNATURE_VERSION_1,
                                            &signatureBlob, &errorBlob);

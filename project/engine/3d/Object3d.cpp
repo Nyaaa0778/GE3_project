@@ -1,4 +1,5 @@
 #include "Object3d.h"
+#include "Camera.h"
 #include "DirectXCommon.h"
 #include "MathUtility.h"
 #include "Model.h"
@@ -31,9 +32,10 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer,
   CreateDirectionalLightData();
 
   // Transform変数を作成
-  transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, -3.14f, 0.0f}, {0.0f, 0.0f, 0.0f}};
-  cameraTransform_ = {
-      {1.0f, 1.0f, 1.0f}, {0.3f, 0.0f, 0.0f}, {0.0f, 4.0f, -10.0f}};
+  transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+
+  // デフォルトカメラを設定
+  camera_ = object3dRenderer_->GetDefaultCamera();
 }
 /// <summary>
 /// 更新
@@ -41,27 +43,23 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer,
 void Object3d::Update() {
 
   transform_.scale = {scale_.x, scale_.y, scale_.z};
-  transform_.rotate = {rotation_.x, rotation_.y, rotation_.z};
-  transform_.translate = {position_.x, position_.y, position_.z};
+  transform_.rotation = {rotation_.x, rotation_.y, rotation_.z};
+  transform_.translation = {position_.x, position_.y, position_.z};
 
   // transformからworldMatrixを作成
-  Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate,
-                                           transform_.translate);
+  Matrix4x4 worldMatrix = MakeAffineMatrix(
+      transform_.scale, transform_.rotation, transform_.translation);
 
-  // cameraTransformからcameraMatrixを作成
-  Matrix4x4 cameraMatrix =
-      MakeAffineMatrix(cameraTransform_.scale, cameraTransform_.rotate,
-                       cameraTransform_.translate);
-  // cameraMatrixからviewMatrixを作成
-  Matrix4x4 viewMatrix = MakeInverseMatrix(cameraMatrix);
-  // projectionMatrixを作成して透視投影行列を書き込む
-  Matrix4x4 projectionMatrix = MakePerspectiveFovMatrix(
-      0.45f,
-      float(object3dRenderer_->GetDxCommon()->GetClientWidth()) /
-          float(object3dRenderer_->GetDxCommon()->GetClientHeight()),
-      0.1f, 100.0f);
+  Matrix4x4 worldViewProjectionMatrix;
 
-  transformationMatrixData_->WVP = worldMatrix * viewMatrix * projectionMatrix;
+  if (camera_) {
+    const Matrix4x4 &viewProjectionMatrix = camera_->GetViewProjectionMatrix();
+    worldViewProjectionMatrix = worldMatrix * viewProjectionMatrix;
+  } else {
+    worldViewProjectionMatrix = worldMatrix;
+  }
+
+  transformationMatrixData_->WVP = worldViewProjectionMatrix;
   transformationMatrixData_->World = worldMatrix;
 }
 /// <summary>
