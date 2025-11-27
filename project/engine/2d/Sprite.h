@@ -42,7 +42,7 @@ public:
   // 位置
   const Vector2 &GetPosition() const { return position_; }
   // 回転
-  const float &GetRotation() const { return rotation_; }
+  const float &GetRotate() const { return rotation_; }
   // 色
   const Vector4 &GetColor() const { return materialData_->color; }
   // 拡縮

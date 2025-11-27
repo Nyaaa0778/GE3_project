@@ -4,6 +4,7 @@
 #include <wrl.h>
 
 class DirectXCommon;
+class Camera;
 
 class Object3dRenderer {
 public:
@@ -29,6 +30,18 @@ public:
   // DirectXCommon
   DirectXCommon *GetDxCommon() const { return dxCommon_; }
 
+  // デフォルトカメラ
+  Camera *GetDefaultCamera() const { return defaultCamera_; }
+
+  //================================================================================
+  // Setter
+  //================================================================================
+
+  // デフォルトカメラ
+  void SetDefaultCamera(Camera *defaultCamera) {
+    defaultCamera_ = defaultCamera;
+  }
+
 private:
   //================================================================================
   // 型エイリアス
@@ -44,6 +57,9 @@ private:
 
   // DirectXCommonのポインタ
   DirectXCommon *dxCommon_ = nullptr;
+
+  // デフォルトカメラ
+  Camera *defaultCamera_ = nullptr;
 
   //================================================================================
   // GPU リソース

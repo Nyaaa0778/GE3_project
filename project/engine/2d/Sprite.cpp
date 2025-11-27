@@ -85,8 +85,8 @@ void Sprite::Update() {
                 {0.0f, 0.0f, rotation_},
                 {position_.x, position_.y, 0.0f}};
 
-  Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotate,
-                                           transform_.translate);
+  Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotation,
+                                           transform_.translation);
   Matrix4x4 viewMatrix = MakeIdentityMatrix();
   Matrix4x4 projectionMatrix = MakeOrthographicMatrix(
       0.0f, 0.0f,

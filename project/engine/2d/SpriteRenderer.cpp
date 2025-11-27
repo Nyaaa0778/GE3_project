@@ -99,8 +99,8 @@ void SpriteRenderer::CreateRootSignature() {
   descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
   // シリアライズしてバイナリする
-  ID3DBlob *signatureBlob = nullptr;
-  ID3DBlob *errorBlob = nullptr;
+  ComPtr<ID3DBlob> signatureBlob = nullptr;
+  ComPtr<ID3DBlob> errorBlob = nullptr;
   HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature,
                                            D3D_ROOT_SIGNATURE_VERSION_1,
                                            &signatureBlob, &errorBlob);

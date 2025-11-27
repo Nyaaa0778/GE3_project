@@ -12,6 +12,7 @@
 
 class Object3dRenderer;
 class Model;
+class Camera;
 
 class Object3d {
 public:
@@ -43,7 +44,7 @@ public:
   // 位置
   const Vector3 &GetPosition() const { return position_; }
   // 回転
-  const Vector3 &GetRotation() const { return rotation_; }
+  const Vector3 &GetRotate() const { return rotation_; }
   // 拡縮
   const Vector3 &GetScale() const { return scale_; }
   // 色
@@ -86,6 +87,9 @@ public:
     directionalLightData_->intensity = intensity;
   }
 
+  // カメラ
+  void SetCamera(Camera *camera) { camera_ = camera; }
+
 private:
   //================================================================================
   // 内部構造体
@@ -124,6 +128,9 @@ private:
   // Modelのポインタ
   Model *model_ = nullptr;
 
+  // Cameraのポインタ
+  Camera *camera_ = nullptr;
+
   //================================================================================
   // GPUリソース（定数バッファ）
   //================================================================================
@@ -139,7 +146,7 @@ private:
   DirectionalLight *directionalLightData_ = nullptr;
 
   //================================================================================
-  // Transform (3Dオブジェクト / カメラ)
+  // Transform
   //================================================================================
 
   // 3DオブジェクトのTransform
@@ -150,9 +157,6 @@ private:
   Vector3 rotation_ = {0.0f, 3.14f, 0.0f};
   // 拡縮
   Vector3 scale_ = {1.0f, 1.0f, 1.0f};
-
-  // カメラのTransform
-  Transform cameraTransform_{};
 
 private:
   //================================================================================

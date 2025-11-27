@@ -3,6 +3,6 @@
 
 struct Transform {
   Vector3 scale;
-  Vector3 rotate;
-  Vector3 translate;
+  Vector3 rotation;
+  Vector3 translation;
 };
