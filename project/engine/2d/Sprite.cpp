@@ -55,7 +55,7 @@ void Sprite::Update() {
 
   // テクスチャのメタデータを取得
   const DirectX::TexMetadata &metadata =
-      TextureManager::GetInstance()->GetMetaData(textureIndex_);
+      TextureManager::GetInstance()->GetMetaData(filePath_);
 
   float textureLeft = textureLeftTop_.x / metadata.width;
   float textureRight = (textureLeftTop_.x + textureSize_.x) / metadata.width;
@@ -85,8 +85,8 @@ void Sprite::Update() {
                 {0.0f, 0.0f, rotation_},
                 {position_.x, position_.y, 0.0f}};
 
-  Matrix4x4 worldMatrix = MakeAffineMatrix(transform_.scale, transform_.rotation,
-                                           transform_.translation);
+  Matrix4x4 worldMatrix = MakeAffineMatrix(
+      transform_.scale, transform_.rotation, transform_.translation);
   Matrix4x4 viewMatrix = MakeIdentityMatrix();
   Matrix4x4 projectionMatrix = MakeOrthographicMatrix(
       0.0f, 0.0f,
@@ -128,7 +128,7 @@ void Sprite::Draw() {
   spriteRenderer_->GetDxCommon()
       ->GetCommandList()
       ->SetGraphicsRootDescriptorTable(
-          2, TextureManager::GetInstance()->GetSrvHandlGPU(textureIndex_));
+          2, TextureManager::GetInstance()->GetSrvHandlGPU(filePath_));
 
   // 描画
   spriteRenderer_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(
@@ -213,7 +213,7 @@ void Sprite::CreateTransformationMatrixData() {
 void Sprite::AdjustTextureSize() {
   // テクスチャメタデータを取得
   const DirectX::TexMetadata &metadata =
-      TextureManager::GetInstance()->GetMetaData(textureIndex_);
+      TextureManager::GetInstance()->GetMetaData(filePath_);
 
   textureSize_.x = static_cast<float>(metadata.width);
   textureSize_.y = static_cast<float>(metadata.height);

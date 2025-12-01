@@ -11,6 +11,7 @@
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
 #include "WinApp.h"
+#include"ShaderResourceViewManager.h"
 
 #include <Matrix4x4.h>
 #include <Transform.h>
@@ -155,6 +156,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   dxCommon = new DirectXCommon();
   dxCommon->Initialize(winApp);
 
+  ShaderResourceViewManager* srvManager = nullptr;
+  //SRVマネージャの初期化
+  srvManager = new ShaderResourceViewManager();
+  srvManager->Initialize(dxCommon);
+
   // ポインタ
   SpriteRenderer *spriteRenderer = nullptr;
   // スプライト共通部の初期化
@@ -162,7 +168,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   spriteRenderer->Initialize(dxCommon);
 
   // テクスチャマネージャの初期化
-  TextureManager::GetInstance()->Initialize(dxCommon);
+  TextureManager::GetInstance()->Initialize(dxCommon,srvManager);
 
   // ポインタ
   Sprite *sprite = nullptr;
@@ -218,98 +224,98 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     // ゲームの処理
 
-    ImGui_ImplDX12_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
+    //ImGui_ImplDX12_NewFrame();
+    //ImGui_ImplWin32_NewFrame();
+    //ImGui::NewFrame();
 
-    ImGui::Begin("Window");
+    //ImGui::Begin("Window");
 
-    // ─────────────────────
-    // ライト
-    // ─────────────────────
+    //// ─────────────────────
+    //// ライト
+    //// ─────────────────────
 
-    ImGui::SeparatorText("Directional Light");
+    //ImGui::SeparatorText("Directional Light");
 
-    Vector4 color = object3d->GetLightColor();
-    if (ImGui::ColorEdit3("Color", &color.x)) {
-      object3d->SetLightColor({color.x, color.y, color.z, 1.0f});
-    }
+    //Vector4 color = object3d->GetLightColor();
+    //if (ImGui::ColorEdit3("Color", &color.x)) {
+    //  object3d->SetLightColor({color.x, color.y, color.z, 1.0f});
+    //}
 
-    Vector3 dir = object3d->GetLightDirection();
-    if (ImGui::SliderFloat3("Direction", &dir.x, -1.0f, 1.0f)) {
-      object3d->SetLightDirection(dir); // ← そのまま渡す
-    }
+    //Vector3 dir = object3d->GetLightDirection();
+    //if (ImGui::SliderFloat3("Direction", &dir.x, -1.0f, 1.0f)) {
+    //  object3d->SetLightDirection(dir); // ← そのまま渡す
+    //}
 
-    float intensity = object3d->GetLightIntensity();
-    if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 5.0f)) {
-      object3d->SetLightIntensity(intensity);
-    }
+    //float intensity = object3d->GetLightIntensity();
+    //if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 5.0f)) {
+    //  object3d->SetLightIntensity(intensity);
+    //}
 
-    // ─────────────────────
-    // Obj
-    // ─────────────────────
+    //// ─────────────────────
+    //// Obj
+    //// ─────────────────────
 
-    ImGui::SeparatorText("Object");
+    //ImGui::SeparatorText("Object");
 
-    {
-      Vector3 pos = object3d->GetPosition();
-      if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
-        object3d->SetPosition(pos);
-      }
-    }
+    //{
+    //  Vector3 pos = object3d->GetPosition();
+    //  if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
+    //    object3d->SetPosition(pos);
+    //  }
+    //}
 
-    {
-      Vector3 scale = object3d->GetScale();
-      if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, -10.0f, 10.0f)) {
-        object3d->SetScale(scale);
-      }
-    }
+    //{
+    //  Vector3 scale = object3d->GetScale();
+    //  if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, -10.0f, 10.0f)) {
+    //    object3d->SetScale(scale);
+    //  }
+    //}
 
-    {
-      Vector3 rot = object3d->GetRotate(); // ← 正しい！
-      if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f, -6.28f, 6.28f)) {
-        object3d->SetRotation(rot);
-      }
-    }
+    //{
+    //  Vector3 rot = object3d->GetRotate(); // ← 正しい！
+    //  if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f, -6.28f, 6.28f)) {
+    //    object3d->SetRotation(rot);
+    //  }
+    //}
 
-    {
-      Vector4 color = object3d->GetColor();
-      float col[4] = {color.x, color.y, color.z, color.w};
+    //{
+    //  Vector4 color = object3d->GetColor();
+    //  float col[4] = {color.x, color.y, color.z, color.w};
 
-      // ImGui カラーピッカー
-      if (ImGui::ColorEdit4("Color", col)) {
+    //  // ImGui カラーピッカー
+    //  if (ImGui::ColorEdit4("Color", col)) {
 
-        // float[4] → Vector4 に戻す
-        Vector4 newColor(col[0], col[1], col[2], col[3]);
+    //    // float[4] → Vector4 に戻す
+    //    Vector4 newColor(col[0], col[1], col[2], col[3]);
 
-        // Object3d 経由で Model に反映
-        object3d->SetColor(newColor);
-      }
-    }
+    //    // Object3d 経由で Model に反映
+    //    object3d->SetColor(newColor);
+    //  }
+    //}
 
-    // ─────────────────────
-    // カメラ
-    // ─────────────────────
+    //// ─────────────────────
+    //// カメラ
+    //// ─────────────────────
 
-    ImGui::SeparatorText("Camera");
+    //ImGui::SeparatorText("Camera");
 
-    // 位置
-    {
-      Vector3 pos = camera->GetTranslate();
-      if (ImGui::DragFloat3("Camera Position", &pos.x, 0.1f)) {
-        camera->SetTranslate(pos);
-      }
-    }
+    //// 位置
+    //{
+    //  Vector3 pos = camera->GetTranslate();
+    //  if (ImGui::DragFloat3("Camera Position", &pos.x, 0.1f)) {
+    //    camera->SetTranslate(pos);
+    //  }
+    //}
 
-    // 回転（ラジアン or 度はお好みで）
-    {
-      Vector3 rot = camera->GetRotate();
-      if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
-        camera->SetRotate(rot);
-      }
-    }
+    //// 回転（ラジアン or 度はお好みで）
+    //{
+    //  Vector3 rot = camera->GetRotate();
+    //  if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
+    //    camera->SetRotate(rot);
+    //  }
+    //}
 
-    ImGui::End();
+    //ImGui::End();
 
     /////
     ///// 更新処理 ↓
@@ -328,24 +334,20 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     ///// 更新処理 ↑
     /////
 
-    ImGui::Render();
+    //ImGui::Render();
 
     /////
     ///// 描画処理 ↓
     /////
 
+    srvManager->BeginDraw();
     dxCommon->BeginDraw();
 
-    // ★ ImGui / 自前テクスチャ用 SRV ヒープをバインド
-    ID3D12DescriptorHeap *descriptorHeaps[] = {
-        dxCommon->GetSrvDescriptorHeap()};
-    dxCommon->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
-
-    // sprite->Draw();
+     sprite->Draw();
     object3d->Draw();
-    // 実際のcommandListのImGuiの描画コマンドを積む
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
-                                  dxCommon->GetCommandList());
+    //// 実際のcommandListのImGuiの描画コマンドを積む
+    //ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(),
+    //                              dxCommon->GetCommandList());
 
     dxCommon->EndDraw();
 
@@ -356,10 +358,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     TextureManager::GetInstance()->ReleaseIntermediateResources();
   }
 
-  // ImGuiの終了処理、初期化と逆順に行う
-  ImGui_ImplDX12_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-  ImGui::DestroyContext();
+  //// ImGuiの終了処理、初期化と逆順に行う
+  //ImGui_ImplDX12_Shutdown();
+  //ImGui_ImplWin32_Shutdown();
+  //ImGui::DestroyContext();
 
   //// 解放処理
   // CloseWindow(winApp->GetHwnd());
@@ -381,6 +383,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   TextureManager::GetInstance()->Finalize();
   ModelManager::GetInstance()->Finalize();
+
+  //SrvManager
+  delete srvManager;
 
   // DirectXを解放
   delete dxCommon;

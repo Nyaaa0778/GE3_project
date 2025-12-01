@@ -197,7 +197,7 @@ private:
 
 public:
   //================================================================================
-  // シェーダ / リソース生成
+  // シェーダ / GPUリソース / デスクリプタ生成
   //================================================================================
 
   /// <summary>
@@ -237,6 +237,18 @@ public:
   ComPtr<ID3D12Resource>
   UploadTextureData(const ComPtr<ID3D12Resource> &texture,
                     const DirectX::ScratchImage &mipImages);
+
+  /// <summary>
+  /// デスクリプタヒープの生成
+  /// </summary>
+  /// <param name="heapType">RTV、SRV、DSVなど</param>
+  /// <param name="numDescriptors">作成するディスクリプタ（ビュー）の数</param>
+  /// <param
+  /// name="shaderVisible">GPU（シェーダー）から参照できるようにするかどうか</param>
+  /// <returns>生成したデスクリプタヒープ</returns>
+  ComPtr<ID3D12DescriptorHeap>
+  CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors,
+                       bool shaderVisible);
 
 private:
   //================================================================================
@@ -291,17 +303,7 @@ private:
   /// </summary>
   /// <returns>生成した深度バッファリソース</returns>
   void CreateDepthBuffer();
-  /// <summary>
-  /// デスクリプタヒープの生成
-  /// </summary>
-  /// <param name="heapType">RTV、SRV、DSVなど</param>
-  /// <param name="numDescriptors">作成するディスクリプタ（ビュー）の数</param>
-  /// <param
-  /// name="shaderVisible">GPU（シェーダー）から参照できるようにするかどうか</param>
-  /// <returns>生成したデスクリプタヒープ</returns>
-  ComPtr<ID3D12DescriptorHeap>
-  CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType, UINT numDescriptors,
-                       bool shaderVisible);
+  
   /// <summary>
   /// 各種デスクリプタヒープの生成
   /// </summary>

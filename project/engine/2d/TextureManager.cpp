@@ -1,5 +1,6 @@
 #include "TextureManager.h"
 #include "DirectXCommon.h"
+#include "ShaderResourceViewManager.h"
 #include "StringUtility.h"
 
 using namespace StringUtility;
@@ -29,8 +30,11 @@ TextureManager *TextureManager::GetInstance() {
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonのポインタ</param>
-void TextureManager::Initialize(DirectXCommon *dxCommon) {
+/// /// <param name="srvManager">SrvManagerのポインタ</param>
+void TextureManager::Initialize(DirectXCommon *dxCommon,
+                                ShaderResourceViewManager *srvManager) {
   dxCommon_ = dxCommon;
+  srvManager_ = srvManager;
 
   // SRVの数と同数
   textureDatas_.reserve(dxCommon_->kMaxSRVCount);
@@ -55,24 +59,15 @@ void TextureManager::Finalize() {
 /// <returns></returns>
 void TextureManager::LoadTexture(const std::string &filePath) {
 
-  // 読み込み済みテクスチャを検索
-  auto it = std::find_if(textureDatas_.begin(), textureDatas_.end(),
-                         [&](TextureData &textureData) {
-                           return textureData.filePath == filePath;
-                         });
-
-  // 読み込み済みなら早期return
-  if (it != textureDatas_.end()) {
+  // 読み込み済みテクスチャを検索、読み込み済みなら早期return
+  if (textureDatas_.contains(filePath)) {
     return;
   }
 
-  // テクスチャ枚数上限チェック
-  assert(textureDatas_.size() + kSRVIndexTop < dxCommon_->kMaxSRVCount);
+  TextureData &textureData = textureDatas_[filePath];
 
-  // テクスチャデータを追加
-  textureDatas_.resize(textureDatas_.size() + 1);
-  // 追加したテクスチャデータの参照を取得する
-  TextureData &textureData = textureDatas_.back();
+  // テクスチャ枚数上限チェック
+  assert(srvManager_->CanAllocate());
 
   // テクスチャファイルを読んでプログラムで扱えるようにする
   DirectX::ScratchImage image{};
@@ -89,18 +84,28 @@ void TextureManager::LoadTexture(const std::string &filePath) {
                                 0, mipImages);
   assert(SUCCEEDED(hr));
 
-  textureData.filePath = filePath;
   textureData.metadata = mipImages.GetMetadata();
   textureData.resource = dxCommon_->CreateTextureResource(textureData.metadata);
 
-  // テクスチャデータの要素番号をSRVのインデックスにする
-  uint32_t srvIndex =
-      static_cast<uint32_t>(textureDatas_.size() - 1 + kSRVIndexTop);
+  textureData.srvIndex = srvManager_->Allocate();
+  textureData.srvHandleCPU =
+      srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
+  textureData.srvHandleGPU =
+      srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
 
-  textureData.srvHandleCPU = dxCommon_->GetSrvCPUDescriptorHandle(srvIndex);
-  textureData.srvHandleGPU = dxCommon_->GetSrvGPUDescriptorHandle(srvIndex);
+  srvManager_->CreateSRVfortexture2D(
+      textureData.srvIndex, textureData.resource.Get(),
+      textureData.metadata.format,
+      static_cast<UINT>(textureData.metadata.mipLevels));
 
-  D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+  //// テクスチャデータの要素番号をSRVのインデックスにする
+  // uint32_t srvIndex =
+  //     static_cast<uint32_t>(textureDatas_.size() - 1 + kSRVIndexTop);
+
+  // textureData.srvHandleCPU = dxCommon_->GetSrvCPUDescriptorHandle(srvIndex);
+  // textureData.srvHandleGPU = dxCommon_->GetSrvGPUDescriptorHandle(srvIndex);
+
+  /*D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
   srvDesc.Format = textureData.metadata.format;
   srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
   srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -108,7 +113,7 @@ void TextureManager::LoadTexture(const std::string &filePath) {
       static_cast<UINT>(textureData.metadata.mipLevels);
 
   dxCommon_->GetDevice()->CreateShaderResourceView(
-      textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);
+      textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);*/
 
   // 転送用に生成した中間リソースをテクスチャデータ構造体に格納
   textureData.intermediateResource =
@@ -119,7 +124,12 @@ void TextureManager::LoadTexture(const std::string &filePath) {
 /// 中間リソースの解放
 /// </summary>
 void TextureManager::ReleaseIntermediateResources() {
-  for (TextureData &textureData : textureDatas_) {
+  for (std::pair<const std::string, TextureData> &pair : textureDatas_) {
+
+    // 2番目（value側）を取り出す
+    TextureData &textureData = pair.second;
+
+    // 中間リソースを解放
     textureData.intermediateResource.Reset();
   }
 }
@@ -136,52 +146,52 @@ void TextureManager::ReleaseIntermediateResources() {
 /// 該当するテクスチャが存在しない場合はassertによりプログラムを停止する</returns>
 uint32_t
 TextureManager::GetTextureIndexByFilePath(const std::string &filePath) {
-  auto it = std::find_if(textureDatas_.begin(), textureDatas_.end(),
-                         [&](TextureData &textureData) {
-                           return textureData.filePath == filePath;
-                         });
+  // map からテクスチャを検索
+  std::unordered_map<std::string, TextureData>::const_iterator it =
+      textureDatas_.find(filePath);
 
-  if (it != textureDatas_.end()) {
-    // 読み込み済みなら要素番号を返す
-    uint32_t textureIndex =
-        static_cast<uint32_t>(std::distance(textureDatas_.begin(), it));
-    return textureIndex;
-  }
+  // 存在しなければ停止
+  assert(it != textureDatas_.end());
 
-  assert(0);
-
-  return 0;
+  // value の中にある SRV index を返す
+  return it->second.srvIndex;
 }
 
 /// <summary>
 /// SRVハンドルの取得
 /// </summary>
-/// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+/// <param name="filePath">テクスチャのファイルパス</param>
 /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
 D3D12_GPU_DESCRIPTOR_HANDLE
-TextureManager::GetSrvHandlGPU(uint32_t textureIndex) {
-  // 範囲外指定違反チェック（テクスチャ番号が正常範囲内である）
-  assert(textureIndex < textureDatas_.size());
+TextureManager::GetSrvHandlGPU(const std::string &filePath) {
+  // map からテクスチャを検索
+  std::unordered_map<std::string, TextureData>::iterator it =
+      textureDatas_.find(filePath);
 
-  // テクスチャデータの参照を取得
-  TextureData &textureData = textureDatas_[textureIndex];
+  // 見つからなかったら停止
+  assert(it != textureDatas_.end());
 
-  // そのテクスチャに対応するGPUのSRVハンドルを返す
+  // テクスチャデータ（value）を取得
+  TextureData &textureData = it->second;
+
+  // そのテクスチャの GPU SRV ハンドルを返す
   return textureData.srvHandleGPU;
 }
 
 /// <summary>
 /// メタデータを取得
 /// </summary>
-/// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+/// <param name="filePath">テクスチャのファイルパス</param>
 /// <returns>指定テクスチャの幅・高さ・フォーマットなどのメタデータ</returns>
-const DirectX::TexMetadata &TextureManager::GetMetaData(uint32_t textureIndex) {
-  // 範囲外指定違反チェック（テクスチャ番号が正常範囲内である）
-  assert(textureIndex < textureDatas_.size());
+const DirectX::TexMetadata &
+TextureManager::GetMetaData(const std::string &filePath) {
+  // キーでテクスチャを検索
+  std::unordered_map<std::string, TextureData>::iterator it =
+      textureDatas_.find(filePath);
 
-  // テクスチャデータの参照を取得
-  TextureData &textureData = textureDatas_[textureIndex];
+  // 見つからなかったら停止
+  assert(it != textureDatas_.end());
 
-  // そのテクスチャのメタデータを返す
-  return textureData.metadata;
+  // テクスチャデータを取得してメタデータを返す
+  return it->second.metadata;
 }
