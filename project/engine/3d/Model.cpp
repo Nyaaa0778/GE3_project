@@ -34,6 +34,7 @@ void Model::Initialize(ModelCommon *modelCommon,
   // マテリアルデータの作成
   CreateMaterialData();
 }
+
 /// <summary>
 /// 描画
 /// </summary>
