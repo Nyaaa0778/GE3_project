@@ -194,7 +194,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   Object3d *object3d = nullptr;
   // object3dの初期化
   object3d = new Object3d();
-  object3d->Initialize(object3dRenderer, "plane");
+  object3d->Initialize(object3dRenderer, "axis");
 
   /// =============================================
   ///
