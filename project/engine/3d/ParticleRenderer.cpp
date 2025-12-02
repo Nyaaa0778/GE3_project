@@ -1,4 +1,4 @@
-#include "Object3dRenderer.h"
+#include "ParticleRenderer.h"
 #include "DirectXCommon.h"
 
 #include <cassert>
@@ -12,7 +12,7 @@
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonのポインタ</param>
-void Object3dRenderer::Initialize(DirectXCommon *dxCommon) {
+void ParticleRenderer::Initialize(DirectXCommon *dxCommon) {
   // 引数で受け取ってメンバ変数に記録する
   dxCommon_ = dxCommon;
 
@@ -23,7 +23,7 @@ void Object3dRenderer::Initialize(DirectXCommon *dxCommon) {
 /// <summary>
 /// 共通描画設定
 /// </summary>
-void Object3dRenderer::SetupCommonRenderState() {
+void ParticleRenderer::SetupCommonRenderState() {
   // ルートシグネチャをセット
   dxCommon_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   // グラフィックスパイプラインステートをセット
@@ -40,7 +40,7 @@ void Object3dRenderer::SetupCommonRenderState() {
 /// <summary>
 /// ルートシグネチャを作成
 /// </summary>
-void Object3dRenderer::CreateRootSignature() {
+void ParticleRenderer::CreateRootSignature() {
   // RootSignature作成
   D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
   descriptionRootSignature.Flags =
@@ -116,7 +116,7 @@ void Object3dRenderer::CreateRootSignature() {
 /// <summary>
 /// グラフィックスパイプラインの生成
 /// </summary>
-void Object3dRenderer::CreateGraphicsPipeline() {
+void ParticleRenderer::CreateGraphicsPipeline() {
   // ルートシグネチャを生成
   CreateRootSignature();
 
@@ -143,52 +143,10 @@ void Object3dRenderer::CreateGraphicsPipeline() {
   // すべての色要素を書き込む
   blendDesc.RenderTarget[0].RenderTargetWriteMask =
       D3D12_COLOR_WRITE_ENABLE_ALL;
-
-  switch (blendMode_) {
-  case BlendMode::kNone:
-    blendDesc.RenderTarget[0].BlendEnable = FALSE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
-    break;
-  case BlendMode::kNormal:
-    blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-
-    break;
-  case BlendMode::kAdd:
-    blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-
-    break;
-  case BlendMode::kSubtract:
-    blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-
-    break;
-  case BlendMode::kMultiply:
-    blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
-
-    break;
-
-  case BlendMode::kScreen:
-    blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
-    blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-
-    break;
-  }
-
+  blendDesc.RenderTarget[0].BlendEnable = TRUE;
+  blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+  blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+  blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
   blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
   blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
   blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
@@ -245,15 +203,4 @@ void Object3dRenderer::CreateGraphicsPipeline() {
   HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(
       &graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState_));
   assert(SUCCEEDED(hr));
-}
-
-//================================================================================
-// Setter
-//================================================================================
-
-// BlendMode
-void Object3dRenderer::SetBlendMode(BlendMode blendMode) {
-  blendMode_ = blendMode;
-
-  CreateGraphicsPipeline();
 }

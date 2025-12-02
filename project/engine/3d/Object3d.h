@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Object3dRenderer.h"
+
 #include <Matrix4x4.h>
 #include <Transform.h>
 #include <Vector2.h>
@@ -10,7 +12,6 @@
 #include <string>
 #include <wrl.h>
 
-class Object3dRenderer;
 class Model;
 class Camera;
 
@@ -49,6 +50,10 @@ public:
   const Vector3 &GetScale() const { return scale_; }
   // 色
   const Vector4 &GetColor() const;
+  // BlendMode
+  Object3dRenderer::BlendMode GetBlendMode() const {
+    return object3dRenderer_->GetBlendMode();
+  }
 
   // ライトの色
   const Vector4 &GetLightColor() const { return directionalLightData_->color; }
@@ -71,6 +76,10 @@ public:
   void SetScale(const Vector3 &scale) { scale_ = scale; }
   // 色
   void SetColor(const Vector4 &color);
+  // BlendMode
+  void SetBlendMode(Object3dRenderer::BlendMode blendMode) {
+    object3dRenderer_->SetBlendMode(blendMode);
+  }
   // モデル
   void SetModel(const std::string &modelName);
 

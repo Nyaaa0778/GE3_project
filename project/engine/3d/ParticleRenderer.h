@@ -6,25 +6,7 @@
 class DirectXCommon;
 class Camera;
 
-class Object3dRenderer {
-public:
-  //================================================================================
-  // Blend Mode
-  //================================================================================
-
-  enum class BlendMode {
-    kNone,             // なし
-    kNormal,           // 通常
-    kAdd,              // 加算
-    kSubtract,         // 減算
-    kMultiply,         // 乗算
-    kScreen,           // スクリーン
-    kCountOfBlendMode, // カウント用
-  };
-
-private:
-  BlendMode blendMode_ = BlendMode::kNormal;
-
+class ParticleRenderer {
 public:
   //================================================================================
   // 初期化 / 描画設定
@@ -51,9 +33,6 @@ public:
   // デフォルトカメラ
   Camera *GetDefaultCamera() const { return defaultCamera_; }
 
-  // Blend Mode
-  BlendMode GetBlendMode() const { return blendMode_; }
-
   //================================================================================
   // Setter
   //================================================================================
@@ -62,9 +41,6 @@ public:
   void SetDefaultCamera(Camera *defaultCamera) {
     defaultCamera_ = defaultCamera;
   }
-
-  // Blend Mode
-  void SetBlendMode(BlendMode blendMode);
 
 private:
   //================================================================================
@@ -75,7 +51,6 @@ private:
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
-private:
   //================================================================================
   // 外部参照
   //================================================================================

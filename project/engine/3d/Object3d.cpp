@@ -4,7 +4,6 @@
 #include "MathUtility.h"
 #include "Model.h"
 #include "ModelManager.h"
-#include "Object3dRenderer.h"
 #include "TextureManager.h"
 
 using namespace MathUtility;

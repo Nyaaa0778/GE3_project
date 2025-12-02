@@ -150,6 +150,9 @@
     <ClCompile Include="engine\system\ShaderResourceViewManager.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\ParticleRenderer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -164,6 +167,8 @@
     <FxCompile Include="resources\shaders\Sprite.PS.hlsl">
       <Filter>リソース ファイル\shaders</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\Particle.VS.hlsl" />
+    <FxCompile Include="resources\shaders\Particle.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -265,6 +270,9 @@
     <ClInclude Include="engine\system\ShaderResourceViewManager.h">
       <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
+    <ClInclude Include="engine\3d\ParticleRenderer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">
@@ -278,5 +286,6 @@
     <None Include="resources\shaders\Sprite.hlsli">
       <Filter>リソース ファイル\shaders</Filter>
     </None>
+    <None Include="resources\shaders\Particle.hlsli" />
   </ItemGroup>
 </Project>
