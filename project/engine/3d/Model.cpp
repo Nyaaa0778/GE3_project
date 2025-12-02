@@ -34,6 +34,7 @@ void Model::Initialize(ModelCommon *modelCommon,
   // マテリアルデータの作成
   CreateMaterialData();
 }
+
 /// <summary>
 /// 描画
 /// </summary>
@@ -51,7 +52,7 @@ void Model::Draw() {
   // SRVのDescriptorTableの先頭を設定
   modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(
       2, TextureManager::GetInstance()->GetSrvHandlGPU(
-             modelData_.material.textureIndex));
+             modelData_.material.textureFilePath));
 
   // 描画
   modelCommon_->GetDxCommon()->GetCommandList()->DrawInstanced(
@@ -121,14 +122,17 @@ void Model::LoadObjFile(const std::string &directoryPath,
       Vector4 position;
       s >> position.x >> position.y >> position.z;
       position.w = 1.0f;
+      position.x *= -1.0f;
       positions.push_back(position);
     } else if (identifier == "vt") {
       Vector2 texcoord;
       s >> texcoord.x >> texcoord.y;
+      texcoord.y = 1.0f - texcoord.y;
       texcoords.push_back(texcoord);
     } else if (identifier == "vn") {
       Vector3 normal;
       s >> normal.x >> normal.y >> normal.z;
+      normal.x *= -1.0f;
       normals.push_back(normal);
     } else if (identifier == "f") {
       VertexData triangle[3];
@@ -152,10 +156,6 @@ void Model::LoadObjFile(const std::string &directoryPath,
         Vector4 position = positions[elementIndices[0] - 1];
         Vector2 texcoord = texcoords[elementIndices[1] - 1];
         Vector3 normal = normals[elementIndices[2] - 1];
-
-        position.x *= -1.0f;
-        normal.x *= -1.0f;
-        texcoord.y = 1.0f - texcoord.y;
 
         triangle[faceVertex] = {position, texcoord, normal};
       }

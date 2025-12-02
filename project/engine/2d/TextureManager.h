@@ -3,9 +3,11 @@
 #include "../../externals/DirectXTex/DirectXTex.h"
 #include <d3d12.h>
 #include <string>
+#include <unordered_map>
 #include <wrl.h>
 
 class DirectXCommon;
+class ShaderResourceViewManager;
 
 class TextureManager {
 public:
@@ -23,7 +25,9 @@ public:
   /// 初期化
   /// </summary>
   /// <param name="dxCommon">DirectXCommonのポインタ</param>
-  void Initialize(DirectXCommon *dxCommon);
+  /// <param name="srvManager">SrvManagerのポインタ</param>
+  void Initialize(DirectXCommon *dxCommon,
+                  ShaderResourceViewManager *srvManager);
 
   /// <summary>
   /// 終了
@@ -62,16 +66,16 @@ public:
   /// <summary>
   /// SRVハンドルの取得
   /// </summary>
-  /// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+  /// <param name="filePath">テクスチャのファイルパス</param>
   /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
-  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandlGPU(uint32_t textureIndex);
+  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandlGPU(const std::string &filePath);
 
   /// <summary>
   /// メタデータを取得
   /// </summary>
-  /// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
+  /// <param name="filePath">テクスチャのファイルパス</param>
   /// <returns>指定テクスチャの幅・高さ・フォーマットなどのメタデータ</returns>
-  const DirectX::TexMetadata &GetMetaData(uint32_t textureIndex);
+  const DirectX::TexMetadata &GetMetaData(const std::string& filePath);
 
 private:
   //================================================================================
@@ -89,9 +93,9 @@ private:
 
   // テクスチャ一枚分のデータ
   struct TextureData {
-    std::string filePath;
     DirectX::TexMetadata metadata;
     ComPtr<ID3D12Resource> resource;
+    uint32_t srvIndex;
     ComPtr<ID3D12Resource> intermediateResource;
     D3D12_CPU_DESCRIPTOR_HANDLE srvHandleCPU;
     D3D12_GPU_DESCRIPTOR_HANDLE srvHandleGPU;
@@ -105,12 +109,15 @@ private:
   // DirectXCommonのポインタ
   DirectXCommon *dxCommon_ = nullptr;
 
+  // SrvManagerのポインタ
+  ShaderResourceViewManager *srvManager_ = nullptr;
+
   //================================================================================
   // テクスチャ管理データ（読み込み済み）
   //================================================================================
 
   // テクスチャデータ
-  std::vector<TextureData> textureDatas_;
+  std::unordered_map<std::string, TextureData> textureDatas_;
 
   // SRVインデックスの開始番号
   static uint32_t kSRVIndexTop;

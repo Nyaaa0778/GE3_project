@@ -1,5 +1,6 @@
 #include "DirectXCommon.h"
 #include "Logger.h"
+#include "ShaderResourceViewManager.h"
 #include "StringUtility.h"
 #include "WinApp.h"
 
@@ -114,10 +115,6 @@ void DirectXCommon::BeginDraw() {
   const float clearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
   commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor,
                                       0, nullptr);
-
-  // SRV用のデスクリプタヒープを指定する
-  ID3D12DescriptorHeap *descriptorHeaps[] = {descriptorHeapSRV_.Get()};
-  commandList_->SetDescriptorHeaps(1, descriptorHeaps);
 
   // ビューポート領域の設定
   commandList_->RSSetViewports(1, &viewportRect_);
