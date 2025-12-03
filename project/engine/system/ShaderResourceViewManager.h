@@ -53,6 +53,15 @@ public:
   /// </summary>
   void BeginDraw();
 
+private:
+  //================================================================================
+  // 型エイリアス
+  //================================================================================
+
+  // namespace
+  template <class InterfaceType>
+  using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
+
 public:
   //================================================================================
   // Getter
@@ -73,6 +82,11 @@ public:
   /// <returns>取得したSRV用のGPUハンドル</returns>
   D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
 
+  //デスクリプタヒープ
+  ID3D12DescriptorHeap* GetDescriptorHeap() const {
+    return descriptorHeap_.Get();
+  }
+
   /// <summary>
   /// 新しくSRVを1つ確保可能かどうかを返す
   /// </summary>
@@ -92,15 +106,6 @@ public:
                                       uint32_t srvIndex);
 
 private:
-  //================================================================================
-  // 型エイリアス
-  //================================================================================
-
-  // namespace
-  template <class InterfaceType>
-  using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
-
-public:
   // デスクリプタサイズ
   uint32_t descriptorSize_;
   // デスクリプタヒープ

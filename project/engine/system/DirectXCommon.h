@@ -60,6 +60,12 @@ public:
   ID3D12GraphicsCommandList *GetCommandList() const {
     return commandList_.Get();
   }
+
+  //バックバッファの数
+  UINT GetSwapChainResourceNum() const {
+    return kBackBufferCount;
+  }
+
   // SRVのデスクリプタヒープ
   ID3D12DescriptorHeap *GetSrvDescriptorHeap() const {
     return descriptorHeapSRV_.Get();
@@ -123,15 +129,12 @@ private:
 
   // スワップチェーン
   ComPtr<IDXGISwapChain4> swapChain_ = nullptr;
-  DXGI_SWAP_CHAIN_DESC1 swapChainDesc_{};
 
   // バックバッファの枚数
   static const UINT kBackBufferCount = 2;
   // スワップチェーンリソース
   std::array<ComPtr<ID3D12Resource>, kBackBufferCount> swapChainResources_;
 
-  // RTVの設定
-  D3D12_RENDER_TARGET_VIEW_DESC rtvDesc_{};
   // RTVハンドル
   D3D12_CPU_DESCRIPTOR_HANDLE rtvHandles_[kBackBufferCount] = {};
 
@@ -339,8 +342,8 @@ private:
   /// </summary>
   void CreateDXCCompiler();
 
-  /// <summary>
+  /*/// <summary>
   /// ImGuiの初期化
   /// </summary>
-  void InitializeImGui();
+  void InitializeImGui();*/
 };

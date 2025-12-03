@@ -122,8 +122,8 @@ void Object3d::CreateDirectionalLightData() {
 
   // 平行光源データの初期値を書き込む
   directionalLightData_->color = {1.0f, 1.0f, 1.0f, 1.0f};
-  directionalLightData_->direction = {0.0f, -1.0f, 0.0f};
-  directionalLightData_->intensity = 1.0f;
+  directionalLightData_->direction = {0.0f, -1.0f, 0.5f};
+  directionalLightData_->intensity = 1.5f;
 }
 
 //================================================================================
