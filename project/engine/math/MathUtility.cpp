@@ -31,6 +31,9 @@ Vector2 Multiply(const Vector2 &v1, const Vector2 &v2) {
 Vector3 Multiply(float s, const Vector3 &v1) {
   return {s * v1.x, s * v1.y, s * v1.z};
 }
+Vector3 Multiply(const Vector3 &v1, float s) {
+  return {s * v1.x, s * v1.y, s * v1.z};
+}
 
 // 外積
 Vector3 Cross(const Vector3 &a, const Vector3 &b) {
@@ -98,6 +101,13 @@ Vector3 operator-(const Vector3 &v1, const Vector3 &v2) {
   return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
 }
 
+Vector3 operator*(const Vector3 &v1, float s) {
+  return {v1.x * s, v1.y * s, v1.z * s};
+}
+Vector3 operator*(float s, const Vector3 &v1) {
+  return {v1.x * s, v1.y * s, v1.z * s};
+}
+
 Vector3 &operator+=(Vector3 &v1, const Vector3 &v2) {
   v1.x += v2.x;
   v1.y += v2.y;
@@ -113,12 +123,6 @@ Vector3 &operator-=(Vector3 &v1, const Vector3 &v2) {
 }
 
 Vector3 &operator*=(Vector3 &v, float s) {
-  v.x *= s;
-  v.y *= s;
-  v.z *= s;
-  return v;
-}
-Vector3 &operator*=(float s, Vector3 &v) {
   v.x *= s;
   v.y *= s;
   v.z *= s;

@@ -159,6 +159,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="engine\3d\Camera.cpp" />
+    <ClCompile Include="engine\3d\ParticleManager.cpp" />
     <ClCompile Include="engine\math\Random.cpp" />
     <ClCompile Include="engine\system\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\system\DirectXCommon.cpp" />
@@ -191,6 +192,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\ModelCommon.cpp" />
     <ClCompile Include="engine\3d\ModelManager.cpp" />
     <ClCompile Include="engine\system\ShaderResourceViewManager.cpp" />
+    <ClCompile Include="engine\3d\ParticleEmitter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -244,7 +246,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\3d\Camera.h" />
-    <ClInclude Include="engine\3d\Transform.h" />
+    <ClInclude Include="engine\math\Transform.h" />
     <ClInclude Include="engine\math\Random.h" />
     <ClInclude Include="engine\system\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\system\DirectXCommon.h" />
@@ -278,6 +280,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\ModelManager.h" />
     <ClInclude Include="engine\system\ShaderResourceViewManager.h" />
     <ClInclude Include="engine\2d\ImGuiManager.h" />
+    <ClInclude Include="engine\3d\ParticleManager.h" />
+    <ClInclude Include="engine\3d\ParticleEmitter.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

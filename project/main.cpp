@@ -14,6 +14,9 @@
 #include "TextureManager.h"
 #include "WinApp.h"
 
+#include "ParticleEmitter.h"
+#include "ParticleManager.h"
+
 #include <Matrix4x4.h>
 #include <Transform.h>
 #include <Vector2.h>
@@ -205,6 +208,32 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 #endif
 
+  // ParticleManager *particleManager = new ParticleManager();
+  // particleManager->Initialize(dxCommon, srvManager);
+  // particleManager->CreateParticleGroup("smoke",               // グループ名
+  //                                      "resources/circle.png" // テクスチャ
+  //);
+
+  // particleManager->Emit("smoke", {0, 0, 0}, 2);
+
+  ParticleEmitter *emitter = nullptr;
+
+  ParticleManager::GetInstance()->Initialize(dxCommon, srvManager);
+
+  ParticleManager::GetInstance()->CreateParticleGroup("smoke",
+                                                      "resources/circle.png");
+
+  // ★ Emitterを作る
+  Transform emitterTransform{};
+  emitterTransform.translation = {0.0f, 0.0f, 0.0f};
+
+  emitter = new ParticleEmitter("smoke",           // グループ名
+                                &emitterTransform, // 発生位置
+                                0.1f,              // 発生間隔（秒）
+                                2,                 // 1回に出す数
+                                true               // 有効
+  );
+
   /// =============================================
   ///
   /// 入力処理の初期化
@@ -351,6 +380,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     sprite->Update();
     object3d->Update();
 
+    emitter->Update();
+
+    ParticleManager::GetInstance()->Update(camera->GetViewMatrix(),
+                            camera->GetProjectionMatrix());
+
     /////
     ///// 更新処理 ↑
     /////
@@ -363,7 +397,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     dxCommon->BeginDraw();
 
     // sprite->Draw();
-    object3d->Draw();
+    // object3d->Draw();
+
+    ParticleManager::GetInstance()->Draw();
 
 #ifdef USE_IMGUI
 
@@ -391,6 +427,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
   // inputを解放
   delete input;
+
+  // ParticleEmitterを解放
+  delete emitter;
+
+  ParticleManager::GetInstance()->Finalize();
 
   // object3dを解放
   delete object3d;

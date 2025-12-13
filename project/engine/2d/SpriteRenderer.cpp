@@ -21,9 +21,6 @@ void SpriteRenderer::Initialize(DirectXCommon *dxCommon) {
 /// 共通描画設定
 /// </summary>
 void SpriteRenderer::SetupCommonRenderState() {
-  ID3D12DescriptorHeap *heaps[] = {dxCommon_->GetSrvDescriptorHeap()};
-  dxCommon_->GetCommandList()->SetDescriptorHeaps(1, heaps);
-
   // ルートシグネチャをセット
   dxCommon_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
   // グラフィックスパイプラインステートをセット
