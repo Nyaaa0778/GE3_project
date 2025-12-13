@@ -50,7 +50,7 @@ public:
   // ビュー行列
   const Matrix4x4 &GetViewMatrix() const { return viewMatrix_; }
   // プロジェクション行列
-  const Matrix4x4 &GetProjectiondMatrix() const { return projectionMatrix_; }
+  const Matrix4x4 &GetProjectionMatrix() const { return projectionMatrix_; }
   // ビュープロジェクション行列
   const Matrix4x4 &GetViewProjectionMatrix() const {
     return viewProjectionMatrix_;

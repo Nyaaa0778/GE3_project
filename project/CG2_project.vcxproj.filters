@@ -150,10 +150,10 @@
     <ClCompile Include="engine\system\ShaderResourceViewManager.cpp">
       <Filter>ソース ファイル\engine\system</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ParticleRenderer.cpp">
+    <ClCompile Include="engine\2d\ImGuiManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\2d\ImGuiManager.cpp">
+    <ClCompile Include="engine\math\Random.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -273,10 +273,10 @@
     <ClInclude Include="engine\system\ShaderResourceViewManager.h">
       <Filter>ヘッダー ファイル\engine\system</Filter>
     </ClInclude>
-    <ClInclude Include="engine\3d\ParticleRenderer.h">
+    <ClInclude Include="engine\2d\ImGuiManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="engine\2d\ImGuiManager.h">
+    <ClInclude Include="engine\math\Random.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

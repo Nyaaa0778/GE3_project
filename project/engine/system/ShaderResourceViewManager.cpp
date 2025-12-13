@@ -98,6 +98,10 @@ void ShaderResourceViewManager::SetGraphicsRootDescriptorTable(
       RootParameterIndex, GetGPUDescriptorHandle(srvIndex));
 }
 
+//================================================================================
+// Getter
+//================================================================================
+
 /// <summary>
 /// CPUの取得
 /// </summary>
