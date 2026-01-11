@@ -8,7 +8,6 @@
 #include "Object3d.h"
 #include "Object3dRenderer.h"
 #include "ShaderResourceViewManager.h"
-#include "Sound.h"
 #include "Sprite.h"
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
@@ -16,6 +15,7 @@
 
 #include "ParticleEmitter.h"
 #include "ParticleManager.h"
+#include "SoundManager.h"
 
 #include <Matrix4x4.h>
 #include <Transform.h>
@@ -30,45 +30,39 @@
 #include <dxgidebug.h>
 #pragma comment(lib, "dxguid.lib")
 
-#include "externals/DirectXTex/DirectXTex.h"
-#pragma comment(lib, "DirectXTex.lib")
-#include "externals/DirectXTex/d3dx12.h"
 #include <xaudio2.h>
 #pragma comment(lib, "xaudio2.lib")
 
+#ifdef USE_IMGUI
 #include "externals/imgui/imgui.h"
 #include "externals/imgui/imgui_impl_dx12.h"
 #include "externals/imgui/imgui_impl_win32.h"
+#endif
 
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <string>
 #include <strsafe.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <vector>
-
-#include <sstream>
 
 using namespace MathUtility;
 
 using Microsoft::WRL::ComPtr;
 
-struct ChunkHeader {
-  char id[4];   // チャンクごとのID
-  int32_t size; // チャンクサイズ
-};
-
-struct RiffHeader {
-  ChunkHeader chunk; // RIFF
-  char type[4];      // WAVE
-};
-
-struct FormatChunk {
-  ChunkHeader chunk; // fmt
-  WAVEFORMATEX fmt;  // 波形フォーマット
-};
+// struct ChunkHeader {
+//   char id[4];   // チャンクごとのID
+//   int32_t size; // チャンクサイズ
+// };
+//
+// struct RiffHeader {
+//   ChunkHeader chunk; // RIFF
+//   char type[4];      // WAVE
+// };
+//
+// struct FormatChunk {
+//   ChunkHeader chunk; // fmt
+//   WAVEFORMATEX fmt;  // 波形フォーマット
+// };
 
 // 現在時刻を取得
 std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
@@ -247,6 +241,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   input = new Input();
   input->Initialize(winApp);
 
+  // --- SoundManager ---
+  SoundManager *soundManager = new SoundManager();
+  soundManager->Initialize();
+
+  // 音声読み込み（パスは自分の resources に合わせて）
+  soundManager->Load("resources/title.mp3");
+
   // object3d->SetModel("axis");
 
   // ウィンドウの×ボタンが押されるまでループ
@@ -383,7 +384,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     emitter->Update();
 
     ParticleManager::GetInstance()->Update(camera->GetViewMatrix(),
-                            camera->GetProjectionMatrix());
+                                           camera->GetProjectionMatrix());
+
+    if (input->TriggerKey(DIK_SPACE)) {
+      soundManager->Play(soundManager);
+    }
 
     /////
     ///// 更新処理 ↑
@@ -415,6 +420,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
     TextureManager::GetInstance()->ReleaseIntermediateResources();
   }
+
+  soundManager->Finalize();
+  delete soundManager;
 
 #ifdef USE_IMGUI
 

@@ -164,7 +164,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\system\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\system\DirectXCommon.cpp" />
     <ClCompile Include="engine\math\MathUtility.cpp" />
-    <ClCompile Include="engine\sound\Sound.cpp" />
     <ClCompile Include="engine\sound\SoundManager.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -275,7 +274,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\math\Vector3.h" />
     <ClInclude Include="engine\math\MathUtility.h" />
     <ClInclude Include="engine\math\Vector4.h" />
-    <ClInclude Include="engine\sound\Sound.h" />
     <ClInclude Include="engine\sound\SoundManager.h" />
     <ClInclude Include="externals\imgui\imconfig.h" />
     <ClInclude Include="externals\imgui\imgui.h" />
