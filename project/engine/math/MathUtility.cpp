@@ -28,10 +28,16 @@ Vector3 Subtract(const Vector3 &v1, const Vector3 &v2) {
 Vector2 Multiply(const Vector2 &v1, const Vector2 &v2) {
   return {v1.x * v2.x, v1.y * v2.y};
 }
-Vector3 Multiply(float s, const Vector3 &v1) {
-  return {s * v1.x, s * v1.y, s * v1.z};
+Vector2 Multiply(const Vector2 &v, float s) { return {s * v.x, s * v.y}; }
+Vector2 Multiply(float s, const Vector2 &v) { return {s * v.x, s * v.y}; }
+
+Vector3 Multiply(const Vector3 &v1, const Vector3 &v2) {
+  return {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
 }
 Vector3 Multiply(const Vector3 &v1, float s) {
+  return {s * v1.x, s * v1.y, s * v1.z};
+}
+Vector3 Multiply(float s, const Vector3 &v1) {
   return {s * v1.x, s * v1.y, s * v1.z};
 }
 
@@ -45,13 +51,20 @@ float Dot(const Vector3 &a, const Vector3 &b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
+// 長さ
+float Length(const Vector2 &v) { return sqrtf(v.x * v.x + v.y * v.y); }
+
+float Length(const Vector3 &v) {
+  return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+
 // 正規化
 Vector3 Normalize(const Vector3 &v) {
-  float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-  if (len == 0.0f) {
+  float length = Length(v);
+  if (length == 0.0f) {
     return {0.0f, 0.0f, 0.0f}; // ゼロ割り防止
   }
-  return {v.x / len, v.y / len, v.z / len};
+  return {v.x / length, v.y / length, v.z / length};
 }
 
 //================================================================================
@@ -60,12 +73,10 @@ Vector3 Normalize(const Vector3 &v) {
 
 //---------- Vector2 ----------
 
-Vector2 operator+(const Vector2 &v1, const Vector2 &v2) {
-  return {v1.x + v2.x, v1.y + v2.y};
-}
+Vector2 operator+(const Vector2 &v1, const Vector2 &v2) { return Add(v1, v2); }
 
 Vector2 operator-(const Vector2 &v1, const Vector2 &v2) {
-  return {v1.x - v2.x, v1.y - v2.y};
+  return Subtract(v1, v2);
 }
 
 Vector2 &operator+=(Vector2 &v1, const Vector2 &v2) {
@@ -93,20 +104,18 @@ Vector2 &operator*=(float s, Vector2 &v) {
 
 //---------- Vector3 ----------
 
-Vector3 operator+(const Vector3 &v1, const Vector3 &v2) {
-  return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
-}
+Vector3 operator+(const Vector3 &v1, const Vector3 &v2) { return Add(v1, v2); }
 
 Vector3 operator-(const Vector3 &v1, const Vector3 &v2) {
-  return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
+  return Subtract(v1, v2);
 }
 
-Vector3 operator*(const Vector3 &v1, float s) {
-  return {v1.x * s, v1.y * s, v1.z * s};
+Vector3 operator*(const Vector3 &v1, const Vector3 &v2) {
+  return Multiply(v1, v2);
 }
-Vector3 operator*(float s, const Vector3 &v1) {
-  return {v1.x * s, v1.y * s, v1.z * s};
-}
+
+Vector3 operator*(const Vector3 &v, float s) { return Multiply(v, s); }
+Vector3 operator*(float s, const Vector3 &v) { return Multiply(v, s); }
 
 Vector3 &operator+=(Vector3 &v1, const Vector3 &v2) {
   v1.x += v2.x;
@@ -123,6 +132,13 @@ Vector3 &operator-=(Vector3 &v1, const Vector3 &v2) {
 }
 
 Vector3 &operator*=(Vector3 &v, float s) {
+  v.x *= s;
+  v.y *= s;
+  v.z *= s;
+  return v;
+}
+
+Vector3 &operator*=(float s, Vector3 &v) {
   v.x *= s;
   v.y *= s;
   v.z *= s;

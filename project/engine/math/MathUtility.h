@@ -19,7 +19,12 @@ Vector2 Subtract(const Vector2 &v1, const Vector2 &v2);
 Vector3 Subtract(const Vector3 &v1, const Vector3 &v2);
 
 // 乗算
+Vector2 Multiply(const Vector2 &v1, const Vector2 &v2);
 Vector2 Multiply(float s, const Vector2 &v);
+Vector2 Multiply(const Vector2 &v, float s);
+
+Vector3 Multiply(const Vector3 &v1, const Vector3 &v2);
+Vector3 Multiply(const Vector3 &v, float s);
 Vector3 Multiply(float s, const Vector3 &v);
 
 // 外積
@@ -27,6 +32,10 @@ Vector3 Cross(const Vector3 &a, const Vector3 &b);
 
 // 内積
 float Dot(const Vector3 &a, const Vector3 &b);
+
+// 長さ
+float Length(const Vector2 &v);
+float Length(const Vector3 &v);
 
 // 正規化
 Vector3 Normalize(const Vector3 &v);
@@ -47,8 +56,9 @@ Vector2 &operator*=(float s, Vector2 &v);
 //---------- Vector3 ----------
 Vector3 operator+(const Vector3 &v1, const Vector3 &v2);
 Vector3 operator-(const Vector3 &v1, const Vector3 &v2);
-Vector3 operator*(const Vector3 &v1, float s);
-Vector3 operator*(float s, const Vector3 &v1);
+Vector3 operator*(const Vector3 &v1, const Vector3 &v2);
+Vector3 operator*(const Vector3 &v, float s);
+Vector3 operator*(float s, const Vector3 &v);
 
 Vector3 &operator+=(Vector3 &v1, const Vector3 &v2);
 Vector3 &operator-=(Vector3 &v1, const Vector3 &v2);
