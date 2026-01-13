@@ -1,28 +1,3 @@
-#include "Camera.h"
-#include "D3DResourceLeakChecker.h"
-#include "DirectXCommon.h"
-#include "ImGuiManager.h"
-#include "Input.h"
-#include "MathUtility.h"
-#include "ModelManager.h"
-#include "Object3d.h"
-#include "Object3dRenderer.h"
-#include "ShaderResourceViewManager.h"
-#include "Sprite.h"
-#include "SpriteRenderer.h"
-#include "TextureManager.h"
-#include "WinApp.h"
-
-#include "ParticleEmitter.h"
-#include "ParticleManager.h"
-#include "SoundManager.h"
-
-#include <Matrix4x4.h>
-#include <Transform.h>
-#include <Vector2.h>
-#include <Vector3.h>
-#include <Vector4.h>
-
 #include <chrono>
 #include <cstdint>
 #include <dbghelp.h>
@@ -39,194 +14,117 @@
 #include "externals/imgui/imgui_impl_win32.h"
 #endif
 
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <string>
-#include <strsafe.h>
+#include "GameManager.h"
 
-using namespace MathUtility;
 
-using Microsoft::WRL::ComPtr;
 
-// struct ChunkHeader {
-//   char id[4];   // チャンクごとのID
-//   int32_t size; // チャンクサイズ
-// };
-//
-// struct RiffHeader {
-//   ChunkHeader chunk; // RIFF
-//   char type[4];      // WAVE
-// };
-//
-// struct FormatChunk {
-//   ChunkHeader chunk; // fmt
-//   WAVEFORMATEX fmt;  // 波形フォーマット
-// };
 
-// 現在時刻を取得
-std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-// ログファイルの名前を秒にする
-std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-    nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-// 日本時間(PCの設定時間)に変換
-std::chrono::zoned_time localTime{std::chrono::current_zone(), nowSeconds};
-// formatを使って年月日_時分秒の文字列に変換
-std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
-// 時刻を使ってファイル名を決定
-std::string logFilePath = std::string("logs/") + dateString + ".log";
-// ファイルを作って書き込み準備
-std::ofstream logStream(logFilePath);
 
-void Log(std::ostream &os, const std::string &message) {
-  os << message << std::endl;
-  OutputDebugStringA(message.c_str());
-}
-
-/// <summary>
-/// デバッグ用のダンプを出力
-/// </summary>
-/// <param name="exception"></param>
-/// <returns></returns>
-static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
-  SYSTEMTIME time;
-  GetLocalTime(&time);
-  wchar_t filePath[MAX_PATH] = {0};
-  CreateDirectory(L"./Dumps", nullptr);
-  StringCchPrintfW(filePath, MAX_PATH, L"./Dumps/%04d-%02d%02d-%02d%02d.dmp",
-                   time.wYear, time.wMonth, time.wDay, time.wHour,
-                   time.wMinute);
-  HANDLE dumpFileHandle =
-      CreateFile(filePath, GENERIC_READ | GENERIC_WRITE,
-                 FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
-  DWORD processId = GetCurrentProcessId();
-  DWORD threadId = GetCurrentThreadId();
-  // 設定情報を入力
-  MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{0};
-  minidumpInformation.ThreadId = threadId;
-  minidumpInformation.ExceptionPointers = exception;
-  minidumpInformation.ClientPointers = TRUE;
-  // Dumpを出力
-  MiniDumpWriteDump(GetCurrentProcess(), processId, dumpFileHandle,
-                    MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
-
-  return EXCEPTION_EXECUTE_HANDLER;
-}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
-  D3DResourceLeakChecker leakCheck;
+  //D3DResourceLeakChecker leakCheck;
 
   CoInitializeEx(0, COINIT_MULTITHREADED);
 
-  SetUnhandledExceptionFilter(ExportDump);
+//  /// =============================================
+//  ///
+//  /// Windowの初期化
+//  ///
+//  /// =============================================
+//
+//  // WindowsAppのポインタ
+//  WinApp *winApp = nullptr;
+//
+//  // WindowsAppの初期化
+//  winApp = new WinApp();
+//  winApp->Initialize();
+//
+//  // 出力ウィンドウへの文字出力
+//  OutputDebugStringA("Hello,DirectX!\n");
+//
+//  // ログのディレクトリを用意
+//  std::filesystem::create_directory("logs");
+//
+//  /// =============================================
+//  ///
+//  /// DirectX12の初期化
+//  ///
+//  /// =============================================
+//
+//  // ポインタ
+//  DirectXCommon *dxCommon = nullptr;
+//
+//  // DirectXの初期化
+//  dxCommon = new DirectXCommon();
+//  dxCommon->Initialize(winApp);
+//
+//  ShaderResourceViewManager *srvManager = nullptr;
+//  // SRVマネージャの初期化
+//  srvManager = new ShaderResourceViewManager();
+//  srvManager->Initialize(dxCommon);
+//
+//  // ポインタ
+//  SpriteRenderer *spriteRenderer = nullptr;
+//  // スプライト共通部の初期化
+//  spriteRenderer = new SpriteRenderer();
+//  spriteRenderer->Initialize(dxCommon);
+//
+//  // テクスチャマネージャの初期化
+//  TextureManager::GetInstance()->Initialize(dxCommon, srvManager);
+//
+//  // ポインタ
+//  Sprite *sprite = nullptr;
+//  // スプライトの初期化
+//  sprite = new Sprite();
+//  sprite->Initialize(spriteRenderer, "resources/uvChecker.png");
+//
+//  // ポインタ
+//  Object3dRenderer *object3dRenderer = nullptr;
+//  // object3dRendererの初期化
+//  object3dRenderer = new Object3dRenderer();
+//  object3dRenderer->Initialize(dxCommon);
+//
+//  // 3Dモデルマネージャの初期化
+//  ModelManager::GetInstance()->Initialize(object3dRenderer->GetDxCommon());
+//
+//  Camera *camera = new Camera();
+//  camera->SetRotate({0.0f, 0.0f, 0.0f});
+//  camera->SetTranslate({0.0f, 0.0f, -10.0f});
+//  object3dRenderer->SetDefaultCamera(camera);
+//
+//  // ポインタ
+//  Object3d *object3d = nullptr;
+//  // object3dの初期化
+//  object3d = new Object3d();
+//  object3d->Initialize(object3dRenderer, "plane");
+//
+//#ifdef USE_IMGUI
+//
+//  ImGuiManager *imguiManager = nullptr;
+//  imguiManager = new ImGuiManager();
+//  imguiManager->Initialize(winApp, dxCommon, srvManager);
+//
+//#endif
 
-  /// =============================================
-  ///
-  /// Windowの初期化
-  ///
-  /// =============================================
+  //ParticleEmitter *emitter = nullptr;
 
-  // WindowsAppのポインタ
-  WinApp *winApp = nullptr;
+  //ParticleManager::GetInstance()->Initialize(dxCommon, srvManager);
 
-  // WindowsAppの初期化
-  winApp = new WinApp();
-  winApp->Initialize();
+  //ParticleManager::GetInstance()->CreateParticleGroup("smoke",
+  //                                                    "resources/circle.png");
 
-  // 出力ウィンドウへの文字出力
-  OutputDebugStringA("Hello,DirectX!\n");
+  //// ★ Emitterを作る
+  //Transform emitterTransform{};
+  //emitterTransform.translation = {0.0f, 0.0f, 0.0f};
 
-  // ログのディレクトリを用意
-  std::filesystem::create_directory("logs");
-
-  /// =============================================
-  ///
-  /// DirectX12の初期化
-  ///
-  /// =============================================
-
-  // ポインタ
-  DirectXCommon *dxCommon = nullptr;
-
-  // DirectXの初期化
-  dxCommon = new DirectXCommon();
-  dxCommon->Initialize(winApp);
-
-  ShaderResourceViewManager *srvManager = nullptr;
-  // SRVマネージャの初期化
-  srvManager = new ShaderResourceViewManager();
-  srvManager->Initialize(dxCommon);
-
-  // ポインタ
-  SpriteRenderer *spriteRenderer = nullptr;
-  // スプライト共通部の初期化
-  spriteRenderer = new SpriteRenderer();
-  spriteRenderer->Initialize(dxCommon);
-
-  // テクスチャマネージャの初期化
-  TextureManager::GetInstance()->Initialize(dxCommon, srvManager);
-
-  // ポインタ
-  Sprite *sprite = nullptr;
-  // スプライトの初期化
-  sprite = new Sprite();
-  sprite->Initialize(spriteRenderer, "resources/uvChecker.png");
-
-  // ポインタ
-  Object3dRenderer *object3dRenderer = nullptr;
-  // object3dRendererの初期化
-  object3dRenderer = new Object3dRenderer();
-  object3dRenderer->Initialize(dxCommon);
-
-  // 3Dモデルマネージャの初期化
-  ModelManager::GetInstance()->Initialize(object3dRenderer->GetDxCommon());
-
-  Camera *camera = new Camera();
-  camera->SetRotate({0.0f, 0.0f, 0.0f});
-  camera->SetTranslate({0.0f, 0.0f, -10.0f});
-  object3dRenderer->SetDefaultCamera(camera);
-
-  // ポインタ
-  Object3d *object3d = nullptr;
-  // object3dの初期化
-  object3d = new Object3d();
-  object3d->Initialize(object3dRenderer, "plane");
-
-#ifdef USE_IMGUI
-
-  ImGuiManager *imguiManager = nullptr;
-  imguiManager = new ImGuiManager();
-  imguiManager->Initialize(winApp, dxCommon, srvManager);
-
-#endif
-
-  // ParticleManager *particleManager = new ParticleManager();
-  // particleManager->Initialize(dxCommon, srvManager);
-  // particleManager->CreateParticleGroup("smoke",               // グループ名
-  //                                      "resources/circle.png" // テクスチャ
+  //emitter = new ParticleEmitter("smoke",           // グループ名
+  //                              &emitterTransform, // 発生位置
+  //                              0.1f,              // 発生間隔（秒）
+  //                              2,                 // 1回に出す数
+  //                              true               // 有効
   //);
-
-  // particleManager->Emit("smoke", {0, 0, 0}, 2);
-
-  ParticleEmitter *emitter = nullptr;
-
-  ParticleManager::GetInstance()->Initialize(dxCommon, srvManager);
-
-  ParticleManager::GetInstance()->CreateParticleGroup("smoke",
-                                                      "resources/circle.png");
-
-  // ★ Emitterを作る
-  Transform emitterTransform{};
-  emitterTransform.translation = {0.0f, 0.0f, 0.0f};
-
-  emitter = new ParticleEmitter("smoke",           // グループ名
-                                &emitterTransform, // 発生位置
-                                0.1f,              // 発生間隔（秒）
-                                2,                 // 1回に出す数
-                                true               // 有効
-  );
 
   /// =============================================
   ///
@@ -234,21 +132,26 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   ///
   /// =============================================
 
-  // 入力のポインタ
-  Input *input = nullptr;
+  //// 入力のポインタ
+  //Input *input = nullptr;
 
-  // 入力の初期化
-  input = new Input();
-  input->Initialize(winApp);
+  //// 入力の初期化
+  //input = new Input();
+  //input->Initialize(winApp);
 
-  // --- SoundManager ---
-  SoundManager *soundManager = new SoundManager();
-  soundManager->Initialize();
+  //// --- SoundManager ---
+  //SoundManager *soundManager = new SoundManager();
+  //soundManager->Initialize();
 
-  // 音声読み込み（パスは自分の resources に合わせて）
-  soundManager->Load("resources/title.mp3");
+  //// 音声読み込み（パスは自分の resources に合わせて）
+  //soundManager->Load("resources/title.mp3");
 
   // object3d->SetModel("axis");
+
+GameManager gameManager;
+
+//GameManagerの初期化
+gameManager.Initialize();
 
   // ウィンドウの×ボタンが押されるまでループ
   while (true) {
