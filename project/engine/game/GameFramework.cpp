@@ -1,8 +1,8 @@
-#include "GameManager.h"
+#include "GameFramework.h"
 
 #include "Camera.h"
-#include "D3DResourceLeakChecker.h"
 #include "DirectXCommon.h"
+#include "ImGuiManager.h"
 #include "Input.h"
 #include "ModelManager.h"
 #include "Object3dRenderer.h"
@@ -11,6 +11,12 @@
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
 #include "WinApp.h"
+
+#ifdef USE_IMGUI
+#include "../externals/imgui/imgui.h"
+#include "../externals/imgui/imgui_impl_dx12.h"
+#include "../externals/imgui/imgui_impl_win32.h"
+#endif
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -62,7 +68,40 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
-void GameManager::Initialize() {
+void GameFramework::Execute() {
+  // ゲームの初期化
+  Initialize();
+
+  // ゲームループ
+  while (true) {
+
+#ifdef USE_IMGUI
+    imguiManager_->Begin();
+#endif
+
+    // 毎フレーム更新
+    Update();
+
+#ifdef USE_IMGUI
+    imguiManager_->End();
+#endif
+
+    // 終了リクエストが着たら抜ける
+    if (IsEndRequest()) {
+      break;
+    }
+
+    camera_->Update();
+
+    // 描画
+    Draw();
+  }
+
+  // ゲームの終了
+  Finalize();
+}
+
+void GameFramework::Initialize() {
   // WinAppの初期化
   winApp_ = new WinApp();
   winApp_->Initialize();
@@ -79,6 +118,11 @@ void GameManager::Initialize() {
   srvManager_ = new ShaderResourceViewManager();
   srvManager_->Initialize(dxCommon_);
 
+  // カメラの初期化
+  camera_ = new Camera();
+  camera_->SetRotate({0.0f, 0.0f, 0.0f});
+  camera_->SetTranslate({0.0f, 0.0f, -10.0f});
+
   // SpriteRendererの初期化
   spriteRenderer_ = new SpriteRenderer();
   spriteRenderer_->Initialize(dxCommon_);
@@ -86,6 +130,8 @@ void GameManager::Initialize() {
   // Object3dRendererの初期化
   object3dRenderer_ = new Object3dRenderer();
   object3dRenderer_->Initialize(dxCommon_);
+  // カメラをセット
+  object3dRenderer_->SetDefaultCamera(camera_);
 
   // SoundManagerの初期化
   soundManager_ = new SoundManager();
@@ -95,8 +141,80 @@ void GameManager::Initialize() {
 
   SetUnhandledExceptionFilter(ExportDump);
 
-  D3DResourceLeakChecker leakCheck;
-
   TextureManager::GetInstance()->Initialize(dxCommon_, srvManager_);
   ModelManager::GetInstance()->Initialize(object3dRenderer_->GetDxCommon());
+
+#ifdef USE_IMGUI
+  imguiManager_ = new ImGuiManager();
+  imguiManager_->Initialize(winApp_, dxCommon_, srvManager_);
+#endif
+}
+
+void GameFramework::Update() {
+  if (winApp_->ProcessMessage()) {
+    endRequest_ = true;
+  }
+
+  if (input_->TriggerKey(DIK_ESCAPE)) {
+    endRequest_ = true;
+  }
+
+  // 入力の更新
+  input_->Update();
+}
+
+void GameFramework::Draw() {
+  srvManager_->BeginDraw();
+
+  dxCommon_->BeginDraw();
+
+#ifdef USE_IMGUI
+
+  imguiManager_->Draw();
+
+#endif
+
+  dxCommon_->EndDraw();
+
+  TextureManager::GetInstance()->ReleaseIntermediateResources();
+}
+
+void GameFramework::Finalize() {
+  soundManager_->Finalize();
+  delete soundManager_;
+
+#ifdef USE_IMGUI
+
+  imguiManager_->Finalize();
+
+#endif
+
+  //// 解放処理
+  // CloseWindow(winApp->GetHwnd());
+
+  // inputを解放
+  delete input_;
+
+  // object3dRendererを解放
+  delete object3dRenderer_;
+
+  // spriteCommonを解放
+  delete spriteRenderer_;
+
+  TextureManager::GetInstance()->Finalize();
+  ModelManager::GetInstance()->Finalize();
+
+  // SrvManager
+  delete srvManager_;
+
+  // DirectXを解放
+  delete dxCommon_;
+
+  // WinodwsAPIの終了処理
+  winApp_->Finalize();
+
+  // WIndowsAPIを解放
+  delete winApp_;
+
+  leakCheck_.~D3DResourceLeakChecker();
 }

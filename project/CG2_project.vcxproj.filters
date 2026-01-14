@@ -64,6 +64,12 @@
     <Filter Include="ソース ファイル\engine\3d">
       <UniqueIdentifier>{9306098f-adc6-4608-ba1f-920b5a45ab37}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\game">
+      <UniqueIdentifier>{294f0d8b-34ba-4840-b57d-7193bf3f2860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\game">
+      <UniqueIdentifier>{c28e9348-f2ca-49f7-8ad4-cba09ccedfd3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -162,7 +168,10 @@
     <ClCompile Include="engine\3d\ParticleManager.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
-    <ClCompile Include="GameManager.cpp">
+    <ClCompile Include="engine\game\GameManager.cpp">
+      <Filter>ソース ファイル\game</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\game\GameFramework.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -295,7 +304,10 @@
     <ClInclude Include="engine\math\Random.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="GameManager.h">
+    <ClInclude Include="engine\game\GameManager.h">
+      <Filter>ヘッダー ファイル\engine\game</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\game\GameFramework.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
