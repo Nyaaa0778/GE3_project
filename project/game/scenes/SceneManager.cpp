@@ -29,11 +29,8 @@ void SceneManager::Shutdown() {
 
 SceneManager::SceneManager() {
   // 初期シーン
-  scene_ = new TitleScene();
-
-  scene_->SetSceneManager(this);
-
-  scene_->Initialize();
+  scene_ = nullptr;
+  nextScene_ = nullptr;
 }
 
 SceneManager::~SceneManager() {
@@ -46,11 +43,21 @@ void SceneManager::Update() {
   // シーンの切り替え
   ChangeScene();
 
+  if (!scene_) {
+    return; // まだ何もないなら何もしない
+  }
+
   // 実行中のシーンを更新
   scene_->Update();
 }
 
-void SceneManager::Draw() { scene_->Draw(); }
+void SceneManager::Draw() {
+  if (!scene_) {
+    return; // まだ何もないなら何もしない
+  }
+
+  scene_->Draw();
+}
 
 void SceneManager::ChangeScene() {
   // 次のシーンの予約があるとき
