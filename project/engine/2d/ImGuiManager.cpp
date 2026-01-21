@@ -3,6 +3,29 @@
 #include "ShaderResourceViewManager.h"
 #include "WinApp.h"
 
+//================================================================================
+// シングルトン
+//================================================================================
+
+ImGuiManager *ImGuiManager::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>ImGuiManagerの唯一のインスタンス</returns>
+ImGuiManager *ImGuiManager::GetInstance() {
+  if (instance == nullptr) {
+    instance = new ImGuiManager;
+  }
+
+  return instance;
+}
+
+void ImGuiManager::Shutdown() {
+  delete instance;
+  instance = nullptr;
+}
+
 /// <summary>
 /// 初期化
 /// </summary>

@@ -39,6 +39,15 @@ void Model::Initialize(ModelCommon *modelCommon,
 /// 描画
 /// </summary>
 void Model::Draw() {
+  assert(modelCommon_);
+  assert(modelCommon_->GetDxCommon());
+  assert(modelCommon_->GetDxCommon()->GetCommandList());
+
+  assert(!modelData_.material.textureFilePath.empty()); // ★まずここ
+  auto h = TextureManager::GetInstance()->GetSrvHandlGPU(
+      modelData_.material.textureFilePath);
+  assert(h.ptr != 0); // ★次にここ
+
   // vertexBufferViewを設定
   modelCommon_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(
       0, 1, &vertexBufferView_);

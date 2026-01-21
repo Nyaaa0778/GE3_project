@@ -64,11 +64,17 @@
     <Filter Include="ソース ファイル\engine\3d">
       <UniqueIdentifier>{9306098f-adc6-4608-ba1f-920b5a45ab37}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ソース ファイル\game">
-      <UniqueIdentifier>{294f0d8b-34ba-4840-b57d-7193bf3f2860}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ヘッダー ファイル\engine\game">
       <UniqueIdentifier>{c28e9348-f2ca-49f7-8ad4-cba09ccedfd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\game">
+      <UniqueIdentifier>{294f0d8b-34ba-4840-b57d-7193bf3f2860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\engine\scene">
+      <UniqueIdentifier>{b6e9b30c-3535-4a39-9b20-f3c6b215fc85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\engine\scene">
+      <UniqueIdentifier>{e6d4a131-9481-4c3f-b45b-9549a14a8b8b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -169,9 +175,21 @@
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
     <ClCompile Include="engine\game\GameManager.cpp">
-      <Filter>ソース ファイル\game</Filter>
+      <Filter>ソース ファイル\engine\game</Filter>
     </ClCompile>
     <ClCompile Include="engine\game\GameFramework.cpp">
+      <Filter>ソース ファイル\engine\game</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\GamePlayScene.cpp">
+      <Filter>ソース ファイル\engine\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\TitleScene.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\IScene.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\scene\SceneManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -308,6 +326,18 @@
       <Filter>ヘッダー ファイル\engine\game</Filter>
     </ClInclude>
     <ClInclude Include="engine\game\GameFramework.h">
+      <Filter>ヘッダー ファイル\engine\game</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\GamePlayScene.h">
+      <Filter>ヘッダー ファイル\engine\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\TitleScene.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\IScene.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\scene\SceneManager.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

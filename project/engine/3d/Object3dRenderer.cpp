@@ -5,6 +5,29 @@
 #include <d3d12.h>
 
 //================================================================================
+// シングルトン
+//================================================================================
+
+Object3dRenderer *Object3dRenderer::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>Object3dRendererの唯一のインスタンス</returns>
+Object3dRenderer *Object3dRenderer::GetInstance() {
+  if (instance == nullptr) {
+    instance = new Object3dRenderer;
+  }
+
+  return instance;
+}
+
+void Object3dRenderer::Shutdown() {
+  delete instance;
+  instance = nullptr;
+}
+
+//================================================================================
 // 初期化 / 描画設定
 //================================================================================
 

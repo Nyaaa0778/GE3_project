@@ -76,14 +76,14 @@ void GameFramework::Execute() {
   while (true) {
 
 #ifdef USE_IMGUI
-    imguiManager_->Begin();
+    ImGuiManager::GetInstance()->Begin();
 #endif
 
     // 毎フレーム更新
     Update();
 
 #ifdef USE_IMGUI
-    imguiManager_->End();
+    ImGuiManager::GetInstance()->End();
 #endif
 
     // 終了リクエストが着たら抜ける
@@ -93,8 +93,14 @@ void GameFramework::Execute() {
 
     camera_->Update();
 
+    // 描画前処理
+    BeginFrame();
+
     // 描画
     Draw();
+
+    // 描画後処理
+    EndFrame();
   }
 
   // ゲームの終了
@@ -103,20 +109,17 @@ void GameFramework::Execute() {
 
 void GameFramework::Initialize() {
   // WinAppの初期化
-  winApp_ = new WinApp();
-  winApp_->Initialize();
+  WinApp::GetInstance()->Initialize();
 
   // DirectXCommonの初期化
-  dxCommon_ = new DirectXCommon();
-  dxCommon_->Initialize(winApp_);
+  DirectXCommon::GetInstance()->Initialize(WinApp::GetInstance());
 
   // Inputの初期化
-  input_ = new Input();
-  input_->Initialize(winApp_);
+  Input::GetInstance()->Initialize(WinApp::GetInstance());
 
   // srvManagerの初期化
-  srvManager_ = new ShaderResourceViewManager();
-  srvManager_->Initialize(dxCommon_);
+  ShaderResourceViewManager::GetInstance()->Initialize(
+      DirectXCommon::GetInstance());
 
   // カメラの初期化
   camera_ = new Camera();
@@ -124,14 +127,12 @@ void GameFramework::Initialize() {
   camera_->SetTranslate({0.0f, 0.0f, -10.0f});
 
   // SpriteRendererの初期化
-  spriteRenderer_ = new SpriteRenderer();
-  spriteRenderer_->Initialize(dxCommon_);
+  SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
   // Object3dRendererの初期化
-  object3dRenderer_ = new Object3dRenderer();
-  object3dRenderer_->Initialize(dxCommon_);
+  Object3dRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
   // カメラをセット
-  object3dRenderer_->SetDefaultCamera(camera_);
+  Object3dRenderer::GetInstance()->SetDefaultCamera(camera_);
 
   // SoundManagerの初期化
   soundManager_ = new SoundManager();
@@ -141,42 +142,28 @@ void GameFramework::Initialize() {
 
   SetUnhandledExceptionFilter(ExportDump);
 
-  TextureManager::GetInstance()->Initialize(dxCommon_, srvManager_);
-  ModelManager::GetInstance()->Initialize(object3dRenderer_->GetDxCommon());
+  TextureManager::GetInstance()->Initialize(
+      DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
+  ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 #ifdef USE_IMGUI
-  imguiManager_ = new ImGuiManager();
-  imguiManager_->Initialize(winApp_, dxCommon_, srvManager_);
+  ImGuiManager::GetInstance()->Initialize(
+      WinApp::GetInstance(), DirectXCommon::GetInstance(),
+      ShaderResourceViewManager::GetInstance());
 #endif
 }
 
 void GameFramework::Update() {
-  if (winApp_->ProcessMessage()) {
+  if (WinApp::GetInstance()->ProcessMessage()) {
     endRequest_ = true;
   }
 
-  if (input_->TriggerKey(DIK_ESCAPE)) {
+  if (Input::GetInstance()->TriggerKey(DIK_ESCAPE)) {
     endRequest_ = true;
   }
 
   // 入力の更新
-  input_->Update();
-}
-
-void GameFramework::Draw() {
-  srvManager_->BeginDraw();
-
-  dxCommon_->BeginDraw();
-
-#ifdef USE_IMGUI
-
-  imguiManager_->Draw();
-
-#endif
-
-  dxCommon_->EndDraw();
-
-  TextureManager::GetInstance()->ReleaseIntermediateResources();
+  Input::GetInstance()->Update();
 }
 
 void GameFramework::Finalize() {
@@ -185,7 +172,8 @@ void GameFramework::Finalize() {
 
 #ifdef USE_IMGUI
 
-  imguiManager_->Finalize();
+  ImGuiManager::GetInstance()->Finalize();
+  ImGuiManager::GetInstance()->Shutdown();
 
 #endif
 
@@ -193,28 +181,48 @@ void GameFramework::Finalize() {
   // CloseWindow(winApp->GetHwnd());
 
   // inputを解放
-  delete input_;
+  Input::GetInstance()->Shutdown();
 
   // object3dRendererを解放
-  delete object3dRenderer_;
+  Object3dRenderer::GetInstance()->Shutdown();
 
   // spriteCommonを解放
-  delete spriteRenderer_;
+  SpriteRenderer::GetInstance()->Shutdown();
 
-  TextureManager::GetInstance()->Finalize();
-  ModelManager::GetInstance()->Finalize();
+  TextureManager::GetInstance()->Shutdown();
+  ModelManager::GetInstance()->Shutdown();
 
   // SrvManager
-  delete srvManager_;
+  ShaderResourceViewManager::GetInstance()->Shutdown();
 
   // DirectXを解放
-  delete dxCommon_;
+  DirectXCommon::GetInstance()->Shutdown();
 
   // WinodwsAPIの終了処理
-  winApp_->Finalize();
+  WinApp::GetInstance()->Finalize();
+  WinApp::GetInstance()->Shutdown();
 
   // WIndowsAPIを解放
-  delete winApp_;
+  WinApp::GetInstance()->Shutdown();
 
   leakCheck_.~D3DResourceLeakChecker();
+}
+
+void GameFramework::BeginFrame() {
+  ShaderResourceViewManager::GetInstance()->BeginDraw();
+
+  DirectXCommon::GetInstance()->BeginDraw();
+}
+
+void GameFramework::EndFrame() {
+
+#ifdef USE_IMGUI
+
+  ImGuiManager::GetInstance()->Draw();
+
+#endif
+
+  DirectXCommon::GetInstance()->EndDraw();
+
+  TextureManager::GetInstance()->ReleaseIntermediateResources();
 }

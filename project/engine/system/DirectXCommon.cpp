@@ -16,8 +16,32 @@
 using namespace Logger;
 using namespace StringUtility;
 
+
 // 最大SRV数
 const uint32_t DirectXCommon::kMaxSRVCount = 512;
+
+//================================================================================
+// シングルトン
+//================================================================================
+
+DirectXCommon *DirectXCommon::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>DirectXCommonの唯一のインスタンス</returns>
+DirectXCommon *DirectXCommon::GetInstance() {
+  if (instance == nullptr) {
+    instance = new DirectXCommon;
+  }
+
+  return instance;
+}
+
+void DirectXCommon::Shutdown() {
+  delete instance;
+  instance = nullptr;
+}
 
 /// <summary>
 /// デストラクタ

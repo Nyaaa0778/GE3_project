@@ -5,6 +5,29 @@
 
 const uint32_t ShaderResourceViewManager::kMaxSRVCount = 512;
 
+//================================================================================
+// シングルトン
+//================================================================================
+
+ShaderResourceViewManager *ShaderResourceViewManager::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>ShaderResourceViewManagerの唯一のインスタンス</returns>
+ShaderResourceViewManager *ShaderResourceViewManager::GetInstance() {
+  if (instance == nullptr) {
+    instance = new ShaderResourceViewManager;
+  }
+
+  return instance;
+}
+
+void ShaderResourceViewManager::Shutdown() {
+  delete instance;
+  instance = nullptr;
+}
+
 /// <summary>
 /// 初期化
 /// </summary>

@@ -43,7 +43,7 @@ void TextureManager::Initialize(DirectXCommon *dxCommon,
 /// <summary>
 /// 終了
 /// </summary>
-void TextureManager::Finalize() {
+void TextureManager::Shutdown() {
   delete instance;
   instance = nullptr;
 }

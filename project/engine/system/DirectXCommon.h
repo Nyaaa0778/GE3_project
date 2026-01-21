@@ -22,11 +22,40 @@ public:
   static const uint32_t kMaxSRVCount;
 
 public:
+  //================================================================================
+  // シングルトン
+  //================================================================================
+
+  // 唯一のインスタンス取得
+  static DirectXCommon *GetInstance();
+
+  static void Shutdown();
+
+  /// <summary>
+  /// コンストラクタ
+  /// </summary>
+  DirectXCommon() = default;
   /// <summary>
   /// デストラクタ
   /// </summary>
   ~DirectXCommon();
 
+private:
+  static DirectXCommon *instance;
+
+  /// <summary>
+  /// コピーコンストラクタ禁止
+  /// </summary>
+  /// <param name="">コピー元（使用不可）</param>
+  DirectXCommon(DirectXCommon &) = delete;
+  /// <summary>
+  /// 代入演算子禁止
+  /// </summary>
+  /// <param name="">代入元（使用不可）</param>
+  /// <returns>このオブジェクトを返す</returns>
+  DirectXCommon &operator=(DirectXCommon &) = delete;
+
+public:
   //================================================================================
   // 初期化 / 更新 / 描画
   //================================================================================
@@ -61,10 +90,8 @@ public:
     return commandList_.Get();
   }
 
-  //バックバッファの数
-  UINT GetSwapChainResourceNum() const {
-    return kBackBufferCount;
-  }
+  // バックバッファの数
+  UINT GetSwapChainResourceNum() const { return kBackBufferCount; }
 
   // SRVのデスクリプタヒープ
   ID3D12DescriptorHeap *GetSrvDescriptorHeap() const {
@@ -306,7 +333,7 @@ private:
   /// </summary>
   /// <returns>生成した深度バッファリソース</returns>
   void CreateDepthBuffer();
-  
+
   /// <summary>
   /// 各種デスクリプタヒープの生成
   /// </summary>
@@ -341,9 +368,4 @@ private:
   /// DXCコンパイラの生成
   /// </summary>
   void CreateDXCCompiler();
-
-  /*/// <summary>
-  /// ImGuiの初期化
-  /// </summary>
-  void InitializeImGui();*/
 };

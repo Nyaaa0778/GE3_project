@@ -9,6 +9,40 @@ class Camera;
 class Object3dRenderer {
 public:
   //================================================================================
+  // シングルトン
+  //================================================================================
+
+  // 唯一のインスタンス取得
+  static Object3dRenderer *GetInstance();
+
+  static void Shutdown();
+
+  /// <summary>
+  /// コンストラクタ
+  /// </summary>
+  Object3dRenderer() = default;
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~Object3dRenderer() = default;
+
+private:
+  static Object3dRenderer *instance;
+
+  /// <summary>
+  /// コピーコンストラクタ禁止
+  /// </summary>
+  /// <param name="">コピー元（使用不可）</param>
+  Object3dRenderer(Object3dRenderer &) = delete;
+  /// <summary>
+  /// 代入演算子禁止
+  /// </summary>
+  /// <param name="">代入元（使用不可）</param>
+  /// <returns>このオブジェクトを返す</returns>
+  Object3dRenderer &operator=(Object3dRenderer &) = delete;
+
+public:
+  //================================================================================
   // Blend Mode
   //================================================================================
 

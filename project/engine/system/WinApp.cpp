@@ -30,6 +30,29 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd,
 #endif
 
 //================================================================================
+// シングルトン
+//================================================================================
+
+WinApp *WinApp::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>WinAppの唯一のインスタンス</returns>
+WinApp *WinApp::GetInstance() {
+  if (instance == nullptr) {
+    instance = new WinApp;
+  }
+
+  return instance;
+}
+
+void WinApp::Shutdown() {
+  delete instance;
+  instance = nullptr;
+}
+
+//================================================================================
 // 初期化 / メッセージ処理 / 終了
 //================================================================================
 

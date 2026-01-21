@@ -16,6 +16,40 @@ public:
   static const uint32_t kMaxSRVCount;
 
 public:
+  //================================================================================
+  // シングルトン
+  //================================================================================
+
+  // 唯一のインスタンス取得
+  static ShaderResourceViewManager *GetInstance();
+
+  static void Shutdown();
+
+  /// <summary>
+  /// コンストラクタ
+  /// </summary>
+  ShaderResourceViewManager() = default;
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~ShaderResourceViewManager() = default;
+
+private:
+  static ShaderResourceViewManager *instance;
+
+  /// <summary>
+  /// コピーコンストラクタ禁止
+  /// </summary>
+  /// <param name="">コピー元（使用不可）</param>
+  ShaderResourceViewManager(ShaderResourceViewManager &) = delete;
+  /// <summary>
+  /// 代入演算子禁止
+  /// </summary>
+  /// <param name="">代入元（使用不可）</param>
+  /// <returns>このオブジェクトを返す</returns>
+  ShaderResourceViewManager &operator=(ShaderResourceViewManager &) = delete;
+
+public:
   /// <summary>
   /// 初期化
   /// </summary>
@@ -82,8 +116,8 @@ public:
   /// <returns>取得したSRV用のGPUハンドル</returns>
   D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(uint32_t index);
 
-  //デスクリプタヒープ
-  ID3D12DescriptorHeap* GetDescriptorHeap() const {
+  // デスクリプタヒープ
+  ID3D12DescriptorHeap *GetDescriptorHeap() const {
     return descriptorHeap_.Get();
   }
 

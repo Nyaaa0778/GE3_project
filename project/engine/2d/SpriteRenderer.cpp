@@ -2,6 +2,29 @@
 #include "DirectXCommon.h"
 
 //================================================================================
+// シングルトン
+//================================================================================
+
+SpriteRenderer *SpriteRenderer::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>SpriteRendererの唯一のインスタンス</returns>
+SpriteRenderer *SpriteRenderer::GetInstance() {
+  if (instance == nullptr) {
+    instance = new SpriteRenderer;
+  }
+
+  return instance;
+}
+
+void SpriteRenderer::Shutdown() {
+  delete instance;
+  instance = nullptr;
+}
+
+//================================================================================
 // 初期化 / 描画設定
 //================================================================================
 

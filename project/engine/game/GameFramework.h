@@ -3,14 +3,7 @@
 #include "D3DResourceLeakChecker.h"
 
 class Camera;
-class DirectXCommon;
-class Input;
-class Object3dRenderer;
-class ShaderResourceViewManager;
 class SoundManager;
-class SpriteRenderer;
-class WinApp;
-class ImGuiManager;
 
 class GameFramework {
 public:
@@ -32,18 +25,12 @@ public:
   virtual bool IsEndRequest() { return endRequest_; }
 
 private:
-  // WinAppのポインタ
-  WinApp *winApp_ = nullptr;
-  // DirectXCommonのポインタ
-  DirectXCommon *dxCommon_ = nullptr;
-  // srvManagerのポインタ
-  ShaderResourceViewManager *srvManager_ = nullptr;
-  // SpriteRendererのポインタ
-  SpriteRenderer *spriteRenderer_ = nullptr;
-  // Object3dRendererのポインタ
-  Object3dRenderer *object3dRenderer_ = nullptr;
-  // Inputのポインタ
-  Input *input_ = nullptr;
+  // 描画前処理
+  void BeginFrame();
+  // 描画後処理
+  void EndFrame();
+
+private:
   // SoundManagerのポインタ
   SoundManager *soundManager_ = nullptr;
   // Cameraのポインタ
@@ -51,11 +38,6 @@ private:
 
   // リークチェック
   D3DResourceLeakChecker leakCheck_;
-
-  // ImGuiManagerのポインタ
-#ifdef USE_IMGUI
-  ImGuiManager *imguiManager_ = nullptr;
-#endif
 
   // ゲーム終了フラグ
   bool endRequest_ = false;

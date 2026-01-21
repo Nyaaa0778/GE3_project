@@ -35,7 +35,33 @@ public:
   /// <summary>
   /// 終了
   /// </summary>
-  void Finalize();
+  void Shutdown();
+
+private:
+  static ParticleManager *instance;
+
+  /// <summary>
+  /// コンストラクタ
+  /// </summary>
+  ParticleManager() = default;
+
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~ParticleManager() = default;
+
+  /// <summary>
+  /// コピーコンストラクタ禁止
+  /// </summary>
+  /// <param name="">コピー元（使用不可）</param>
+  ParticleManager(ParticleManager &) = delete;
+
+  /// <summary>
+  /// 代入演算子禁止
+  /// </summary>
+  /// <param name="">代入元（使用不可）</param>
+  /// <returns>このオブジェクトを返す</returns>
+  ParticleManager &operator=(ParticleManager &) = delete;
 
 public:
   //================================================================================
@@ -206,36 +232,6 @@ private:
 
   // 板ポリゴン（パーティクル）描画用の頂点データ
   std::vector<VertexData> vertices_;
-
-private:
-  //================================================================================
-  // シングルトン実装詳細
-  //================================================================================
-
-  static ParticleManager *instance;
-
-  /// <summary>
-  /// コンストラクタ
-  /// </summary>
-  ParticleManager() = default;
-
-  /// <summary>
-  /// デストラクタ
-  /// </summary>
-  ~ParticleManager() = default;
-
-  /// <summary>
-  /// コピーコンストラクタ禁止
-  /// </summary>
-  /// <param name="">コピー元（使用不可）</param>
-  ParticleManager(ParticleManager &) = delete;
-
-  /// <summary>
-  /// 代入演算子禁止
-  /// </summary>
-  /// <param name="">代入元（使用不可）</param>
-  /// <returns>このオブジェクトを返す</returns>
-  ParticleManager &operator=(ParticleManager &) = delete;
 
 private:
   //================================================================================

@@ -30,7 +30,7 @@ ParticleManager *ParticleManager::GetInstance() {
 /// <summary>
 /// 終了
 /// </summary>
-void ParticleManager::Finalize() {
+void ParticleManager::Shutdown() {
   delete instance;
   instance = nullptr;
 }

@@ -34,7 +34,7 @@ void ModelManager::Initialize(DirectXCommon *dxCommon) {
 /// <summary>
 /// 終了
 /// </summary>
-void ModelManager::Finalize() {
+void ModelManager::Shutdown() {
   // 読み込んだModelを全部破棄
   models_.clear();
 

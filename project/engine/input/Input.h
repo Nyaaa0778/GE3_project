@@ -11,6 +11,40 @@ class WinApp;
 class Input {
 public:
   //================================================================================
+  // シングルトン
+  //================================================================================
+
+  // 唯一のインスタンス取得
+  static Input *GetInstance();
+
+  static void Shutdown();
+
+  /// <summary>
+  /// コンストラクタ
+  /// </summary>
+  Input() = default;
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~Input() = default;
+
+private:
+  static Input *instance;
+
+  /// <summary>
+  /// コピーコンストラクタ禁止
+  /// </summary>
+  /// <param name="">コピー元（使用不可）</param>
+  Input(Input &) = delete;
+  /// <summary>
+  /// 代入演算子禁止
+  /// </summary>
+  /// <param name="">代入元（使用不可）</param>
+  /// <returns>このオブジェクトを返す</returns>
+  Input &operator=(Input &) = delete;
+
+public:
+  //================================================================================
   // 初期化 / 更新
   //================================================================================
 

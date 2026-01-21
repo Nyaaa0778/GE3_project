@@ -1,7 +1,8 @@
 #pragma once
 
-
 #include "GameFramework.h"
+
+class SceneManager;
 
 class GameManager : public GameFramework {
 public:
@@ -13,6 +14,9 @@ public:
   void Draw() override;
   // 終了
   void Finalize() override;
+
+private:
+  SceneManager *sceneManager_ = nullptr;
 
 private:
   // ゲーム終了フラグ
