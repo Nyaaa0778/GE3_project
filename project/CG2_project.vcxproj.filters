@@ -153,9 +153,6 @@
     <ClCompile Include="engine\graphics\ShaderResourceViewManager.cpp">
       <Filter>ソース ファイル\engine\core</Filter>
     </ClCompile>
-    <ClCompile Include="engine\3d\ParticleManager.cpp">
-      <Filter>ソース ファイル\engine\3d</Filter>
-    </ClCompile>
     <ClCompile Include="engine\framework\GameFramework.cpp">
       <Filter>ソース ファイル\engine\game</Filter>
     </ClCompile>
