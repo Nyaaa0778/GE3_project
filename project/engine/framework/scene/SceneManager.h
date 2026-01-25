@@ -1,6 +1,9 @@
 #pragma once
 
+#include <string>
+
 class IScene;
+class ISceneFactory;
 
 class SceneManager {
 public:
@@ -43,8 +46,17 @@ public:
   void Draw();
 
 public:
+  //================================================================================
+  // Setter
+  //================================================================================
+
+  // シーンファクトリー
+  void SetSceneFactory(ISceneFactory *sceneFactory) {
+    sceneFactory_ = sceneFactory;
+  }
+
   // 次のシーンを予約
-  void SetNextScene(IScene *nextScene) { nextScene_ = nextScene; }
+  void ChangeScene(const std::string &sceneName);
 
 private:
   // 今のシーン
@@ -52,6 +64,9 @@ private:
   // 次のシーン
   IScene *nextScene_ = nullptr;
 
+  // シーンファクトリー
+  ISceneFactory *sceneFactory_ = nullptr;
+
 private:
-  void ChangeScene();
+  void ChangeSceneInternal();
 };

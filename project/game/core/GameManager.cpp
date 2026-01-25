@@ -1,18 +1,20 @@
 #include "GameManager.h"
 
+#include "IScene.h"
+#include "GameSceneFactory.h"
 #include "SceneManager.h"
-#include"IScene.h"
-#include"TitleScene.h"
 
 void GameManager::Initialize() {
   // 基底クラスの初期化
   GameFramework::Initialize();
 
-  sceneManager_ = new SceneManager();
+  //シーンファクトリを生成してマネージャにセット
+  sceneFactory_ = new GameSceneFactory();
 
-  IScene *scene = new TitleScene();
-  //シーンマネージャに最初のシーンをセット
-  sceneManager_->SetNextScene(scene);
+  SceneManager::GetInstance()->SetSceneFactory(sceneFactory_);
+
+  // シーンマネージャに最初のシーンをセット
+  SceneManager::GetInstance()->ChangeScene("TITLE");
 }
 
 void GameManager::Update() {
@@ -20,14 +22,17 @@ void GameManager::Update() {
   // 基底クラスの更新
   GameFramework::Update();
 
-  sceneManager_->Update();
+  SceneManager::GetInstance()->Update();
 }
 
-void GameManager::Draw() { sceneManager_->Draw(); }
+void GameManager::Draw() { SceneManager::GetInstance()->Draw(); }
 
 void GameManager::Finalize() {
   // シーンマネージャを解放
-  delete sceneManager_;
+  SceneManager::GetInstance()->Shutdown();
+
+  //シーンファクトリを解放
+  delete sceneFactory_;
 
   // 基底クラスの終了処理
   GameFramework::Finalize();

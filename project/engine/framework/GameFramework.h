@@ -4,6 +4,7 @@
 
 class Camera;
 class SoundManager;
+class ISceneFactory;
 
 class GameFramework {
 public:
@@ -35,6 +36,9 @@ private:
   SoundManager *soundManager_ = nullptr;
   // Cameraのポインタ
   Camera *camera_ = nullptr;
+
+  //シーンファクトリー
+  ISceneFactory *sceneFactory_ = nullptr;
 
   // リークチェック
   D3DResourceLeakChecker leakCheck_;

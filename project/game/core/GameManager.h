@@ -2,7 +2,7 @@
 
 #include "GameFramework.h"
 
-class SceneManager;
+class ISceneFactory;
 
 class GameManager : public GameFramework {
 public:
@@ -16,7 +16,8 @@ public:
   void Finalize() override;
 
 private:
-  SceneManager *sceneManager_ = nullptr;
+  // シーンファクトリー
+  ISceneFactory *sceneFactory_ = nullptr;
 
 private:
   // ゲーム終了フラグ

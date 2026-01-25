@@ -1,8 +1,9 @@
 #include "SceneManager.h"
 
-#include "GamePlayScene.h"
 #include "IScene.h"
-#include "TitleScene.h"
+#include "ISceneFactory.h"
+
+#include <cassert>
 
 //================================================================================
 // シングルトン
@@ -35,13 +36,20 @@ SceneManager::SceneManager() {
 
 SceneManager::~SceneManager() {
   // 最後のシーンの終了と解放
-  scene_->Finalize();
-  delete scene_;
+  if (scene_) {
+    scene_->Finalize();
+    delete scene_;
+  }
+
+  if (nextScene_) {
+    delete nextScene_;
+    nextScene_ = nullptr;
+  }
 }
 
 void SceneManager::Update() {
   // シーンの切り替え
-  ChangeScene();
+  ChangeSceneInternal();
 
   if (!scene_) {
     return; // まだ何もないなら何もしない
@@ -59,7 +67,16 @@ void SceneManager::Draw() {
   scene_->Draw();
 }
 
-void SceneManager::ChangeScene() {
+void SceneManager::ChangeScene(const std::string &sceneName) {
+  assert(sceneFactory_ && "SceneFactory is not set");
+
+  assert(nextScene_ == nullptr);
+
+  //次のシーンを予約
+  nextScene_ = sceneFactory_->CreateScene(sceneName);
+}
+
+void SceneManager::ChangeSceneInternal() {
   // 次のシーンの予約があるとき
   if (nextScene_) {
     // 旧シーンの終了

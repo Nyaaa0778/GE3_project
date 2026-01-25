@@ -2,6 +2,7 @@
 
 #include "Camera.h"
 #include "DirectXCommon.h"
+#include "ISceneFactory.h"
 #include "ImGuiManager.h"
 #include "Input.h"
 #include "ModelManager.h"
