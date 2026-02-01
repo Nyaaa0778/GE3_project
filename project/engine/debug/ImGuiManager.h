@@ -8,7 +8,8 @@
 
 #endif
 
-class WinApp;
+#include <memory>
+
 class DirectXCommon;
 class ShaderResourceViewManager;
 
@@ -21,7 +22,16 @@ public:
   // 唯一のインスタンス取得
   static ImGuiManager *GetInstance();
 
-  static void Shutdown();
+  /// <summary>
+  /// 終了
+  /// </summary>
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<ImGuiManager>;
+
+private:
+  static std::unique_ptr<ImGuiManager> instance;
 
   /// <summary>
   /// コンストラクタ
@@ -30,10 +40,7 @@ public:
   /// <summary>
   /// デストラクタ
   /// </summary>
-  ~ImGuiManager() = default;
-
-private:
-  static ImGuiManager *instance;
+  ~ImGuiManager();
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -51,10 +58,7 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  /// <param name="winApp">WinAppのポインタ</param>
-  /// <param name="dxCommon">DirectXCommonのポインタ</param>
-  /// <param name="srvManager">SrvManagerのポインタ</param>
-  void Initialize(WinApp *winApp, DirectXCommon *dxCommon,
+  void Initialize(DirectXCommon *dxCommon,
                   ShaderResourceViewManager *srvManager);
 
   /// <summary>
@@ -71,11 +75,6 @@ public:
   /// </summary>
   void Draw();
 
-  /// <summary>
-  /// 終了
-  /// </summary>
-  void Finalize();
-
 private:
   //================================================================================
   // 外部参照
@@ -83,6 +82,6 @@ private:
 
   // DirectXCommonのポインタ
   DirectXCommon *dxCommon_ = nullptr;
-  // SrvManager
+  // SrvManagerのポインタ
   ShaderResourceViewManager *srvManager_ = nullptr;
 };

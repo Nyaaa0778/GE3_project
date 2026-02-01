@@ -1,11 +1,13 @@
 #pragma once
 
-#include "IScene.h"
+#include <memory>
 #include <string>
+
+#include "IScene.h"
 
 class ISceneFactory {
 public:
   virtual ~ISceneFactory() = default;
-  //シーン生成
-  virtual IScene *CreateScene(const std::string &sceneName) = 0;
+  // シーン生成
+  virtual std::unique_ptr<IScene> CreateScene(const std::string &sceneName) = 0;
 };

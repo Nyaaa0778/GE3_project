@@ -1,11 +1,22 @@
 #pragma once
 
+#include <memory>
+
 #include "GameFramework.h"
 
 class ISceneFactory;
 
 class GameManager : public GameFramework {
 public:
+  /// <summary>
+  /// コンストラクタ
+  /// </summary>
+  GameManager();
+  /// <summary>
+  /// デストラクタ
+  /// </summary>
+  ~GameManager() override;
+
   // 初期化
   void Initialize() override;
   // 更新
@@ -17,7 +28,7 @@ public:
 
 private:
   // シーンファクトリー
-  ISceneFactory *sceneFactory_ = nullptr;
+  std::unique_ptr<ISceneFactory> sceneFactory_ = nullptr;
 
 private:
   // ゲーム終了フラグ

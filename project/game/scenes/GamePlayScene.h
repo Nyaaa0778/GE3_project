@@ -1,10 +1,16 @@
 #pragma once
+
 #include "IScene.h"
 
+#include <memory>
+
 class Object3d;
+class Camera;
 
 class GamePlayScene : public IScene {
 public:
+  GamePlayScene();
+  ~GamePlayScene();
 
   void Initialize() override;
 
@@ -15,5 +21,6 @@ public:
   void Finalize() override;
 
 private:
-  Object3d *obj_ = nullptr;
+  // モデル
+  std::unique_ptr<Object3d> obj_;
 };

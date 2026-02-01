@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 class IScene;
@@ -14,7 +15,7 @@ public:
   // 唯一のインスタンス取得
   static SceneManager *GetInstance();
 
-  static void Shutdown();
+  static void Finalize();
 
   /// <summary>
   /// コンストラクタ
@@ -26,7 +27,7 @@ public:
   ~SceneManager();
 
 private:
-  static SceneManager *instance;
+  static std::unique_ptr<SceneManager> instance;
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -59,10 +60,10 @@ public:
   void ChangeScene(const std::string &sceneName);
 
 private:
-  // 今のシーン
-  IScene *scene_ = nullptr;
-  // 次のシーン
-  IScene *nextScene_ = nullptr;
+  // 今のシーン (unique_ptr で管理)
+  std::unique_ptr<IScene> scene_ = nullptr;
+  // 次のシーン (unique_ptr で管理)
+  std::unique_ptr<IScene> nextScene_ = nullptr;
 
   // シーンファクトリー
   ISceneFactory *sceneFactory_ = nullptr;

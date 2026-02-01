@@ -159,7 +159,7 @@
     <ClCompile Include="game\scenes\GamePlayScene.cpp">
       <Filter>ソース ファイル\game</Filter>
     </ClCompile>
-    <ClCompile Include="engine\core\timing\FixFPS.cpp">
+    <ClCompile Include="engine\core\timing\TimeManager.cpp">
       <Filter>ソース ファイル\engine\core</Filter>
     </ClCompile>
     <ClCompile Include="engine\core\debug\D3DResourceLeakChecker.cpp">
@@ -289,7 +289,7 @@
     <ClInclude Include="engine\core\debug\D3DResourceLeakChecker.h">
       <Filter>ヘッダー ファイル\engine\core</Filter>
     </ClInclude>
-    <ClInclude Include="engine\core\timing\FixFPS.h">
+    <ClInclude Include="engine\core\timing\TimeManager.h">
       <Filter>ヘッダー ファイル\engine\core</Filter>
     </ClInclude>
     <ClInclude Include="engine\2d\SpriteRenderer.h">

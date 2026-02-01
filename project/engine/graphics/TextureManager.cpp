@@ -1,11 +1,12 @@
 #include "TextureManager.h"
+
 #include "DirectXCommon.h"
 #include "ShaderResourceViewManager.h"
 #include "StringUtility.h"
 
 using namespace StringUtility;
 
-TextureManager *TextureManager::instance = nullptr;
+std::unique_ptr<TextureManager> TextureManager::instance = nullptr;
 
 // ImGuiで0番を使用するため、1番から使用
 uint32_t TextureManager::kSRVIndexTop = 1;
@@ -20,33 +21,30 @@ uint32_t TextureManager::kSRVIndexTop = 1;
 /// <returns>TextureManager の唯一のインスタンス</returns>
 TextureManager *TextureManager::GetInstance() {
   if (instance == nullptr) {
-    instance = new TextureManager;
+    instance.reset(new TextureManager());
   }
 
-  return instance;
+  return instance.get();
 }
 
 /// <summary>
 /// 初期化
 /// </summary>
-/// <param name="dxCommon">DirectXCommonのポインタ</param>
-/// /// <param name="srvManager">SrvManagerのポインタ</param>
 void TextureManager::Initialize(DirectXCommon *dxCommon,
                                 ShaderResourceViewManager *srvManager) {
+
+  // メンバ変数を記録
   dxCommon_ = dxCommon;
   srvManager_ = srvManager;
 
   // SRVの数と同数
-  textureDatas_.reserve(dxCommon_->kMaxSRVCount);
+  textureDatas_.reserve(DirectXCommon::GetInstance()->kMaxSRVCount);
 }
 
 /// <summary>
 /// 終了
 /// </summary>
-void TextureManager::Shutdown() {
-  delete instance;
-  instance = nullptr;
-}
+void TextureManager::Finalize() { instance.reset(); }
 
 //================================================================================
 // テクスチャ読み込み / 中間リソース解放
@@ -67,7 +65,7 @@ void TextureManager::LoadTexture(const std::string &filePath) {
   TextureData &textureData = textureDatas_[filePath];
 
   // テクスチャ枚数上限チェック
-  assert(srvManager_->CanAllocate());
+  assert(ShaderResourceViewManager::GetInstance()->CanAllocate());
 
   // テクスチャファイルを読んでプログラムで扱えるようにする
   DirectX::ScratchImage image{};
@@ -85,39 +83,26 @@ void TextureManager::LoadTexture(const std::string &filePath) {
   assert(SUCCEEDED(hr));
 
   textureData.metadata = mipImages.GetMetadata();
-  textureData.resource = dxCommon_->CreateTextureResource(textureData.metadata);
+  textureData.resource =
+      DirectXCommon::GetInstance()->CreateTextureResource(textureData.metadata);
 
-  textureData.srvIndex = srvManager_->Allocate();
+  textureData.srvIndex = ShaderResourceViewManager::GetInstance()->Allocate();
   textureData.srvHandleCPU =
-      srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
+      ShaderResourceViewManager::GetInstance()->GetCPUDescriptorHandle(
+          textureData.srvIndex);
   textureData.srvHandleGPU =
-      srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
+      ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(
+          textureData.srvIndex);
 
-  srvManager_->CreateSRVfortexture2D(
+  ShaderResourceViewManager::GetInstance()->CreateSRVfortexture2D(
       textureData.srvIndex, textureData.resource.Get(),
       textureData.metadata.format,
       static_cast<UINT>(textureData.metadata.mipLevels));
 
-  //// テクスチャデータの要素番号をSRVのインデックスにする
-  // uint32_t srvIndex =
-  //     static_cast<uint32_t>(textureDatas_.size() - 1 + kSRVIndexTop);
-
-  // textureData.srvHandleCPU = dxCommon_->GetSrvCPUDescriptorHandle(srvIndex);
-  // textureData.srvHandleGPU = dxCommon_->GetSrvGPUDescriptorHandle(srvIndex);
-
-  /*D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-  srvDesc.Format = textureData.metadata.format;
-  srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-  srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-  srvDesc.Texture2D.MipLevels =
-      static_cast<UINT>(textureData.metadata.mipLevels);
-
-  dxCommon_->GetDevice()->CreateShaderResourceView(
-      textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);*/
-
   // 転送用に生成した中間リソースをテクスチャデータ構造体に格納
   textureData.intermediateResource =
-      dxCommon_->UploadTextureData(textureData.resource, mipImages);
+      DirectXCommon::GetInstance()->UploadTextureData(textureData.resource,
+                                                      mipImages);
 }
 
 /// <summary>

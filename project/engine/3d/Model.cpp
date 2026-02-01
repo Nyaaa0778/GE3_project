@@ -13,11 +13,10 @@ using namespace MathUtility;
 /// <summary>
 /// 初期化
 /// </summary>
-/// <param name="modelCommon">ModelCommonのポインタ</param>
-void Model::Initialize(ModelCommon *modelCommon,
-                       const std::string &directoryPath,
+void Model::Initialize(const std::string &directoryPath,
                        const std::string &filename) {
-  modelCommon_ = modelCommon;
+
+  modelCommon_ = ModelCommon::GetInstance();
 
   LoadObjFile(directoryPath, filename);
 
@@ -39,14 +38,13 @@ void Model::Initialize(ModelCommon *modelCommon,
 /// 描画
 /// </summary>
 void Model::Draw() {
-  assert(modelCommon_);
   assert(modelCommon_->GetDxCommon());
   assert(modelCommon_->GetDxCommon()->GetCommandList());
 
-  assert(!modelData_.material.textureFilePath.empty()); // ★まずここ
+  assert(!modelData_.material.textureFilePath.empty());
   auto h = TextureManager::GetInstance()->GetSrvHandlGPU(
       modelData_.material.textureFilePath);
-  assert(h.ptr != 0); // ★次にここ
+  assert(h.ptr != 0);
 
   // vertexBufferViewを設定
   modelCommon_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(

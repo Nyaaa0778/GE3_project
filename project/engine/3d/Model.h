@@ -17,8 +17,7 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  /// <param name="modelCommon">ModelCommonのポインタ</param>
-  void Initialize(ModelCommon *modelCommon, const std::string &directoryPath,
+  void Initialize(const std::string &directoryPath,
                   const std::string &filename);
   /// <summary>
   /// 描画
@@ -112,7 +111,6 @@ private:
 
   // ModelCommonのポインタ
   ModelCommon *modelCommon_ = nullptr;
-
   //================================================================================
   // GPUリソース（頂点）
   //================================================================================

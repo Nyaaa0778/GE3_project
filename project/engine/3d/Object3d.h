@@ -14,6 +14,7 @@
 
 class Model;
 class Camera;
+class Object3dRenderer;
 
 class Object3d {
 public:
@@ -24,10 +25,8 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  /// <param name="object3dRenderer">Object3dRendererのポインタ</param>
-  /// /// <param name="filePath">モデルファイルのパス</param>
-  void Initialize(Object3dRenderer *object3dRenderer,
-                  const std::string &filePath);
+  /// <param name="filePath">モデルファイルのパス</param>
+  void Initialize(const std::string &filePath);
   /// <summary>
   /// 更新
   /// </summary>
@@ -51,9 +50,7 @@ public:
   // 色
   const Vector4 &GetColor() const;
   // BlendMode
-  Object3dRenderer::BlendMode GetBlendMode() const {
-    return object3dRenderer_->GetBlendMode();
-  }
+  Object3dRenderer::BlendMode GetBlendMode() const { return blendMode_; }
 
   // ライトの色
   const Vector4 &GetLightColor() const { return directionalLightData_->color; }
@@ -78,7 +75,7 @@ public:
   void SetColor(const Vector4 &color);
   // BlendMode
   void SetBlendMode(Object3dRenderer::BlendMode blendMode) {
-    object3dRenderer_->SetBlendMode(blendMode);
+    blendMode_ = blendMode;
   }
   // モデル
   void SetModel(const std::string &modelName);
@@ -166,6 +163,9 @@ private:
   Vector3 rotation_ = {0.0f, 3.14f, 0.0f};
   // 拡縮
   Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+
+  // BlendMode
+  Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
 
 private:
   //================================================================================

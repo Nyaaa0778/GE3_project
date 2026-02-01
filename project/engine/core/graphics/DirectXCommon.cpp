@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "ShaderResourceViewManager.h"
 #include "StringUtility.h"
+#include "TimeManager.h"
 #include "WinApp.h"
 
 #include <cassert>
@@ -16,7 +17,6 @@
 using namespace Logger;
 using namespace StringUtility;
 
-
 // 最大SRV数
 const uint32_t DirectXCommon::kMaxSRVCount = 512;
 
@@ -24,7 +24,7 @@ const uint32_t DirectXCommon::kMaxSRVCount = 512;
 // シングルトン
 //================================================================================
 
-DirectXCommon *DirectXCommon::instance = nullptr;
+std::unique_ptr<DirectXCommon> DirectXCommon::instance = nullptr;
 
 /// <summary>
 /// シングルトンインスタンスの取得
@@ -32,16 +32,16 @@ DirectXCommon *DirectXCommon::instance = nullptr;
 /// <returns>DirectXCommonの唯一のインスタンス</returns>
 DirectXCommon *DirectXCommon::GetInstance() {
   if (instance == nullptr) {
-    instance = new DirectXCommon;
+    instance.reset(new DirectXCommon());
   }
 
-  return instance;
+  return instance.get();
 }
 
-void DirectXCommon::Shutdown() {
-  delete instance;
-  instance = nullptr;
-}
+/// <summary>
+/// 終了
+/// </summary>
+void DirectXCommon::Finalize() { instance.reset(); }
 
 /// <summary>
 /// デストラクタ
@@ -72,7 +72,7 @@ DirectXCommon::~DirectXCommon() {
 void DirectXCommon::Initialize(WinApp *winApp) {
 
   // FPS固定初期化
-  fixFps_.Initialize();
+  TimeManager::GetInstance()->Initialize();
 
   // NULL検出
   assert(winApp);
@@ -101,8 +101,6 @@ void DirectXCommon::Initialize(WinApp *winApp) {
   InitializeScissorRect();
   // DXCコンパイラの生成
   CreateDXCCompiler();
-  //// ImGuiの初期化
-  //InitializeImGui();
 }
 
 /// <summary>
@@ -177,7 +175,7 @@ void DirectXCommon::EndDraw() {
   commandQueue_->Signal(fence_.Get(), fenceValue_);
 
   // FPS固定
-  fixFps_.Update();
+  TimeManager::GetInstance()->Update();
 
   // Fence完了待ち
   if (fence_->GetCompletedValue() < fenceValue_) {
@@ -386,15 +384,15 @@ void DirectXCommon::CreateSwapChain() {
   swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // 色の形式
   swapChainDesc.SampleDesc.Count = 1; // マルチサンプルしない(ギザギザ)
   swapChainDesc.BufferUsage =
-      DXGI_USAGE_RENDER_TARGET_OUTPUT; // 描画ターゲットとして利用
+      DXGI_USAGE_RENDER_TARGET_OUTPUT;          // 描画ターゲットとして利用
   swapChainDesc.BufferCount = kBackBufferCount; // ダブルバッファ
   swapChainDesc.SwapEffect =
       DXGI_SWAP_EFFECT_FLIP_DISCARD; // モニタにうつしたら、中身を放棄
 
   // コマンドキュー、ウィンドウハンドル、設定を渡して生成
   HRESULT hr = dxgiFactory_->CreateSwapChainForHwnd(
-      commandQueue_.Get(), winApp_->GetHwnd(), &swapChainDesc, nullptr,
-      nullptr, reinterpret_cast<IDXGISwapChain1 **>(swapChain_.GetAddressOf()));
+      commandQueue_.Get(), winApp_->GetHwnd(), &swapChainDesc, nullptr, nullptr,
+      reinterpret_cast<IDXGISwapChain1 **>(swapChain_.GetAddressOf()));
   assert(SUCCEEDED(hr));
 }
 
@@ -499,7 +497,7 @@ void DirectXCommon::InitializeRenderTargetView() {
 
   // RTVの設定
   D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
-  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; // 出力結果をSRGBに変換
+  rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;      // 出力結果をSRGBに変換
   rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D; // 2Dテクスチャ
 
   // 先頭ハンドル（参考: 直接使ってもOK、実際の作成はfor内でindexを進める）
@@ -588,20 +586,6 @@ void DirectXCommon::CreateDXCCompiler() {
   hr = dxcUtils_->CreateDefaultIncludeHandler(&includeHandler_);
   assert(SUCCEEDED(hr));
 }
-
-///// <summary>
-///// ImGuiの初期化
-///// </summary>
-//void DirectXCommon::InitializeImGui() {
-//  IMGUI_CHECKVERSION();
-//  ImGui::CreateContext();
-//  ImGui::StyleColorsDark();
-//  ImGui_ImplWin32_Init(winApp_->GetHwnd());
-//  ImGui_ImplDX12_Init(device_.Get(), swapChainDesc_.BufferCount,
-//                      rtvDesc_.Format, descriptorHeapSRV_.Get(),
-//                      descriptorHeapSRV_->GetCPUDescriptorHandleForHeapStart(),
-//                      descriptorHeapSRV_->GetGPUDescriptorHandleForHeapStart());
-//}
 
 //================================================================================
 // シェーダ / リソース生成

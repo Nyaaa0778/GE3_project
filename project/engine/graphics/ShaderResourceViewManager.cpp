@@ -9,7 +9,8 @@ const uint32_t ShaderResourceViewManager::kMaxSRVCount = 512;
 // シングルトン
 //================================================================================
 
-ShaderResourceViewManager *ShaderResourceViewManager::instance = nullptr;
+std::unique_ptr<ShaderResourceViewManager> ShaderResourceViewManager::instance =
+    nullptr;
 
 /// <summary>
 /// シングルトンインスタンスの取得
@@ -17,31 +18,26 @@ ShaderResourceViewManager *ShaderResourceViewManager::instance = nullptr;
 /// <returns>ShaderResourceViewManagerの唯一のインスタンス</returns>
 ShaderResourceViewManager *ShaderResourceViewManager::GetInstance() {
   if (instance == nullptr) {
-    instance = new ShaderResourceViewManager;
+    instance.reset(new ShaderResourceViewManager());
   }
 
-  return instance;
+  return instance.get();
 }
 
-void ShaderResourceViewManager::Shutdown() {
-  delete instance;
-  instance = nullptr;
-}
+void ShaderResourceViewManager::Finalize() { instance.reset(); }
 
 /// <summary>
 /// 初期化
 /// </summary>
-/// <param name="dxCommon">DirectXCommonのポインタ</param>
-void ShaderResourceViewManager::Initialize(DirectXCommon *dxCommon) {
-  // 引数を受け取ってメンバ変数に記録する
-  dxCommon_ = dxCommon;
-
+void ShaderResourceViewManager::Initialize() {
   // デスクリプタヒープの生成
-  descriptorHeap_ = dxCommon_->CreateDescriptorHeap(
+  descriptorHeap_ = DirectXCommon::GetInstance()->CreateDescriptorHeap(
       D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
   // デスクリプタ1個分のサイズを取得
-  descriptorSize_ = dxCommon_->GetDevice()->GetDescriptorHandleIncrementSize(
-      D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+  descriptorSize_ = DirectXCommon::GetInstance()
+                        ->GetDevice()
+                        ->GetDescriptorHandleIncrementSize(
+                            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 uint32_t ShaderResourceViewManager::Allocate() {
@@ -74,7 +70,7 @@ void ShaderResourceViewManager::CreateSRVfortexture2D(uint32_t srvIndex,
   srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
   srvDesc.Texture2D.MipLevels = MipLevels;
 
-  dxCommon_->GetDevice()->CreateShaderResourceView(
+  DirectXCommon::GetInstance()->GetDevice()->CreateShaderResourceView(
       pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
 }
 /// <summary>
@@ -98,7 +94,7 @@ void ShaderResourceViewManager::CreateSRVforStructureBuffer(
   srvDesc.Buffer.StructureByteStride = structureByteStride; // 1要素のバイト数
   srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
-  dxCommon_->GetDevice()->CreateShaderResourceView(
+  DirectXCommon::GetInstance()->GetDevice()->CreateShaderResourceView(
       pResource, &srvDesc, GetCPUDescriptorHandle(srvIndex));
 }
 
@@ -107,7 +103,8 @@ void ShaderResourceViewManager::CreateSRVforStructureBuffer(
 /// </summary>
 void ShaderResourceViewManager::BeginDraw() {
   ID3D12DescriptorHeap *descriptorHeaps[] = {descriptorHeap_.Get()};
-  dxCommon_->GetCommandList()->SetDescriptorHeaps(1, descriptorHeaps);
+  DirectXCommon::GetInstance()->GetCommandList()->SetDescriptorHeaps(
+      1, descriptorHeaps);
 }
 
 /// <summary>
@@ -117,8 +114,10 @@ void ShaderResourceViewManager::BeginDraw() {
 /// <param name="srvIndex">使用するSRVインデックス</param>
 void ShaderResourceViewManager::SetGraphicsRootDescriptorTable(
     UINT RootParameterIndex, uint32_t srvIndex) {
-  dxCommon_->GetCommandList()->SetGraphicsRootDescriptorTable(
-      RootParameterIndex, GetGPUDescriptorHandle(srvIndex));
+  DirectXCommon::GetInstance()
+      ->GetCommandList()
+      ->SetGraphicsRootDescriptorTable(RootParameterIndex,
+                                       GetGPUDescriptorHandle(srvIndex));
 }
 
 //================================================================================

@@ -2,9 +2,9 @@
 
 #include "Camera.h"
 #include "DirectXCommon.h"
-#include "ISceneFactory.h"
 #include "ImGuiManager.h"
 #include "Input.h"
+#include "ModelCommon.h"
 #include "ModelManager.h"
 #include "Object3dRenderer.h"
 #include "ShaderResourceViewManager.h"
@@ -22,22 +22,9 @@
 #include <dbghelp.h>
 #include <strsafe.h>
 #pragma comment(lib, "Dbghelp.lib")
+#include <chrono>
 #include <filesystem>
-#include <fstream>
-
-// 現在時刻を取得
-std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-// ログファイルの名前を秒にする
-std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
-    nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
-// 日本時間(PCの設定時間)に変換
-std::chrono::zoned_time localTime{std::chrono::current_zone(), nowSeconds};
-// formatを使って年月日_時分秒の文字列に変換
-std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
-// 時刻を使ってファイル名を決定
-std::string logFilePath = std::string("logs/") + dateString + ".log";
-// ファイルを作って書き込み準備
-std::ofstream logStream(logFilePath);
+#include <format>
 
 /// <summary>
 /// デバッグ用のダンプを出力
@@ -69,6 +56,12 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS *exception) {
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
+GameFramework::GameFramework() = default;
+GameFramework::~GameFramework() = default;
+
+/// <summary>
+/// 実行
+/// </summary>
 void GameFramework::Execute() {
   // ゲームの初期化
   Initialize();
@@ -108,52 +101,62 @@ void GameFramework::Execute() {
   Finalize();
 }
 
+/// <summary>
+/// 初期化
+/// </summary>
 void GameFramework::Initialize() {
+
+  // ログシステムの初期化
+  InitializeLogSystem();
+  // 例外フィルタの設定
+  SetUnhandledExceptionFilter(ExportDump);
+
   // WinAppの初期化
-  WinApp::GetInstance()->Initialize();
+  WinApp::GetInstance()->Initialize(L"DIrectXGame", 1280, 720);
 
   // DirectXCommonの初期化
   DirectXCommon::GetInstance()->Initialize(WinApp::GetInstance());
 
-  // Inputの初期化
-  Input::GetInstance()->Initialize(WinApp::GetInstance());
-
   // srvManagerの初期化
-  ShaderResourceViewManager::GetInstance()->Initialize(
-      DirectXCommon::GetInstance());
+  ShaderResourceViewManager::GetInstance()->Initialize();
 
   // カメラの初期化
-  camera_ = new Camera();
+  camera_ = std::make_unique<Camera>();
   camera_->SetRotate({0.0f, 0.0f, 0.0f});
   camera_->SetTranslate({0.0f, 0.0f, -10.0f});
 
   // SpriteRendererの初期化
   SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
+  // ModelCommonの初期化
+  ModelCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+
   // Object3dRendererの初期化
   Object3dRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
   // カメラをセット
-  Object3dRenderer::GetInstance()->SetDefaultCamera(camera_);
+  Object3dRenderer::GetInstance()->SetDefaultCamera(camera_.get());
 
   // SoundManagerの初期化
-  soundManager_ = new SoundManager();
+  soundManager_ = std::make_unique<SoundManager>();
   soundManager_->Initialize();
 
-  std::filesystem::create_directory("logs");
-
-  SetUnhandledExceptionFilter(ExportDump);
-
+  // TextureManaferの初期化
   TextureManager::GetInstance()->Initialize(
       DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
-  ModelManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
+
+  // Inputの初期化
+  Input::GetInstance()->Initialize(WinApp::GetInstance());
 
 #ifdef USE_IMGUI
+  // ImGuiManagerの初期化
   ImGuiManager::GetInstance()->Initialize(
-      WinApp::GetInstance(), DirectXCommon::GetInstance(),
-      ShaderResourceViewManager::GetInstance());
+      DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
 #endif
 }
 
+/// <summary>
+/// 更新
+/// </summary>
 void GameFramework::Update() {
   if (WinApp::GetInstance()->ProcessMessage()) {
     endRequest_ = true;
@@ -167,14 +170,17 @@ void GameFramework::Update() {
   Input::GetInstance()->Update();
 }
 
+/// <summary>
+/// 終了
+/// </summary>
 void GameFramework::Finalize() {
-  soundManager_->Finalize();
-  delete soundManager_;
+  if (logStream_.is_open()) {
+    logStream_.close();
+  }
 
 #ifdef USE_IMGUI
 
   ImGuiManager::GetInstance()->Finalize();
-  ImGuiManager::GetInstance()->Shutdown();
 
 #endif
 
@@ -182,39 +188,70 @@ void GameFramework::Finalize() {
   // CloseWindow(winApp->GetHwnd());
 
   // inputを解放
-  Input::GetInstance()->Shutdown();
+  Input::GetInstance()->Finalize();
 
   // object3dRendererを解放
-  Object3dRenderer::GetInstance()->Shutdown();
+  Object3dRenderer::GetInstance()->Finalize();
+
+  // modelCommonを解放
+  ModelCommon::GetInstance()->Finalize();
+
+  // ModelManagerを解放
+  ModelManager::GetInstance()->Finalize();
 
   // spriteCommonを解放
-  SpriteRenderer::GetInstance()->Shutdown();
+  SpriteRenderer::GetInstance()->Finalize();
 
-  TextureManager::GetInstance()->Shutdown();
-  ModelManager::GetInstance()->Shutdown();
+  TextureManager::GetInstance()->Finalize();
 
   // SrvManager
-  ShaderResourceViewManager::GetInstance()->Shutdown();
+  ShaderResourceViewManager::GetInstance()->Finalize();
 
   // DirectXを解放
-  DirectXCommon::GetInstance()->Shutdown();
-
-  // WinodwsAPIの終了処理
-  WinApp::GetInstance()->Finalize();
-  WinApp::GetInstance()->Shutdown();
+  DirectXCommon::GetInstance()->Finalize();
 
   // WIndowsAPIを解放
-  WinApp::GetInstance()->Shutdown();
-
-  leakCheck_.~D3DResourceLeakChecker();
+  WinApp::GetInstance()->Finalize();
 }
 
+/// <summary>
+/// ログシステムの初期化
+/// </summary>
+void GameFramework::InitializeLogSystem() {
+  std::filesystem::create_directory("logs");
+
+  // 現在時刻を取得
+  std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+  // ログファイルの名前を秒にする
+  std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
+      nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
+  // 日本時間(PCの設定時間)に変換
+  std::chrono::zoned_time localTime{std::chrono::current_zone(), nowSeconds};
+  // formatを使って年月日_時分秒の文字列に変換
+  std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
+  // 時刻を使ってファイル名を決定
+  std::string logFilePath = std::string("logs/") + dateString + ".log";
+
+  logStream_.open(logFilePath);
+
+  // 試しに書き込み
+  if (logStream_.is_open()) {
+    logStream_ << "Game Initialized." << std::endl;
+  }
+}
+
+/// <summary>
+/// 描画前処理
+/// </summary>
 void GameFramework::BeginFrame() {
   ShaderResourceViewManager::GetInstance()->BeginDraw();
 
   DirectXCommon::GetInstance()->BeginDraw();
 }
 
+/// <summary>
+/// 描画後処理
+/// </summary>
 void GameFramework::EndFrame() {
 
 #ifdef USE_IMGUI

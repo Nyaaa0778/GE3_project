@@ -11,7 +11,7 @@
 
 using namespace MathUtility;
 
-ParticleManager *ParticleManager::instance = nullptr;
+std::unique_ptr<ParticleManager> ParticleManager::instance = nullptr;
 
 //================================================================================
 // シングルトン
@@ -22,18 +22,16 @@ ParticleManager *ParticleManager::instance = nullptr;
 /// </summary>
 ParticleManager *ParticleManager::GetInstance() {
   if (instance == nullptr) {
-    instance = new ParticleManager();
+    instance.reset(new ParticleManager());
   }
-  return instance;
+
+  return instance.get();
 }
 
 /// <summary>
 /// 終了
 /// </summary>
-void ParticleManager::Shutdown() {
-  delete instance;
-  instance = nullptr;
-}
+void ParticleManager::Finalize() { instance.reset(); }
 
 //================================================================================
 // 初期化 / 更新 / 描画
@@ -53,9 +51,6 @@ void ParticleManager::Initialize(DirectXCommon *dxCommon,
 
   dxCommon_ = dxCommon;
   srvManager_ = srvManager;
-
-  // ランダムエンジンの初期化
-  Random::SeedEngine();
 
   // 頂点データの初期化
   InitializeVertexData();
@@ -487,9 +482,7 @@ ParticleManager::MakeParticle(const Vector3 &translate) {
   particle.transform.scale = {1.0f, 1.0f, 1.0f};
   particle.transform.rotation = {0.0f, 0.0f, 0.0f};
 
-  Vector3 randomTranslate = {Random::GeneraterFloat(-1.0f, 1.0f),
-                             Random::GeneraterFloat(-1.0f, 1.0f),
-                             Random::GeneraterFloat(-1.0f, 1.0f)};
+  Vector3 randomTranslate = Random::RangeVector3(-1.0f, 1.0f);
 
   // 位置をランダム配置
   particle.transform.translation = {
@@ -499,17 +492,13 @@ ParticleManager::MakeParticle(const Vector3 &translate) {
   };
 
   // 速度もランダム
-  particle.velocity = {
-      Random::GeneraterFloat(-1.0f, 1.0f), // vx
-      Random::GeneraterFloat(-1.0f, 1.0f), // vy
-      Random::GeneraterFloat(-1.0f, 1.0f)  // vz
-  };
+  particle.velocity = Random::RangeVector3(-1.0f, 1.0f);
 
-  particle.color = {Random::GeneraterFloat(0.0f, 1.0f),
-                    Random::GeneraterFloat(0.0f, 1.0f),
-                    Random::GeneraterFloat(0.0f, 1.0f), 1.0f};
+  particle.color = {Random::RangeFloat(0.0f, 1.0f),
+                    Random::RangeFloat(0.0f, 1.0f),
+                    Random::RangeFloat(0.0f, 1.0f), 1.0f};
 
-  particle.lifeTime = Random::GeneraterFloat(1.0f, 3.0f);
+  particle.lifeTime = Random::RangeFloat(1.0f, 3.0f);
   particle.currentTime = 0;
 
   return particle;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d12.h>
+#include <memory>
 #include <wrl.h>
 
 class DirectXCommon;
@@ -14,7 +15,16 @@ public:
   // 唯一のインスタンス取得
   static SpriteRenderer *GetInstance();
 
-  static void Shutdown();
+  /// <summary>
+  /// 終了
+  /// </summary>
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<SpriteRenderer>;
+
+private:
+  static std::unique_ptr<SpriteRenderer> instance;
 
   /// <summary>
   /// コンストラクタ
@@ -24,9 +34,6 @@ public:
   /// デストラクタ
   /// </summary>
   ~SpriteRenderer() = default;
-
-private:
-  static SpriteRenderer *instance;
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -48,21 +55,12 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  /// <param name="dxCommon">DirectXCommonのポインタ</param>
   void Initialize(DirectXCommon *dxCommon);
 
   /// <summary>
   /// 共通描画設定
   /// </summary>
   void SetupCommonRenderState();
-
-public:
-  //================================================================================
-  // Getter
-  //================================================================================
-
-  // DirectXCommon
-  DirectXCommon *GetDxCommon() const { return dxCommon_; }
 
 private:
   //================================================================================
@@ -73,6 +71,7 @@ private:
   template <class InterfaceType>
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
+private:
   //================================================================================
   // 外部参照
   //================================================================================

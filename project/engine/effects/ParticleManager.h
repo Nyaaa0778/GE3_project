@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <list>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -35,16 +36,18 @@ public:
   /// <summary>
   /// 終了
   /// </summary>
-  void Shutdown();
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<ParticleManager>;
 
 private:
-  static ParticleManager *instance;
+  static std::unique_ptr<ParticleManager> instance;
 
   /// <summary>
   /// コンストラクタ
   /// </summary>
   ParticleManager() = default;
-
   /// <summary>
   /// デストラクタ
   /// </summary>
@@ -55,7 +58,6 @@ private:
   /// </summary>
   /// <param name="">コピー元（使用不可）</param>
   ParticleManager(ParticleManager &) = delete;
-
   /// <summary>
   /// 代入演算子禁止
   /// </summary>

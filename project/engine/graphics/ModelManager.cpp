@@ -1,11 +1,11 @@
 #include "ModelManager.h"
-#include "Model.h"
-#include "ModelCommon.h"
 
-ModelManager *ModelManager::instance = nullptr;
+#include "Model.h"
+
+std::unique_ptr<ModelManager> ModelManager::instance = nullptr;
 
 //================================================================================
-// シングルトン管理 / 初期化・終了
+// シングルトン
 //================================================================================
 
 /// <summary>
@@ -14,37 +14,16 @@ ModelManager *ModelManager::instance = nullptr;
 /// <returns>TextureManager の唯一のインスタンス</returns>
 ModelManager *ModelManager::GetInstance() {
   if (instance == nullptr) {
-    instance = new ModelManager;
+    instance.reset(new ModelManager());
   }
 
-  return instance;
-}
-
-/// <summary>
-/// 初期化
-/// </summary>
-/// <param name="dxCommon">DirectXCommonのポインタ</param>
-void ModelManager::Initialize(DirectXCommon *dxCommon) {
-  // ModelCommonの生成
-  modelCommon_ = new ModelCommon();
-  // ModelCommonの初期化
-  modelCommon_->Initialize(dxCommon);
+  return instance.get();
 }
 
 /// <summary>
 /// 終了
 /// </summary>
-void ModelManager::Shutdown() {
-  // 読み込んだModelを全部破棄
-  models_.clear();
-
-  // ModelCommonを解放
-  delete modelCommon_;
-  modelCommon_ = nullptr;
-
-  delete instance;
-  instance = nullptr;
-}
+void ModelManager::Finalize() { instance.reset(); }
 
 //================================================================================
 // Modelの読み込み
@@ -66,7 +45,7 @@ void ModelManager::LoadModel(const std::string &modelName) {
 
   // モデルの生成とファイル読み込み、初期化
   std::unique_ptr<Model> model = std::make_unique<Model>();
-  model->Initialize(modelCommon_, directoryPath, fileName);
+  model->Initialize(directoryPath, fileName);
 
   // モデルをmapコンテナに格納する
   models_.insert(std::make_pair(modelName, std::move(model)));

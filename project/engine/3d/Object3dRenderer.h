@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d12.h>
+#include <memory>
 #include <wrl.h>
 
 class DirectXCommon;
@@ -15,7 +16,16 @@ public:
   // 唯一のインスタンス取得
   static Object3dRenderer *GetInstance();
 
-  static void Shutdown();
+  /// <summary>
+  /// 終了
+  /// </summary>
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<Object3dRenderer>;
+
+private:
+  static std::unique_ptr<Object3dRenderer> instance;
 
   /// <summary>
   /// コンストラクタ
@@ -25,9 +35,6 @@ public:
   /// デストラクタ
   /// </summary>
   ~Object3dRenderer() = default;
-
-private:
-  static Object3dRenderer *instance;
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -81,7 +88,6 @@ public:
 
   // DirectXCommon
   DirectXCommon *GetDxCommon() const { return dxCommon_; }
-
   // デフォルトカメラ
   Camera *GetDefaultCamera() const { return defaultCamera_; }
 
@@ -96,9 +102,6 @@ public:
   void SetDefaultCamera(Camera *defaultCamera) {
     defaultCamera_ = defaultCamera;
   }
-
-  // Blend Mode
-  void SetBlendMode(BlendMode blendMode);
 
 private:
   //================================================================================
@@ -116,7 +119,6 @@ private:
 
   // DirectXCommonのポインタ
   DirectXCommon *dxCommon_ = nullptr;
-
   // デフォルトカメラ
   Camera *defaultCamera_ = nullptr;
 
@@ -143,4 +145,15 @@ private:
   /// グラフィックスパイプラインの生成
   /// </summary>
   void CreateGraphicsPipeline();
+
+  //================================================================================
+  // BlendMode
+  //================================================================================
+
+  /// <summary>
+  /// 指定したブレンドモードに対応
+  /// </summary>
+  /// <param name="mode">使いたいBlendMode</param>
+  /// <returns>ブレンド設定を格納したD3D12_BLEND_DESC</returns>
+  D3D12_BLEND_DESC MakeBlendDesc(BlendMode mode);
 };

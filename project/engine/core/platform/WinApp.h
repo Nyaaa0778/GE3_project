@@ -1,6 +1,8 @@
 #pragma once
+
 #include <Windows.h>
 #include <cstdint>
+#include <memory>
 
 class WinApp {
 public:
@@ -20,7 +22,13 @@ public:
   // 唯一のインスタンス取得
   static WinApp *GetInstance();
 
-  static void Shutdown();
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<WinApp>;
+
+private:
+  static std::unique_ptr<WinApp> instance;
 
   /// <summary>
   /// コンストラクタ
@@ -29,10 +37,7 @@ public:
   /// <summary>
   /// デストラクタ
   /// </summary>
-  ~WinApp() = default;
-
-private:
-  static WinApp *instance;
+  ~WinApp();
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -54,7 +59,11 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  void Initialize();
+  /// <param name="title">ウィンドウタイトル</param>
+  /// <param name="width">横幅（指定なしなら1280）</param>
+  /// <param name="height">縦幅（指定なしなら720）</param>
+  void Initialize(const wchar_t *title = L"DirectXGame",
+                  int32_t width = kClientWidth, int32_t height = kClientHeight);
 
   /// <summary>
   /// メッセージの処理
@@ -62,14 +71,14 @@ public:
   /// <returns></returns>
   bool ProcessMessage();
 
-  /// <summary>
-  /// 終了
-  /// </summary>
-  void Finalize();
-
+public:
   //================================================================================
   // Getter
   //================================================================================
+
+  // 画面サイズ
+  int32_t GetWidth() const { return width_; }
+  int32_t GetHeight() const { return height_; }
 
   /// <summary>
   /// アプリケーションハンドルを取得
@@ -92,6 +101,10 @@ private:
 
   // ウィンドウハンドル
   HWND hwnd_ = nullptr;
+
+  // 画面サイズ
+  int32_t width_ = kClientWidth;
+  int32_t height_ = kClientHeight;
 
 private:
   //================================================================================

@@ -15,12 +15,10 @@ using namespace MathUtility;
 /// <summary>
 /// 初期化
 /// </summary>
-/// <param name="object3dRenderer">Object3dRendererのポインタ</param>
 /// <param name="modelName">モデル名</param>
-void Object3d::Initialize(Object3dRenderer *object3dRenderer,
-                          const std::string &modelName) {
-  // 引数で受け取ってメンバ変数に保存
-  object3dRenderer_ = object3dRenderer;
+void Object3d::Initialize(const std::string &modelName) {
+
+  object3dRenderer_ = Object3dRenderer::GetInstance();
 
   // モデルをセット
   SetModel(modelName);
@@ -34,7 +32,7 @@ void Object3d::Initialize(Object3dRenderer *object3dRenderer,
   transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
   // デフォルトカメラを設定
-  camera_ = object3dRenderer_->GetDefaultCamera();
+  camera_ = Object3dRenderer::GetInstance()->GetDefaultCamera();
 }
 /// <summary>
 /// 更新

@@ -2,9 +2,8 @@
 
 #include <cstdint>
 #include <d3d12.h>
+#include <memory>
 #include <wrl.h>
-
-class DirectXCommon;
 
 class ShaderResourceViewManager {
 public:
@@ -23,7 +22,16 @@ public:
   // 唯一のインスタンス取得
   static ShaderResourceViewManager *GetInstance();
 
-  static void Shutdown();
+  /// <summary>
+  /// 終了
+  /// </summary>
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<ShaderResourceViewManager>;
+
+private:
+  static std::unique_ptr<ShaderResourceViewManager> instance;
 
   /// <summary>
   /// コンストラクタ
@@ -33,9 +41,6 @@ public:
   /// デストラクタ
   /// </summary>
   ~ShaderResourceViewManager() = default;
-
-private:
-  static ShaderResourceViewManager *instance;
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -53,8 +58,7 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  /// <param name="dxCommon">DirectXCommonのポインタ</param>
-  void Initialize(DirectXCommon *dxCommon);
+  void Initialize();
 
   /// <summary>
   /// SRV用ディスクリプタインデックスを発行
@@ -147,8 +151,4 @@ private:
 
   // 次に使用するSRVインデックス
   uint32_t useIndexNext_ = 0;
-
-private:
-  // DirectXCommonのポインタ
-  DirectXCommon *dxCommon_ = nullptr;
 };

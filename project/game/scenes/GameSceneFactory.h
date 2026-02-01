@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
+
 #include "ISceneFactory.h"
 
 class GameSceneFactory : public ISceneFactory {
 public:
-  IScene *CreateScene(const std::string &sceneName) override;
+  std::unique_ptr<IScene> CreateScene(const std::string &sceneName) override;
 };

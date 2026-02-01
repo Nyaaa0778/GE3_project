@@ -194,7 +194,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </ClCompile>
     <ClCompile Include="engine\input\Input.cpp" />
     <ClCompile Include="engine\core\debug\Logger.cpp" />
-    <ClCompile Include="engine\core\timing\FixFPS.cpp" />
+    <ClCompile Include="engine\core\timing\TimeManager.cpp" />
     <ClCompile Include="engine\debug\ImGuiManager.cpp" />
     <ClCompile Include="game\scenes\GameSceneFactory.cpp" />
     <ClCompile Include="game\core\GameManager.cpp" />
@@ -295,7 +295,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\core\platform\WinApp.h" />
     <ClInclude Include="engine\core\debug\Logger.h" />
     <ClInclude Include="engine\core\utility\StringUtility.h" />
-    <ClInclude Include="engine\core\timing\FixFPS.h" />
+    <ClInclude Include="engine\core\timing\TimeManager.h" />
     <ClInclude Include="engine\2d\SpriteRenderer.h" />
     <ClInclude Include="engine\2d\Sprite.h" />
     <ClInclude Include="engine\graphics\TextureManager.h" />

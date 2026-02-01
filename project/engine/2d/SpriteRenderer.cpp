@@ -1,11 +1,12 @@
 #include "SpriteRenderer.h"
+
 #include "DirectXCommon.h"
 
 //================================================================================
 // シングルトン
 //================================================================================
 
-SpriteRenderer *SpriteRenderer::instance = nullptr;
+std::unique_ptr<SpriteRenderer> SpriteRenderer::instance = nullptr;
 
 /// <summary>
 /// シングルトンインスタンスの取得
@@ -13,16 +14,16 @@ SpriteRenderer *SpriteRenderer::instance = nullptr;
 /// <returns>SpriteRendererの唯一のインスタンス</returns>
 SpriteRenderer *SpriteRenderer::GetInstance() {
   if (instance == nullptr) {
-    instance = new SpriteRenderer;
+    instance.reset(new SpriteRenderer());
   }
 
-  return instance;
+  return instance.get();
 }
 
-void SpriteRenderer::Shutdown() {
-  delete instance;
-  instance = nullptr;
-}
+/// <summary>
+/// 終了
+/// </summary>
+void SpriteRenderer::Finalize() { instance.reset(); }
 
 //================================================================================
 // 初期化 / 描画設定
@@ -31,9 +32,9 @@ void SpriteRenderer::Shutdown() {
 /// <summary>
 /// 初期化
 /// </summary>
-/// <param name="dxCommon">DirectXCommonの初期化</param>
 void SpriteRenderer::Initialize(DirectXCommon *dxCommon) {
-  // 引数で受け取ってメンバ変数に記録する
+
+  // メンバ変数に記録
   dxCommon_ = dxCommon;
 
   // グラフィックスパイプラインの生成

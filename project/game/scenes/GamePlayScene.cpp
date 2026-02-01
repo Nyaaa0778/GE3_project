@@ -9,10 +9,13 @@
 #include "../externals/imgui/imgui_impl_win32.h"
 #endif
 
+GamePlayScene::GamePlayScene() = default;
+GamePlayScene::~GamePlayScene() = default;
+
 void GamePlayScene::Initialize() {
   // object3dの初期化
-  obj_ = new Object3d();
-  obj_->Initialize(Object3dRenderer::GetInstance(), "plane");
+  obj_ = std::make_unique<Object3d>();
+  obj_->Initialize("plane");
 }
 
 void GamePlayScene::Update() {
@@ -45,12 +48,12 @@ void GamePlayScene::Update() {
   // Obj
   // ─────────────────────
 
-   ImGui::SeparatorText("Object");
+  ImGui::SeparatorText("Object");
 
   {
-     Vector3 pos = obj_->GetPosition();
+    Vector3 pos = obj_->GetPosition();
     if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
-       obj_->SetPosition(pos);
+      obj_->SetPosition(pos);
     }
   }
 
@@ -122,7 +125,4 @@ void GamePlayScene::Update() {
 
 void GamePlayScene::Draw() { obj_->Draw(); }
 
-void GamePlayScene::Finalize() {
-  // object3dを解放
-  delete obj_;
-}
+void GamePlayScene::Finalize() {}

@@ -1,4 +1,5 @@
 #include "Sprite.h"
+
 #include "DirectXCommon.h"
 #include "MathUtility.h"
 #include "SpriteRenderer.h"
@@ -14,11 +15,9 @@ using namespace MathUtility;
 /// <summary>
 /// 初期化
 /// </summary>
-/// <param name="spriteCommon">SpriteCommonの初期化</param>
 /// <param name="filePath">使いたいテクスチャのファイルパス</param>
-void Sprite::Initialize(SpriteRenderer *spriteRenderer, std::string filePath) {
+void Sprite::Initialize(std::string filePath) {
   // 引数で受け取ってメンバ変数に記録する
-  spriteRenderer_ = spriteRenderer;
   filePath_ = filePath;
 
   SetTexture(filePath);
@@ -90,9 +89,9 @@ void Sprite::Update() {
   Matrix4x4 viewMatrix = MakeIdentityMatrix();
   Matrix4x4 projectionMatrix = MakeOrthographicMatrix(
       0.0f, 0.0f,
-      static_cast<float>(spriteRenderer_->GetDxCommon()->GetClientWidth()),
-      static_cast<float>(spriteRenderer_->GetDxCommon()->GetClientHeight()),
-      0.0f, 100.0f);
+      static_cast<float>(DirectXCommon::GetInstance()->GetClientWidth()),
+      static_cast<float>(DirectXCommon::GetInstance()->GetClientHeight()), 0.0f,
+      100.0f);
 
   transformationMatrixData_->WVP = worldMatrix * viewMatrix * projectionMatrix;
 
@@ -103,36 +102,36 @@ void Sprite::Update() {
 /// </summary>
 void Sprite::Draw() {
 
-  spriteRenderer_->SetupCommonRenderState();
+  SpriteRenderer::GetInstance()->SetupCommonRenderState();
 
   // vertexBufferViewを設定
-  spriteRenderer_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(
+  DirectXCommon::GetInstance()->GetCommandList()->IASetVertexBuffers(
       0, 1, &vertexBufferView_);
   // indexBufferViewを設定
-  spriteRenderer_->GetDxCommon()->GetCommandList()->IASetIndexBuffer(
+  DirectXCommon::GetInstance()->GetCommandList()->IASetIndexBuffer(
       &indexBufferView_);
 
   // マテリアルのCBufferの場所を設定
-  spriteRenderer_->GetDxCommon()
+  DirectXCommon::GetInstance()
       ->GetCommandList()
       ->SetGraphicsRootConstantBufferView(
           0, materialBuffer_->GetGPUVirtualAddress());
 
   // 座標変換行列のCBufferの場所を設定
-  spriteRenderer_->GetDxCommon()
+  DirectXCommon::GetInstance()
       ->GetCommandList()
       ->SetGraphicsRootConstantBufferView(
           1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
   // SRVのDescriptorTableの先頭を設定
-  spriteRenderer_->GetDxCommon()
+  DirectXCommon::GetInstance()
       ->GetCommandList()
       ->SetGraphicsRootDescriptorTable(
           2, TextureManager::GetInstance()->GetSrvHandlGPU(filePath_));
 
   // 描画
-  spriteRenderer_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(
-      6, 1, 0, 0, 0);
+  DirectXCommon::GetInstance()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,
+                                                                       0, 0);
 }
 
 //================================================================================
@@ -145,7 +144,7 @@ void Sprite::Draw() {
 void Sprite::CreateVertexData() {
 
   // vertexResourceを作成
-  vertexBuffer_ = spriteRenderer_->GetDxCommon()->CreateBufferResource(
+  vertexBuffer_ = DirectXCommon::GetInstance()->CreateBufferResource(
       sizeof(VertexData) * 4);
 
   // vertexBufferViewを作成する
@@ -161,8 +160,8 @@ void Sprite::CreateVertexData() {
 /// </summary>
 void Sprite::CreateIndexData() {
   // indexResourceを作成
-  indexBuffer_ = spriteRenderer_->GetDxCommon()->CreateBufferResource(
-      sizeof(uint32_t) * 6);
+  indexBuffer_ =
+      DirectXCommon::GetInstance()->CreateBufferResource(sizeof(uint32_t) * 6);
 
   // indexBufferViewを作成する
   indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
@@ -178,7 +177,7 @@ void Sprite::CreateIndexData() {
 void Sprite::CreateMaterialData() {
   // マテリアルリソースを作る
   materialBuffer_ =
-      spriteRenderer_->GetDxCommon()->CreateBufferResource(sizeof(Material));
+      DirectXCommon::GetInstance()->CreateBufferResource(sizeof(Material));
 
   // 書き込むためのアドレスを取得して、マテリアルにデータを書き込む
   materialBuffer_->Map(0, nullptr, reinterpret_cast<void **>(&materialData_));
@@ -193,7 +192,7 @@ void Sprite::CreateMaterialData() {
 void Sprite::CreateTransformationMatrixData() {
   // 座標変換行列リソースを作る
   transformationMatrixBuffer_ =
-      spriteRenderer_->GetDxCommon()->CreateBufferResource(
+      DirectXCommon::GetInstance()->CreateBufferResource(
           sizeof(TransformationMatrix));
 
   // 書き込むためのアドレスを取得して、座標変換行列データに書き込む

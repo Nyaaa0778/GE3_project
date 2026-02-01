@@ -11,8 +11,6 @@
 #include <string>
 #include <wrl.h>
 
-class SpriteRenderer;
-
 class Sprite {
 public:
   //================================================================================
@@ -22,9 +20,8 @@ public:
   /// <summary>
   /// 初期化
   /// </summary>
-  /// <param name="spriteCommon">SpriteCommonのポインタ</param>
   /// <param name="filePath">使いたいテクスチャのファイルパス</param>
-  void Initialize(SpriteRenderer *spriteCommon, std::string filePath);
+  void Initialize(std::string filePath);
   /// <summary>
   /// 更新
   /// </summary>
@@ -119,13 +116,6 @@ private:
   using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
 private:
-  //================================================================================
-  // 外部参照
-  //================================================================================
-
-  // SpriteCommonのポインタ
-  SpriteRenderer *spriteRenderer_ = nullptr;
-
   //================================================================================
   // GPUリソース（頂点/インデックス）
   //================================================================================

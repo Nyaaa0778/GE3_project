@@ -9,7 +9,7 @@
 // シングルトン
 //================================================================================
 
-SceneManager *SceneManager::instance = nullptr;
+std::unique_ptr<SceneManager> SceneManager::instance = nullptr;
 
 /// <summary>
 /// シングルトンインスタンスの取得
@@ -17,16 +17,13 @@ SceneManager *SceneManager::instance = nullptr;
 /// <returns>SceneManagerの唯一のインスタンス</returns>
 SceneManager *SceneManager::GetInstance() {
   if (instance == nullptr) {
-    instance = new SceneManager;
+    instance.reset(new SceneManager());
   }
 
-  return instance;
+  return instance.get();
 }
 
-void SceneManager::Shutdown() {
-  delete instance;
-  instance = nullptr;
-}
+void SceneManager::Finalize() { instance.reset(); }
 
 SceneManager::SceneManager() {
   // 初期シーン
@@ -38,12 +35,6 @@ SceneManager::~SceneManager() {
   // 最後のシーンの終了と解放
   if (scene_) {
     scene_->Finalize();
-    delete scene_;
-  }
-
-  if (nextScene_) {
-    delete nextScene_;
-    nextScene_ = nullptr;
   }
 }
 
@@ -79,20 +70,14 @@ void SceneManager::ChangeScene(const std::string &sceneName) {
 void SceneManager::ChangeSceneInternal() {
   // 次のシーンの予約があるとき
   if (nextScene_) {
-    // 旧シーンの終了
     if (scene_) {
       scene_->Finalize();
-      delete scene_;
     }
 
-    // シーンの切り替え
-    scene_ = nextScene_;
-    nextScene_ = nullptr;
+    // 所有権の移動 (古いシーンはここで自動的に delete される)
+    scene_ = std::move(nextScene_);
 
-    // シーンマネージャをセット
     scene_->SetSceneManager(this);
-
-    // 次のシーンを初期化
     scene_->Initialize();
   }
 }

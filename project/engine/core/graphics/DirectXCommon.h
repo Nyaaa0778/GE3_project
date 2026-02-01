@@ -1,12 +1,13 @@
 #pragma once
-#include "FixFPS.h"
 
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <dxgi1_6.h>
 
 #include "../../externals/DirectXTex/DirectXTex.h"
+
 #include <array>
+#include <memory>
 #include <string>
 #include <wrl.h>
 
@@ -29,7 +30,16 @@ public:
   // 唯一のインスタンス取得
   static DirectXCommon *GetInstance();
 
-  static void Shutdown();
+  /// <summary>
+  /// 終了
+  /// </summary>
+  static void Finalize();
+
+  // unique_ptrからの削除を許可
+  friend std::default_delete<DirectXCommon>;
+
+private:
+  static std::unique_ptr<DirectXCommon> instance;
 
   /// <summary>
   /// コンストラクタ
@@ -39,9 +49,6 @@ public:
   /// デストラクタ
   /// </summary>
   ~DirectXCommon();
-
-private:
-  static DirectXCommon *instance;
 
   /// <summary>
   /// コピーコンストラクタ禁止
@@ -217,13 +224,6 @@ private:
   IDxcUtils *dxcUtils_ = nullptr;
   IDxcCompiler3 *dxcCompiler_ = nullptr;
   IDxcIncludeHandler *includeHandler_ = nullptr;
-
-  //================================================================================
-  // FPS固定
-  //================================================================================
-
-  // FPS固定
-  FixFPS fixFps_;
 
 public:
   //================================================================================
