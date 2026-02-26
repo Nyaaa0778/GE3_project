@@ -28,6 +28,8 @@ void Sprite::Initialize(SpriteCommon *spriteCommon, std::string filePath) {
   CreateMaterialData();
   // 座標変換行列データの作成
   CreateTransformationMatrixData();
+
+  AdjustTextureSize();
 }
 /// <summary>
 /// 更新
@@ -96,8 +98,6 @@ void Sprite::Update() {
   worldViewProjectionMatrix =
       Multiply(worldMatrix, Multiply(viewMatrix, projectionMatrix));
   transformationMatrixData_->WVP = worldViewProjectionMatrix;
-
-  AdjustTextureSize();
 }
 /// <summary>
 /// 描画
@@ -129,7 +129,7 @@ void Sprite::Draw() {
   spriteCommon_->GetDxCommon()
       ->GetCommandList()
       ->SetGraphicsRootDescriptorTable(
-          2, TextureManager::GetInstance()->GetSrvHandlGPU(textureIndex_));
+          2, TextureManager::GetInstance()->GetSrvHandleGPU(textureIndex_));
 
   // 描画
   spriteCommon_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,

@@ -144,7 +144,7 @@ uint32_t TextureManager::GetSrvIndexByFilePath(const std::string &filePath) {
 /// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
 /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
 D3D12_GPU_DESCRIPTOR_HANDLE
-TextureManager::GetSrvHandlGPU(uint32_t textureIndex) {
+TextureManager::GetSrvHandleGPU(uint32_t textureIndex) {
   // 範囲外指定違反チェック（テクスチャ番号が正常範囲内である）
   assert(textureIndex < textureDatas_.size());
 

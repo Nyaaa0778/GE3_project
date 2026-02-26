@@ -50,7 +50,7 @@ public:
   /// </summary>
   /// <param name="textureIndex">SRVヒープ内のテクスチャインデックス</param>
   /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
-  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandlGPU(uint32_t textureIndex);
+  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandleGPU(uint32_t textureIndex);
 
   /// <summary>
   /// メタデータを取得
