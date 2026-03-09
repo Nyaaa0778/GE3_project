@@ -5,6 +5,7 @@
 #include "IScene.h"
 
 class Object3d;
+class Sprite;
 
 class TitleScene : public IScene {
 public:
@@ -22,4 +23,10 @@ public:
 private:
   // モデル
   std::unique_ptr<Object3d> obj_;
+
+  // スプライト
+  std::unique_ptr<Sprite> sprite_;
+
+private:
+  void UpdateImGui();
 };

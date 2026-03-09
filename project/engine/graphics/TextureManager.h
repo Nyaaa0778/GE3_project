@@ -97,7 +97,7 @@ public:
   /// </summary>
   /// <param name="filePath">テクスチャのファイルパス</param>
   /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
-  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandlGPU(const std::string &filePath);
+  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvHandleGPU(const std::string &filePath);
 
   /// <summary>
   /// メタデータを取得

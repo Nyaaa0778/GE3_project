@@ -42,7 +42,7 @@ void Model::Draw() {
   assert(modelCommon_->GetDxCommon()->GetCommandList());
 
   assert(!modelData_.material.textureFilePath.empty());
-  auto h = TextureManager::GetInstance()->GetSrvHandlGPU(
+  auto h = TextureManager::GetInstance()->GetSrvHandleGPU(
       modelData_.material.textureFilePath);
   assert(h.ptr != 0);
 
@@ -58,7 +58,7 @@ void Model::Draw() {
 
   // SRVのDescriptorTableの先頭を設定
   modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(
-      2, TextureManager::GetInstance()->GetSrvHandlGPU(
+      2, TextureManager::GetInstance()->GetSrvHandleGPU(
              modelData_.material.textureFilePath));
 
   // 描画

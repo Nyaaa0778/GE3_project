@@ -30,6 +30,8 @@ void Sprite::Initialize(std::string filePath) {
   CreateMaterialData();
   // 座標変換行列データの作成
   CreateTransformationMatrixData();
+
+  AdjustTextureSize();
 }
 /// <summary>
 /// 更新
@@ -94,8 +96,6 @@ void Sprite::Update() {
       100.0f);
 
   transformationMatrixData_->WVP = worldMatrix * viewMatrix * projectionMatrix;
-
-  AdjustTextureSize();
 }
 /// <summary>
 /// 描画
@@ -127,7 +127,7 @@ void Sprite::Draw() {
   DirectXCommon::GetInstance()
       ->GetCommandList()
       ->SetGraphicsRootDescriptorTable(
-          2, TextureManager::GetInstance()->GetSrvHandlGPU(filePath_));
+          2, TextureManager::GetInstance()->GetSrvHandleGPU(filePath_));
 
   // 描画
   DirectXCommon::GetInstance()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,

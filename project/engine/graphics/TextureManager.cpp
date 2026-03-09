@@ -148,7 +148,7 @@ TextureManager::GetTextureIndexByFilePath(const std::string &filePath) {
 /// <param name="filePath">テクスチャのファイルパス</param>
 /// <returns>指定インデックスのSRVのGPUデスクリプタハンドル</returns>
 D3D12_GPU_DESCRIPTOR_HANDLE
-TextureManager::GetSrvHandlGPU(const std::string &filePath) {
+TextureManager::GetSrvHandleGPU(const std::string &filePath) {
   // map からテクスチャを検索
   std::unordered_map<std::string, TextureData>::iterator it =
       textureDatas_.find(filePath);

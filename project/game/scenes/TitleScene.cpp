@@ -1,9 +1,10 @@
 #include "TitleScene.h"
 
+#include "ImGuiManager.h"
 #include "Input.h"
-#include "SceneManager.h"
-
 #include "Object3d.h"
+#include "SceneManager.h"
+#include "Sprite.h"
 
 #include <stdio.h>
 
@@ -14,6 +15,10 @@ void TitleScene::Initialize() {
   // object3dの初期化
   obj_ = std::make_unique<Object3d>();
   obj_->Initialize("plane");
+
+  // spriteの初期化
+  sprite_ = std::make_unique<Sprite>();
+  sprite_->Initialize("resources/monsterBall.png");
 }
 
 void TitleScene::Update() {
@@ -40,7 +45,7 @@ void TitleScene::Update() {
     input->SetShake(0.0f, 0.0f);
   }
 
-if (input->TriggerButton(XINPUT_GAMEPAD_RIGHT_THUMB)) {
+  if (input->TriggerButton(XINPUT_GAMEPAD_RIGHT_THUMB)) {
     input->SetShake(1.0f, 1.0f, 3.0f); // 1秒間ドカン！と震えて勝手に止まる
   }
   // --- 3. スティック移動処理 ---
@@ -51,8 +56,74 @@ if (input->TriggerButton(XINPUT_GAMEPAD_RIGHT_THUMB)) {
   obj_->SetPosition(pos);
 
   obj_->Update();
+
+  UpdateImGui();
+
+  sprite_->Update();
 }
 
-void TitleScene::Draw() { obj_->Draw(); }
+void TitleScene::Draw() {
+  obj_->Draw();
+
+  sprite_->Draw();
+}
 
 void TitleScene::Finalize() {}
+
+void TitleScene::UpdateImGui() {
+#ifdef USE_IMGUI
+
+  // 【要件クリア】1. ウィンドウのサイズを固定する (例: 幅400, 高さ300)
+  // ImGuiCond_Once
+  // を指定すると、最初の1回だけサイズを設定し、以後はそのサイズを維持します。
+  ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Once);
+
+  // もしユーザーのドラッグによるリサイズ自体を完全に禁止したい場合は、フラグを渡します。
+  ImGui::Begin("Sprite Control", nullptr, ImGuiWindowFlags_NoResize);
+
+  ImGui::SeparatorText("Sprite Object");
+
+  // 【要件クリア】2. Spriteの操作 & 3. 小数点1桁表示 ("%.1f")
+
+  // 位置 (2D想定で Vector2 にしていますが、エンジン仕様が Vector3 なら
+  // DragFloat3 にしてください)
+  {
+    Vector2 pos = sprite_->GetPosition();
+    // 引数: ラベル, 変数のアドレス, 変化量, 最小値, 最大値(0で制限なし),
+    // フォーマット
+    if (ImGui::DragFloat2("Position", &pos.x, 1.0f, 0.0f, 0.0f, "%.1f")) {
+      sprite_->SetPosition(pos);
+    }
+  }
+
+  // スケール
+  {
+    Vector2 scale = sprite_->GetScale();
+    if (ImGui::DragFloat2("Scale", &scale.x, 0.1f, -10.0f, 10.0f, "%.1f")) {
+      sprite_->SetScale(scale);
+    }
+  }
+
+  // 回転 (2DのZ軸回転を想定し、単一の float で扱う場合)
+  {
+    float rot = sprite_->GetRotate();
+    if (ImGui::DragFloat("Rotation", &rot, 0.1f, -6.28f, 6.28f, "%.1f")) {
+      sprite_->SetRotation(rot);
+    }
+  }
+
+  // 色・透明度 (アルファ値)
+  {
+    Vector4 color = sprite_->GetColor();
+    float col[4] = {color.x, color.y, color.z, color.w};
+
+    if (ImGui::ColorEdit4("Color", col)) {
+      Vector4 newColor(col[0], col[1], col[2], col[3]);
+      sprite_->SetColor(newColor);
+    }
+  }
+
+  ImGui::End();
+
+#endif
+}

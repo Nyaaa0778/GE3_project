@@ -196,7 +196,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\core\debug\Logger.cpp" />
     <ClCompile Include="engine\core\timing\TimeManager.cpp" />
     <ClCompile Include="engine\debug\ImGuiManager.cpp" />
-    <ClCompile Include="game\scenes\GameSceneFactory.cpp" />
+    <ClCompile Include="engine\framework\scene\GameSceneFactory.cpp" />
     <ClCompile Include="game\core\GameManager.cpp" />
     <ClCompile Include="engine\framework\GameFramework.cpp" />
     <ClCompile Include="game\scenes\GamePlayScene.cpp" />
@@ -308,7 +308,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\debug\ImGuiManager.h" />
     <ClInclude Include="engine\effects\ParticleManager.h" />
     <ClInclude Include="engine\effects\ParticleEmitter.h" />
-    <ClInclude Include="game\scenes\GameSceneFactory.h" />
+    <ClInclude Include="engine\framework\scene\GameSceneFactory.h" />
     <ClInclude Include="game\core\GameManager.h" />
     <ClInclude Include="engine\framework\GameFramework.h" />
     <ClInclude Include="game\scenes\GamePlayScene.h" />
