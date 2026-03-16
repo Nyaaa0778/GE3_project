@@ -13,6 +13,7 @@ GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
 
 void GamePlayScene::Initialize() {
+
   // object3dの初期化
   obj_ = std::make_unique<Object3d>();
   obj_->Initialize("plane");
