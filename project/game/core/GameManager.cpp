@@ -9,34 +9,34 @@ GameManager::GameManager() = default;
 GameManager::~GameManager() = default;
 
 void GameManager::Initialize() {
-  // 基底クラスの初期化
-  GameFramework::Initialize();
+	// 基底クラスの初期化
+	GameFramework::Initialize();
 
-  // シーンファクトリを生成してマネージャにセット
-  sceneFactory_ = std::make_unique<GameSceneFactory>();
+	// シーンファクトリを生成してマネージャにセット
+	sceneFactory_ = std::make_unique<GameSceneFactory>();
 
-  SceneManager::GetInstance()->SetSceneFactory(sceneFactory_.get());
+	SceneManager::GetInstance()->SetSceneFactory(sceneFactory_.get());
 
-  // シーンマネージャに最初のシーンをセット
-  SceneManager::GetInstance()->ChangeScene("TITLE");
+	// シーンマネージャに最初のシーンをセット
+	SceneManager::GetInstance()->ChangeScene("TITLE");
 }
 
 void GameManager::Update() {
 
-  // 基底クラスの更新
-  GameFramework::Update();
+	// 基底クラスの更新
+	GameFramework::Update();
 
-  SceneManager::GetInstance()->Update();
+	SceneManager::GetInstance()->Update();
 }
 
 void GameManager::Draw() { SceneManager::GetInstance()->Draw(); }
 
 void GameManager::Finalize() {
-  // シーンマネージャを解放
-  SceneManager::GetInstance()->Finalize();
+	// シーンマネージャを解放
+	SceneManager::GetInstance()->Finalize();
 
-  // 基底クラスの終了処理
-  GameFramework::Finalize();
+	// 基底クラスの終了処理
+	GameFramework::Finalize();
 
-  CoUninitialize();
+	CoUninitialize();
 }

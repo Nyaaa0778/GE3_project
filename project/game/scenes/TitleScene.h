@@ -9,24 +9,24 @@ class Sprite;
 
 class TitleScene : public IScene {
 public:
-  TitleScene();
-  ~TitleScene();
+	TitleScene();
+	~TitleScene();
 
-  void Initialize() override;
+	void Initialize() override;
 
-  void Update() override;
+	void Update() override;
 
-  void Draw() override;
+	void Draw() override;
 
-  void Finalize() override;
-
-private:
-  // モデル
-  std::unique_ptr<Object3d> obj_;
-
-  // スプライト
-  std::unique_ptr<Sprite> sprite_;
+	void Finalize() override;
 
 private:
-  void UpdateImGui();
+	// モデル
+	std::unique_ptr<Object3d> obj_;
+
+	// スプライト
+	std::unique_ptr<Sprite> sprite_;
+
+private:
+	void UpdateImGui();
 };

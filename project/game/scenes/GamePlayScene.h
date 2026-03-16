@@ -9,18 +9,18 @@ class Camera;
 
 class GamePlayScene : public IScene {
 public:
-  GamePlayScene();
-  ~GamePlayScene();
+	GamePlayScene();
+	~GamePlayScene();
 
-  void Initialize() override;
+	void Initialize() override;
 
-  void Update() override;
+	void Update() override;
 
-  void Draw() override;
+	void Draw() override;
 
-  void Finalize() override;
+	void Finalize() override;
 
 private:
-  // モデル
-  std::unique_ptr<Object3d> obj_;
+	// モデル
+	std::unique_ptr<Object3d> obj_;
 };

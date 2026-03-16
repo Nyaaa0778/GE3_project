@@ -9,12 +9,12 @@
 std::unique_ptr<ModelCommon> ModelCommon::instance = nullptr;
 
 // 唯一のインスタンス取得
-ModelCommon *ModelCommon::GetInstance() {
-  if (instance == nullptr) {
-    instance.reset(new ModelCommon());
-  }
+ModelCommon* ModelCommon::GetInstance() {
+	if (instance == nullptr) {
+		instance = std::make_unique<ModelCommon>();
+	}
 
-  return instance.get();
+	return instance.get();
 }
 
 /// <summary>
@@ -30,4 +30,4 @@ void ModelCommon::Finalize() { instance.reset(); }
 /// 初期化
 /// </summary>
 /// <param name="dxCommon">DirectXCommonのポインタ</param>
-void ModelCommon::Initialize(DirectXCommon *dxCommon) { dxCommon_ = dxCommon; }
+void ModelCommon::Initialize(DirectXCommon* dxCommon) { dxCommon_ = dxCommon; }

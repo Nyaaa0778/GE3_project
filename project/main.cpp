@@ -3,16 +3,16 @@
 #include "GameFramework.h"
 #include "GameManager.h"
 
+#include <memory>
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
-  CoInitializeEx(0, COINIT_MULTITHREADED);
+	CoInitializeEx(0, COINIT_MULTITHREADED);
 
-  GameFramework *gameManager = new GameManager();
+	std::unique_ptr<GameFramework> gameManager = std::make_unique<GameManager>();
 
-  gameManager->Execute();
+	gameManager->Execute();
 
-  delete gameManager;
-
-  return 0;
+	return 0;
 }

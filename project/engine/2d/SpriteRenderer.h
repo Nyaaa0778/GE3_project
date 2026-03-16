@@ -8,98 +8,98 @@ class DirectXCommon;
 
 class SpriteRenderer {
 public:
-  //================================================================================
-  // シングルトン
-  //================================================================================
+	//================================================================================
+	// シングルトン
+	//================================================================================
 
-  // 唯一のインスタンス取得
-  static SpriteRenderer *GetInstance();
+	// 唯一のインスタンス取得
+	static SpriteRenderer* GetInstance();
 
-  /// <summary>
-  /// 終了
-  /// </summary>
-  static void Finalize();
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
+	SpriteRenderer() = default;
+	/// <summary>
+	/// デストラクタ
+	/// </summary>
+	~SpriteRenderer() = default;
 
-  // unique_ptrからの削除を許可
-  friend std::default_delete<SpriteRenderer>;
+	/// <summary>
+	/// 終了
+	/// </summary>
+	static void Finalize();
+
+	// unique_ptrからの削除を許可
+	friend std::default_delete<SpriteRenderer>;
 
 private:
-  static std::unique_ptr<SpriteRenderer> instance;
+	static std::unique_ptr<SpriteRenderer> instance;
 
-  /// <summary>
-  /// コンストラクタ
-  /// </summary>
-  SpriteRenderer() = default;
-  /// <summary>
-  /// デストラクタ
-  /// </summary>
-  ~SpriteRenderer() = default;
-
-  /// <summary>
-  /// コピーコンストラクタ禁止
-  /// </summary>
-  /// <param name="">コピー元（使用不可）</param>
-  SpriteRenderer(SpriteRenderer &) = delete;
-  /// <summary>
-  /// 代入演算子禁止
-  /// </summary>
-  /// <param name="">代入元（使用不可）</param>
-  /// <returns>このオブジェクトを返す</returns>
-  SpriteRenderer &operator=(SpriteRenderer &) = delete;
+	/// <summary>
+	/// コピーコンストラクタ禁止
+	/// </summary>
+	/// <param name="">コピー元（使用不可）</param>
+	SpriteRenderer(SpriteRenderer&) = delete;
+	/// <summary>
+	/// 代入演算子禁止
+	/// </summary>
+	/// <param name="">代入元（使用不可）</param>
+	/// <returns>このオブジェクトを返す</returns>
+	SpriteRenderer& operator=(SpriteRenderer&) = delete;
 
 public:
-  //================================================================================
-  // 初期化 / 描画設定
-  //================================================================================
+	//================================================================================
+	// 初期化 / 描画設定
+	//================================================================================
 
-  /// <summary>
-  /// 初期化
-  /// </summary>
-  void Initialize(DirectXCommon *dxCommon);
+	/// <summary>
+	/// 初期化
+	/// </summary>
+	void Initialize(DirectXCommon* dxCommon);
 
-  /// <summary>
-  /// 共通描画設定
-  /// </summary>
-  void SetupCommonRenderState();
-
-private:
-  //================================================================================
-  // 型エイリアス
-  //================================================================================
-
-  // namespace
-  template <class InterfaceType>
-  using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
+	/// <summary>
+	/// 共通描画設定
+	/// </summary>
+	void SetupCommonRenderState();
 
 private:
-  //================================================================================
-  // 外部参照
-  //================================================================================
+	//================================================================================
+	// 型エイリアス
+	//================================================================================
 
-  // DirectXCommonのポインタ
-  DirectXCommon *dxCommon_ = nullptr;
-
-  //================================================================================
-  // GPU リソース
-  //================================================================================
-
-  // ルートシグネチャ
-  ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-  // グラフィックスパイプラインステート
-  ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+	// namespace
+	template <class InterfaceType>
+	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
 private:
-  //================================================================================
-  // パイプライン構築（RootSignature / PSO）
-  //================================================================================
+	//================================================================================
+	// 外部参照
+	//================================================================================
 
-  /// <summary>
-  /// ルートシグネチャの生成
-  /// </summary>
-  void CreateRootSignature();
+	// DirectXCommonのポインタ
+	DirectXCommon* dxCommon_ = nullptr;
 
-  /// <summary>
-  /// グラフィックスパイプラインの生成
-  /// </summary>
-  void CreateGraphicsPipeline();
+	//================================================================================
+	// GPU リソース
+	//================================================================================
+
+	// ルートシグネチャ
+	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+	// グラフィックスパイプラインステート
+	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+
+private:
+	//================================================================================
+	// パイプライン構築（RootSignature / PSO）
+	//================================================================================
+
+	/// <summary>
+	/// ルートシグネチャの生成
+	/// </summary>
+	void CreateRootSignature();
+
+	/// <summary>
+	/// グラフィックスパイプラインの生成
+	/// </summary>
+	void CreateGraphicsPipeline();
 };

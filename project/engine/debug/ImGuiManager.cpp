@@ -14,12 +14,12 @@ std::unique_ptr<ImGuiManager> ImGuiManager::instance = nullptr;
 /// シングルトンインスタンスの取得
 /// </summary>
 /// <returns>ImGuiManagerの唯一のインスタンス</returns>
-ImGuiManager *ImGuiManager::GetInstance() {
-  if (instance == nullptr) {
-    instance.reset(new ImGuiManager());
-  }
+ImGuiManager* ImGuiManager::GetInstance() {
+	if (instance == nullptr) {
+		instance = std::make_unique<ImGuiManager>();
+	}
 
-  return instance.get();
+	return instance.get();
 }
 
 /// <summary>
@@ -33,10 +33,10 @@ void ImGuiManager::Finalize() { instance.reset(); }
 ImGuiManager::~ImGuiManager() {
 #ifdef USE_IMGUI
 
-  // ImGuiの終了処理、初期化と逆順に行う
-  ImGui_ImplDX12_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-  ImGui::DestroyContext();
+	// ImGuiの終了処理、初期化と逆順に行う
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 
 #endif
 }
@@ -45,41 +45,41 @@ ImGuiManager::~ImGuiManager() {
 /// 初期化
 /// </summary>
 void ImGuiManager::Initialize(
-    [[maybe_unused]] DirectXCommon *dxCommon,
-    [[maybe_unused]] ShaderResourceViewManager *srvManager) {
+	[[maybe_unused]] DirectXCommon* dxCommon,
+	[[maybe_unused]] ShaderResourceViewManager* srvManager) {
 
-  // メンバ変数を記録
-  dxCommon_ = dxCommon;
-  srvManager_ = srvManager;
+	// メンバ変数を記録
+	dxCommon_ = dxCommon;
+	srvManager_ = srvManager;
 
 #ifdef USE_IMGUI
 
-  uint32_t fontSrvIndex = ShaderResourceViewManager::GetInstance()->Allocate();
+	uint32_t fontSrvIndex = ShaderResourceViewManager::GetInstance()->Allocate();
 
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
 
-  {
-    ImGuiIO &io = ImGui::GetIO();
-    // デフォルトフォントを登録
-    if (io.Fonts->Fonts.empty()) {
-      io.Fonts->AddFontDefault();
-    }
-    // フォントアトラスを明示的にビルド
-    io.Fonts->Build();
-  }
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		// デフォルトフォントを登録
+		if (io.Fonts->Fonts.empty()) {
+			io.Fonts->AddFontDefault();
+		}
+		// フォントアトラスを明示的にビルド
+		io.Fonts->Build();
+	}
 
-  ImGui::StyleColorsClassic();
-  ImGui_ImplWin32_Init(WinApp::GetInstance()->GetHwnd());
-  ImGui_ImplDX12_Init(
-      DirectXCommon::GetInstance()->GetDevice(),
-      static_cast<int>(DirectXCommon::GetInstance()->GetSwapChainResourceNum()),
-      DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-      ShaderResourceViewManager::GetInstance()->GetDescriptorHeap(),
-      ShaderResourceViewManager::GetInstance()->GetCPUDescriptorHandle(
-          fontSrvIndex),
-      ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(
-          fontSrvIndex));
+	ImGui::StyleColorsClassic();
+	ImGui_ImplWin32_Init(WinApp::GetInstance()->GetHwnd());
+	ImGui_ImplDX12_Init(
+		DirectXCommon::GetInstance()->GetDevice(),
+		static_cast<int>(DirectXCommon::GetInstance()->GetSwapChainResourceNum()),
+		DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+		ShaderResourceViewManager::GetInstance()->GetDescriptorHeap(),
+		ShaderResourceViewManager::GetInstance()->GetCPUDescriptorHandle(
+			fontSrvIndex),
+		ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(
+			fontSrvIndex));
 
 #endif
 }
@@ -90,9 +90,9 @@ void ImGuiManager::Initialize(
 void ImGuiManager::Begin() {
 #ifdef USE_IMGUI
 
-  ImGui_ImplDX12_NewFrame();
-  ImGui_ImplWin32_NewFrame();
-  ImGui::NewFrame();
+	ImGui_ImplDX12_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
 
 #endif
 }
@@ -102,7 +102,7 @@ void ImGuiManager::Begin() {
 void ImGuiManager::End() {
 #ifdef USE_IMGUI
 
-  ImGui::Render();
+	ImGui::Render();
 
 #endif
 }
@@ -113,15 +113,15 @@ void ImGuiManager::End() {
 void ImGuiManager::Draw() {
 #ifdef USE_IMGUI
 
-  ID3D12GraphicsCommandList *commandList =
-      DirectXCommon::GetInstance()->GetCommandList();
+	ID3D12GraphicsCommandList* commandList =
+		DirectXCommon::GetInstance()->GetCommandList();
 
-  // デスクリプタヒープの配列をセットするコマンド
-  ID3D12DescriptorHeap *ppHeaps[] = {
-      ShaderResourceViewManager::GetInstance()->GetDescriptorHeap()};
-  commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-  // 描画コマンド発行
-  ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
+	// デスクリプタヒープの配列をセットするコマンド
+	ID3D12DescriptorHeap* ppHeaps[] = {
+		ShaderResourceViewManager::GetInstance()->GetDescriptorHeap()};
+	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+	// 描画コマンド発行
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), commandList);
 
 #endif
 }

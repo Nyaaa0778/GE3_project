@@ -6,5 +6,5 @@
 
 class GameSceneFactory : public ISceneFactory {
 public:
-  std::unique_ptr<IScene> CreateScene(const std::string &sceneName) override;
+	std::unique_ptr<IScene> CreateScene(const std::string& sceneName) override;
 };

@@ -5,71 +5,71 @@
 
 class TimeManager {
 public:
-  //================================================================================
-  // シングルトン
-  //================================================================================
+	//================================================================================
+	// シングルトン
+	//================================================================================
 
-  // 唯一のインスタンス取得
-  static TimeManager *GetInstance();
+	// 唯一のインスタンス取得
+	static TimeManager* GetInstance();
 
-  /// <summary>
-  /// 終了
-  /// </summary>
-  static void Finalize();
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
+	TimeManager() = default;
+	/// <summary>
+	/// デストラクタ
+	/// </summary>
+	~TimeManager() = default;
 
-  // unique_ptrからの削除を許可
-  friend std::default_delete<TimeManager>;
+	/// <summary>
+	/// 終了
+	/// </summary>
+	static void Finalize();
 
-private:
-  static std::unique_ptr<TimeManager> instance;
-
-  /// <summary>
-  /// コンストラクタ
-  /// </summary>
-  TimeManager() = default;
-  /// <summary>
-  /// デストラクタ
-  /// </summary>
-  ~TimeManager() = default;
-
-  /// <summary>
-  /// コピーコンストラクタ禁止
-  /// </summary>
-  /// <param name="">コピー元（使用不可）</param>
-  TimeManager(TimeManager &) = delete;
-  /// <summary>
-  /// 代入演算子禁止
-  /// </summary>
-  /// <param name="">代入元（使用不可）</param>
-  /// <returns>このオブジェクトを返す</returns>
-  TimeManager &operator=(TimeManager &) = delete;
-
-public:
-  //================================================================================
-  // 初期化 / 更新
-  //================================================================================
-
-  /// <summary>
-  /// 初期化
-  /// </summary>
-  void Initialize();
-  /// <summary>
-  /// 更新
-  /// </summary>
-  void Update();
-
-public:
-  //================================================================================
-  // Getter
-  //================================================================================
-
-  // 経過時間
-  float GetDeltaTime() const { return deltaTime_; }
+	// unique_ptrからの削除を許可
+	friend std::default_delete<TimeManager>;
 
 private:
-  // 記録時間(FPS固定用)
-  std::chrono::steady_clock::time_point frameStartTime_;
+	static std::unique_ptr<TimeManager> instance;
 
-  // 経過時間
-  float deltaTime_ = 0.0f;
+	/// <summary>
+	/// コピーコンストラクタ禁止
+	/// </summary>
+	/// <param name="">コピー元（使用不可）</param>
+	TimeManager(TimeManager&) = delete;
+	/// <summary>
+	/// 代入演算子禁止
+	/// </summary>
+	/// <param name="">代入元（使用不可）</param>
+	/// <returns>このオブジェクトを返す</returns>
+	TimeManager& operator=(TimeManager&) = delete;
+
+public:
+	//================================================================================
+	// 初期化 / 更新
+	//================================================================================
+
+	/// <summary>
+	/// 初期化
+	/// </summary>
+	void Initialize();
+	/// <summary>
+	/// 更新
+	/// </summary>
+	void Update();
+
+public:
+	//================================================================================
+	// Getter
+	//================================================================================
+
+	// 経過時間
+	float GetDeltaTime() const { return deltaTime_; }
+
+private:
+	// 記録時間(FPS固定用)
+	std::chrono::steady_clock::time_point frameStartTime_;
+
+	// 経過時間
+	float deltaTime_ = 0.0f;
 };

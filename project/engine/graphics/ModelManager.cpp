@@ -12,12 +12,12 @@ std::unique_ptr<ModelManager> ModelManager::instance = nullptr;
 /// シングルトンインスタンスの取得
 /// </summary>
 /// <returns>TextureManager の唯一のインスタンス</returns>
-ModelManager *ModelManager::GetInstance() {
-  if (instance == nullptr) {
-    instance.reset(new ModelManager());
-  }
+ModelManager* ModelManager::GetInstance() {
+	if (instance == nullptr) {
+		instance = std::make_unique<ModelManager>();
+	}
 
-  return instance.get();
+	return instance.get();
 }
 
 /// <summary>
@@ -33,22 +33,22 @@ void ModelManager::Finalize() { instance.reset(); }
 /// モデルファイルの読み込み
 /// </summary>
 /// <param name="ModelName">モデル名</param>
-void ModelManager::LoadModel(const std::string &modelName) {
-  // 読み込み済みのモデルを検索
-  if (models_.contains(modelName)) {
-    // 読み込み済みなら早期return
-    return;
-  }
+void ModelManager::LoadModel(const std::string& modelName) {
+	// 読み込み済みのモデルを検索
+	if (models_.contains(modelName)) {
+		// 読み込み済みなら早期return
+		return;
+	}
 
-  std::string directoryPath = "resources/" + modelName;
-  std::string fileName = modelName + ".obj";
+	std::string directoryPath = "resources/" + modelName;
+	std::string fileName = modelName + ".obj";
 
-  // モデルの生成とファイル読み込み、初期化
-  std::unique_ptr<Model> model = std::make_unique<Model>();
-  model->Initialize(directoryPath, fileName);
+	// モデルの生成とファイル読み込み、初期化
+	std::unique_ptr<Model> model = std::make_unique<Model>();
+	model->Initialize(directoryPath, fileName);
 
-  // モデルをmapコンテナに格納する
-  models_.insert(std::make_pair(modelName, std::move(model)));
+	// モデルをmapコンテナに格納する
+	models_.insert(std::make_pair(modelName, std::move(model)));
 }
 
 //================================================================================
@@ -60,13 +60,13 @@ void ModelManager::LoadModel(const std::string &modelName) {
 /// </summary>
 /// <param name="modelName">モデル名</param>
 /// <returns>モデル</returns>
-Model *ModelManager::FindModel(const std::string &modelName) {
-  // 読み込み済みモデルを検索
-  if (models_.contains(modelName)) {
-    // 読み込みモデルを戻り値としてreturn
-    return models_.at(modelName).get();
-  }
+Model* ModelManager::FindModel(const std::string& modelName) {
+	// 読み込み済みモデルを検索
+	if (models_.contains(modelName)) {
+		// 読み込みモデルを戻り値としてreturn
+		return models_.at(modelName).get();
+	}
 
-  // ファイル名一致なし
-  return nullptr;
+	// ファイル名一致なし
+	return nullptr;
 }
