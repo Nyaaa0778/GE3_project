@@ -5,6 +5,7 @@
 #include "Object3d.h"
 #include "SceneManager.h"
 #include "Sprite.h"
+#include "AudioSource.h"
 
 #include <stdio.h>
 
@@ -18,11 +19,34 @@ void TitleScene::Initialize() {
 
 	// spriteの初期化
 	sprite_ = std::make_unique<Sprite>();
-	sprite_->Initialize("resources/monsterBall.png");
+	sprite_->Initialize("monsterBall.png");
+
+	// --------------------------------------------------
+	// ② ラジカセ（AudioSource）の実体を作る
+	// --------------------------------------------------
+	bgm_ = std::make_unique<AudioSource>();
+	se_ = std::make_unique<AudioSource>();
+
+	// --------------------------------------------------
+	// ③ BGMをセットして、ループ再生スタート！
+	// --------------------------------------------------
+	bgm_->SetAudio("title.mp3");
+	bgm_->PlayAudio(true); // trueを渡すとループ再生！
 }
 
 void TitleScene::Update() {
 	auto input = Input::GetInstance();
+
+	// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
+	if (input->TriggerKey(DIK_SPACE)) {
+		se_->SetAudio("Alarm01.wav");
+		se_->PlayAudio(); // 何も書かない、または false で1回だけ再生
+	}
+
+	// 【停止のテスト】Bキーを押したらBGMだけをピタッと止める
+	if (input->TriggerKey(DIK_B)) {
+		bgm_->StopAudio();
+	}
 
 	// --- 1. シーン遷移判定 ---
 	if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
@@ -68,7 +92,9 @@ void TitleScene::Draw() {
 	sprite_->Draw();
 }
 
-void TitleScene::Finalize() {}
+void TitleScene::Finalize() {
+	
+}
 
 void TitleScene::UpdateImGui() {
 #ifdef USE_IMGUI
@@ -121,6 +147,81 @@ void TitleScene::UpdateImGui() {
 			Vector4 newColor(col[0], col[1], col[2], col[3]);
 			sprite_->SetColor(newColor);
 		}
+	}
+
+	ImGui::End();
+
+	static float volume = 1.0f;
+	static float pitch = 1.0f;
+	static float muffle = 0.0f;
+
+	// 2. ImGuiのウィンドウを作成
+	ImGui::Begin("Audio Controller");
+
+	if (bgm_->IsPlaying()) {
+		// 再生中の場合は緑色のテキストで表示
+		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Playing");
+	} else {
+		// 停止中の場合は赤色のテキストで表示
+		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Status: Stopped");
+	}
+
+	ImGui::Separator();
+
+	static float pan = 0.0f; // 追加
+
+	// ---------------------------------------------------
+	// パラメータ調整（スライダー）
+	// ---------------------------------------------------
+	if (ImGui::SliderFloat("Pan", &pan, -1.0f, 1.0f)) {
+		bgm_->SetPan(pan);
+	}
+	// ダブルクリック等で中央に戻せるようにリセットボタンを置くと便利です
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Pan")) {
+		pan = 0.0f;
+		bgm_->SetPan(pan);
+	}
+
+	ImGui::Separator();
+
+	// ---------------------------------------------------
+	// パラメータ調整（スライダー）
+	// ---------------------------------------------------
+	// ImGui::SliderFloat は、値が変更されたフレームでのみ true を返します。
+	if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
+		bgm_->SetVolume(volume);
+	}
+
+	// ピッチの範囲はゲームの要件に合わせて調整してください（例：0.1〜2.0）
+	if (ImGui::SliderFloat("Pitch", &pitch, 0.1f, 2.0f)) {
+		bgm_->SetPitch(pitch);
+	}
+
+	if (ImGui::SliderFloat("Muffle", &muffle, 0.0f, 1.0f)) {
+		bgm_->SetMuffle(muffle);
+	}
+
+	ImGui::Separator();
+
+	// ---------------------------------------------------
+	// 再生・停止コントロール（ボタン）
+	// ---------------------------------------------------
+	// セッターの確認には音を鳴らす必要があるので、ボタンも作っておくと便利です
+	if (ImGui::Button("Play")) {
+		bgm_->PlayAudio(); // ループさせたい場合は PlayAudio(true)
+	}
+	ImGui::SameLine(); // 次のUIを右に並べる
+	if (ImGui::Button("Pause")) {
+		bgm_->PauseAudio();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Resume")) {
+		bgm_->ResumeAudio();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) {
+		bgm_->StopAudio();
 	}
 
 	ImGui::End();

@@ -36,18 +36,18 @@ void ModelManager::Finalize() { instance.reset(); }
 void ModelManager::LoadModel(const std::string& modelName) {
 	// 読み込み済みのモデルを検索
 	if (models_.contains(modelName)) {
-		// 読み込み済みなら早期return
+		// 読み込み済みなら早期に return
 		return;
 	}
 
-	std::string directoryPath = "resources/" + modelName;
+	std::string directoryPath = "resources/models/" + modelName;
 	std::string fileName = modelName + ".obj";
 
 	// モデルの生成とファイル読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();
 	model->Initialize(directoryPath, fileName);
 
-	// モデルをmapコンテナに格納する
+	// モデルを mapコンテナ に格納する
 	models_.insert(std::make_pair(modelName, std::move(model)));
 }
 
@@ -63,7 +63,7 @@ void ModelManager::LoadModel(const std::string& modelName) {
 Model* ModelManager::FindModel(const std::string& modelName) {
 	// 読み込み済みモデルを検索
 	if (models_.contains(modelName)) {
-		// 読み込みモデルを戻り値としてreturn
+		// 読み込みモデルを戻り値として return
 		return models_.at(modelName).get();
 	}
 

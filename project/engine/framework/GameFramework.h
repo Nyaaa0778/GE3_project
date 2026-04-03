@@ -6,7 +6,6 @@
 #include "D3DResourceLeakChecker.h"
 
 class Camera;
-class SoundManager;
 
 class GameFramework {
 public:
@@ -57,8 +56,6 @@ private:
 	void EndFrame();
 
 private:
-	// SoundManagerのポインタ
-	std::unique_ptr<SoundManager> soundManager_ = nullptr;
 	// Cameraのポインタ
 	std::unique_ptr<Camera> camera_ = nullptr;
 
