@@ -235,9 +235,20 @@ void Sprite::SetColor(const Vector4& color) { materialData_->color = color; }
 void Sprite::SetScale(const Vector2& scale) { scale_ = scale; }
 // テクスチャ
 void Sprite::SetTexture(const std::string& filePath) {
-	TextureManager::GetInstance()->LoadTexture(filePath);
+	std::string fullPath = filePath;
+
+	// パスに "resources/sprites/" が含まれていなければ付与する
+	if (fullPath.find("resources/sprites/") == std::string::npos) {
+		fullPath = "resources/sprites/" + filePath;
+	}
+
+	// 構築したフルパスを使ってテクスチャを読み込む
+	TextureManager::GetInstance()->LoadTexture(fullPath);
 	textureIndex_ =
-		TextureManager::GetInstance()->GetTextureIndexByFilePath(filePath);
+		TextureManager::GetInstance()->GetTextureIndexByFilePath(fullPath);
+
+	// メンバ変数の filePath_ にはフルパスを保存しておく
+	filePath_ = fullPath;
 }
 
 // アンカーポイント

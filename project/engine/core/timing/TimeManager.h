@@ -72,4 +72,6 @@ private:
 
 	// 経過時間
 	float deltaTime_ = 0.0f;
+	// 前回Updateが呼ばれた時刻
+	std::chrono::steady_clock::time_point lastUpdateTime_;
 };

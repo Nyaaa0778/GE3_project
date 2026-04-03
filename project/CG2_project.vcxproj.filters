@@ -40,9 +40,6 @@
     <Filter Include="ヘッダー ファイル\engine\math">
       <UniqueIdentifier>{98284fb1-aeeb-4b33-b5d5-d65f49fdc384}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ヘッダー ファイル\engine\sound">
-      <UniqueIdentifier>{948c5635-10ba-4459-9448-0cca6887190c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ソース ファイル\engine\2d">
       <UniqueIdentifier>{32131846-5d2e-429c-a473-558df1a396d8}</UniqueIdentifier>
     </Filter>
@@ -88,6 +85,9 @@
     <Filter Include="ヘッダー ファイル\game">
       <UniqueIdentifier>{b8907de4-08a4-415a-b205-d19715903d00}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ヘッダー ファイル\engine\audio">
+      <UniqueIdentifier>{948c5635-10ba-4459-9448-0cca6887190c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -114,7 +114,7 @@
     <ClCompile Include="externals\imgui\imgui_widgets.cpp">
       <Filter>externals\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="engine\audio\SoundManager.cpp">
+    <ClCompile Include="engine\audio\AudioManager.cpp">
       <Filter>ソース ファイル\engine\audio</Filter>
     </ClCompile>
     <ClCompile Include="engine\input\Input.cpp">
@@ -207,6 +207,9 @@
     <ClCompile Include="engine\framework\scene\GameSceneFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="engine\audio\AudioSource.cpp">
+      <Filter>ソース ファイル\engine\audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -268,8 +271,8 @@
     <ClInclude Include="engine\math\Vector4.h">
       <Filter>ヘッダー ファイル\engine\math</Filter>
     </ClInclude>
-    <ClInclude Include="engine\audio\SoundManager.h">
-      <Filter>ヘッダー ファイル\engine\sound</Filter>
+    <ClInclude Include="engine\audio\AudioManager.h">
+      <Filter>ヘッダー ファイル\engine\audio</Filter>
     </ClInclude>
     <ClInclude Include="engine\input\Input.h">
       <Filter>ヘッダー ファイル\engine\input</Filter>
@@ -360,6 +363,9 @@
     </ClInclude>
     <ClInclude Include="engine\framework\scene\GameSceneFactory.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\audio\AudioSource.h">
+      <Filter>ヘッダー ファイル\engine\audio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

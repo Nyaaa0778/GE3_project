@@ -57,7 +57,7 @@ void TextureManager::Finalize() { instance.reset(); }
 /// <returns></returns>
 void TextureManager::LoadTexture(const std::string& filePath) {
 
-	// 読み込み済みテクスチャを検索、読み込み済みなら早期return
+	// 読み込み済みテクスチャを検索、読み込み済みなら早期に return
 	if (textureDatas_.contains(filePath)) {
 		return;
 	}
@@ -128,7 +128,7 @@ void TextureManager::ReleaseIntermediateResources() {
 /// </summary>
 /// <param name="filePath">検索対象となるテクスチャのファイルパス</param>
 /// <returns>見つかったテクスチャのSRVインデックス、
-/// 該当するテクスチャが存在しない場合はassertによりプログラムを停止する</returns>
+/// 該当するテクスチャが存在しない場合は assert によりプログラムを停止する</returns>
 uint32_t
 TextureManager::GetTextureIndexByFilePath(const std::string& filePath) {
 	// map からテクスチャを検索

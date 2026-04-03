@@ -4,6 +4,7 @@
 
 #include "IScene.h"
 
+class AudioSource;
 class Object3d;
 class Sprite;
 
@@ -26,6 +27,10 @@ private:
 
 	// スプライト
 	std::unique_ptr<Sprite> sprite_;
+
+	// 音声
+	std::unique_ptr<AudioSource> bgm_; // BGM用
+	std::unique_ptr<AudioSource> se_;  // 決定音やカーソル音などのSE用
 
 private:
 	void UpdateImGui();

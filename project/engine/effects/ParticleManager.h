@@ -82,9 +82,9 @@ public:
 	/// <summary>
 	/// 更新
 	/// </summary>
-	/// <param name="viewmatrix">カメラのビュー行列</param>
+	/// <param name="viewMatrix">カメラのビュー行列</param>
 	/// <param name="projectionMatrix">カメラの射影行列</param>
-	void Update(const Matrix4x4& viewmatrix, const Matrix4x4& projectionMatrix);
+	void Update(const Matrix4x4& viewMatrix, const Matrix4x4& projectionMatrix);
 
 	/// <summary>
 	/// 描画

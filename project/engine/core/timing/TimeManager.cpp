@@ -35,18 +35,29 @@ void TimeManager::Finalize() { instance.reset(); }
 void TimeManager::Initialize() {
 	// 現在の時刻を記録する
 	frameStartTime_ = std::chrono::steady_clock::now();
+
+	// 最初の時間を記録
+	lastUpdateTime_ = frameStartTime_;
 }
 /// <summary>
 /// 更新
 /// </summary>
 void TimeManager::Update() {
+	// 実際の経過時間(deltaTime)の計算
+	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	std::chrono::microseconds realElapsed = std::chrono::duration_cast<std::chrono::microseconds>(now - lastUpdateTime_);
+
+	// マイクロ秒(100万分の1秒)を秒(float)に変換して保持
+	deltaTime_ = static_cast<float>(realElapsed.count()) / 1000000.0f;
+	lastUpdateTime_ = now;
+
 	// 1/60秒ピッタリの時間
 	const std::chrono::microseconds kMinTime(uint64_t(1000000.0f / 60.0f));
 	// 1/60秒よりわずかに短い時間
 	const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0f / 65.0f));
 
 	// 現在時刻を取得する
-	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	//std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 	// 前回記録からの経過時間を取得する
 	std::chrono::microseconds elapsed =
 		std::chrono::duration_cast<std::chrono::microseconds>(now -

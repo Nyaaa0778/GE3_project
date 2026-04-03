@@ -67,7 +67,7 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,
 /// <summary>
 /// 更新
 /// </summary>
-/// <param name="viewmatrix">カメラのビュー行列</param>
+/// <param name="viewMatrix">カメラのビュー行列</param>
 /// <param name="projectionMatrix">カメラの射影行列</param>
 void ParticleManager::Update(const Matrix4x4& viewMatrix,
 	const Matrix4x4& projectionMatrix) {
@@ -417,7 +417,7 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 	// 新たなパーティクルグループの初期化
 	group.material.textureFilePath = textureFilePath;
 
-	// SRVindexを設定
+	// SRVIndexを設定
 	TextureManager::GetInstance()->LoadTexture(textureFilePath);
 	group.material.textureSrvIndex =
 		TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
@@ -454,7 +454,7 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 /// <param name="count">発生させるパーティクル数</param>
 void ParticleManager::Emit(const std::string groupName,
 	const Vector3& emitPosition, uint32_t count) {
-	// 登録済みのグループかチェックしてassert
+	// 登録済みのグループかチェックして assert
 	auto it = particleGroups_.find(groupName);
 	assert(it != particleGroups_.end() && "Particle group not found.");
 

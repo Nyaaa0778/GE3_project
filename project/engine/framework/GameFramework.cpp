@@ -8,7 +8,7 @@
 #include "ModelManager.h"
 #include "Object3dRenderer.h"
 #include "ShaderResourceViewManager.h"
-#include "SoundManager.h"
+#include "AudioManager.h"
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
 #include "WinApp.h"
@@ -111,13 +111,13 @@ void GameFramework::Initialize() {
 	// 例外フィルタの設定
 	SetUnhandledExceptionFilter(ExportDump);
 
-	// WinAppの初期化
-	WinApp::GetInstance()->Initialize(L"DIrectXGame", 1280, 720);
+	// WinApp の初期化
+	WinApp::GetInstance()->Initialize(L"DirectXGame", 1280, 720);
 
-	// DirectXCommonの初期化
+	// DirectXCommon の初期化
 	DirectXCommon::GetInstance()->Initialize(WinApp::GetInstance());
 
-	// srvManagerの初期化
+	// srvManage rの初期化
 	ShaderResourceViewManager::GetInstance()->Initialize();
 
 	// カメラの初期化
@@ -125,30 +125,29 @@ void GameFramework::Initialize() {
 	camera_->SetRotate({0.0f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 0.0f, -10.0f});
 
-	// SpriteRendererの初期化
+	// SpriteRenderer の初期化
 	SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
-	// ModelCommonの初期化
+	// ModelCommon の初期化
 	ModelCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
-	// Object3dRendererの初期化
+	// Object3dRenderer の初期化
 	Object3dRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	// カメラをセット
 	Object3dRenderer::GetInstance()->SetDefaultCamera(camera_.get());
 
-	// SoundManagerの初期化
-	soundManager_ = std::make_unique<SoundManager>();
-	soundManager_->Initialize();
+	// AudioManager の初期化
+	AudioManager::GetInstance()->Initialize();
 
-	// TextureManaferの初期化
+	// TextureManafer の初期化
 	TextureManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
 
-	// Inputの初期化
+	// Input の初期化
 	Input::GetInstance()->Initialize(WinApp::GetInstance());
 
 #ifdef USE_IMGUI
-	// ImGuiManagerの初期化
+	// ImGuiManager の初期化
 	ImGuiManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
 #endif
@@ -201,6 +200,9 @@ void GameFramework::Finalize() {
 
 	// spriteCommonを解放
 	SpriteRenderer::GetInstance()->Finalize();
+
+	// AudioManagerを解放
+	AudioManager::GetInstance()->Finalize();
 
 	TextureManager::GetInstance()->Finalize();
 

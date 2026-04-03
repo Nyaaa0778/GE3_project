@@ -69,7 +69,7 @@ void Object3dRenderer::CreateRootSignature() {
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	// RootParamenterを作成、複数設定できるから配列(今回は結果1つなので長さ1の配列)
+	// RootParameterを作成、複数設定できるから配列(今回は結果1つなので長さ1の配列)
 	D3D12_ROOT_PARAMETER rootParameters[4] = {};
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // CBVを使用
 	rootParameters[0].ShaderVisibility =

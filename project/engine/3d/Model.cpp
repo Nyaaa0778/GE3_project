@@ -109,7 +109,7 @@ Model::LoadMaterialTemplateFile(const std::string& directoryPath,
 /// </summary>
 /// <param
 /// name="directoryPath">.objファイルが置いてあるディレクトリのパス</param>
-/// <param name="filename">読み込む.objファイル名</param>
+/// <param name="filename">読み込む .obj ファイル名</param>
 void Model::LoadObjFile(const std::string& directoryPath,
 	const std::string& filename) {
 	std::vector<Vector4> positions; // 位置
@@ -148,8 +148,8 @@ void Model::LoadObjFile(const std::string& directoryPath,
 			for (int32_t faceVertex = 0; faceVertex < 3; ++faceVertex) {
 				std::string vertexDefinition;
 				s >> vertexDefinition;
-				// 頂点の要素のIndexは 位置 / UV / 法線
-				// で格納されているので、分解してIndexを取得
+				// 頂点の要素の Index は 位置 / UV / 法線
+				// で格納されているので、分解して Index を取得
 				std::istringstream v(vertexDefinition);
 
 				uint32_t elementIndices[3];
@@ -159,7 +159,7 @@ void Model::LoadObjFile(const std::string& directoryPath,
 					elementIndices[element] = std::stoi(index);
 				}
 
-				// 要素へのIndexから、実際の要素の値を取得して頂点を構築
+				// 要素への Index から、実際の要素の値を取得して頂点を構築
 				Vector4 position = positions[elementIndices[0] - 1];
 				Vector2 texcoord = texcoords[elementIndices[1] - 1];
 				Vector3 normal = normals[elementIndices[2] - 1];
@@ -171,10 +171,10 @@ void Model::LoadObjFile(const std::string& directoryPath,
 			modelData_.vertices.push_back(triangle[1]);
 			modelData_.vertices.push_back(triangle[0]);
 		} else if (identifier == "mtllib") {
-			// materialTemolateLibraryファイルの名前を取得
+			// materialTemplateLibrary ファイルの名前を取得
 			std::string materialFilename;
 			s >> materialFilename;
-			// 基本的にobjファイルと同一階層にmtlは存在させるのでディレクトリ名とファイル名を渡す
+			// 基本的に obj と同一階層に mtl は存在させるのでディレクトリ名とファイル名を渡す
 			modelData_.material =
 				LoadMaterialTemplateFile(directoryPath, materialFilename);
 		}
