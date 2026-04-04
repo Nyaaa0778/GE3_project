@@ -29,7 +29,7 @@ std::unique_ptr<DirectXCommon> DirectXCommon::instance = nullptr;
 /// <summary>
 /// シングルトンインスタンスの取得
 /// </summary>
-/// <returns>DirectXCommonの唯一のインスタンス</returns>
+/// <returns>DirectXCommon の唯一のインスタンス</returns>
 DirectXCommon* DirectXCommon::GetInstance() {
 
 	if (instance == nullptr) {

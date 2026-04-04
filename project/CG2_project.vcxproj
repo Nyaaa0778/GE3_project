@@ -159,7 +159,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="engine\audio\AudioSource.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\effects\ParticleManager.cpp" />
     <ClCompile Include="engine\core\utility\Random.cpp" />
@@ -274,7 +273,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engine\audio\AudioSource.h" />
     <ClInclude Include="engine\3d\Camera.h" />
     <ClInclude Include="engine\core\graphics\Transform.h" />
     <ClInclude Include="engine\core\utility\Random.h" />
