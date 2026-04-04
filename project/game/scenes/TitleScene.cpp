@@ -5,9 +5,7 @@
 #include "Object3d.h"
 #include "SceneManager.h"
 #include "Sprite.h"
-#include "AudioSource.h"
-
-#include <stdio.h>
+#include "AudioManager.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -24,14 +22,14 @@ void TitleScene::Initialize() {
 	// --------------------------------------------------
 	// ② ラジカセ（AudioSource）の実体を作る
 	// --------------------------------------------------
-	bgm_ = std::make_unique<AudioSource>();
-	se_ = std::make_unique<AudioSource>();
+	bgm_ = AudioManager::LoadAudio("title.mp3");
+	se_ = AudioManager::LoadAudio("bgmGamePlay.wav", SoundGroup::SE);
 
 	// --------------------------------------------------
 	// ③ BGMをセットして、ループ再生スタート！
 	// --------------------------------------------------
-	bgm_->SetAudio("title.mp3");
-	bgm_->PlayAudio(true); // trueを渡すとループ再生！
+	
+	AudioManager::PlayAudio(bgm_, true); // trueを渡すとループ再生！
 }
 
 void TitleScene::Update() {
@@ -39,13 +37,12 @@ void TitleScene::Update() {
 
 	// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
 	if (input->TriggerKey(DIK_SPACE)) {
-		se_->SetAudio("Alarm01.wav");
-		se_->PlayAudio(); // 何も書かない、または false で1回だけ再生
+		AudioManager::PlayAudio(se_); // 何も書かない、または false で1回だけ再生
 	}
 
 	// 【停止のテスト】Bキーを押したらBGMだけをピタッと止める
 	if (input->TriggerKey(DIK_B)) {
-		bgm_->StopAudio();
+		AudioManager::StopAudio(bgm_);
 	}
 
 	// --- 1. シーン遷移判定 ---
@@ -155,10 +152,24 @@ void TitleScene::UpdateImGui() {
 	static float pitch = 1.0f;
 	static float muffle = 0.0f;
 
-	// 2. ImGuiのウィンドウを作成
-	ImGui::Begin("Audio Controller");
+	ImGui::Begin("BGM Controller");
 
-	if (bgm_->IsPlaying()) {
+	static float globalBgmVolume = 1.0f;
+	if (ImGui::SliderFloat("Global BGM Volume", &globalBgmVolume, 0.0f, 1.0f)) {
+		AudioManager::SetBGMVolume(globalBgmVolume);
+	}
+
+	static float globalSeVolume = 1.0f;
+	if (ImGui::SliderFloat("Global SE Volume", &globalSeVolume, 0.0f, 1.0f)) {
+		AudioManager::SetSEVolume(globalSeVolume);
+	}
+
+	ImGui::End();
+
+	// 2. ImGuiのウィンドウを作成
+	ImGui::Begin("BGM Controller");
+
+	if (AudioManager::IsPlaying(bgm_)) {
 		// 再生中の場合は緑色のテキストで表示
 		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Playing");
 	} else {
@@ -174,13 +185,13 @@ void TitleScene::UpdateImGui() {
 	// パラメータ調整（スライダー）
 	// ---------------------------------------------------
 	if (ImGui::SliderFloat("Pan", &pan, -1.0f, 1.0f)) {
-		bgm_->SetPan(pan);
+		AudioManager::SetPan(bgm_, pan);
 	}
 	// ダブルクリック等で中央に戻せるようにリセットボタンを置くと便利です
 	ImGui::SameLine();
 	if (ImGui::Button("Reset Pan")) {
 		pan = 0.0f;
-		bgm_->SetPan(pan);
+		AudioManager::SetPan(bgm_, pan);
 	}
 
 	ImGui::Separator();
@@ -190,16 +201,16 @@ void TitleScene::UpdateImGui() {
 	// ---------------------------------------------------
 	// ImGui::SliderFloat は、値が変更されたフレームでのみ true を返します。
 	if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
-		bgm_->SetVolume(volume);
+		AudioManager::SetMasterVolume(volume);
 	}
 
 	// ピッチの範囲はゲームの要件に合わせて調整してください（例：0.1〜2.0）
 	if (ImGui::SliderFloat("Pitch", &pitch, 0.1f, 2.0f)) {
-		bgm_->SetPitch(pitch);
+		AudioManager::SetPitch(bgm_, pitch);
 	}
 
 	if (ImGui::SliderFloat("Muffle", &muffle, 0.0f, 1.0f)) {
-		bgm_->SetMuffle(muffle);
+		AudioManager::SetMuffle(bgm_, muffle);
 	}
 
 	ImGui::Separator();
@@ -209,19 +220,47 @@ void TitleScene::UpdateImGui() {
 	// ---------------------------------------------------
 	// セッターの確認には音を鳴らす必要があるので、ボタンも作っておくと便利です
 	if (ImGui::Button("Play")) {
-		bgm_->PlayAudio(); // ループさせたい場合は PlayAudio(true)
+		AudioManager::PlayAudio(bgm_); // ループさせたい場合は PlayAudio(true)
 	}
 	ImGui::SameLine(); // 次のUIを右に並べる
 	if (ImGui::Button("Pause")) {
-		bgm_->PauseAudio();
+		AudioManager::PauseAudio(bgm_);
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Resume")) {
-		bgm_->ResumeAudio();
+		AudioManager::ResumeAudio(bgm_);
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Stop")) {
-		bgm_->StopAudio();
+		AudioManager::StopAudio(bgm_);
+	}
+
+	ImGui::End();
+
+	ImGui::Begin("SE Controller");
+
+	// ---------------------------------------------------
+	// 再生・停止コントロール（ボタン）
+	// ---------------------------------------------------
+	// セッターの確認には音を鳴らす必要があるので、ボタンも作っておくと便利です
+	if (ImGui::Button("Play")) {
+		AudioManager::PlayAudio(se_); // ループさせたい場合は PlayAudio(true)
+	}
+	ImGui::SameLine(); // 次のUIを右に並べる
+	if (ImGui::Button("Pause")) {
+		AudioManager::PauseAudio(se_);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Resume")) {
+		AudioManager::ResumeAudio(se_);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) {
+		AudioManager::StopAudio(se_);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("One Shot")) {
+		AudioManager::PlayOneShot(se_);
 	}
 
 	ImGui::End();

@@ -207,9 +207,6 @@
     <ClCompile Include="engine\framework\scene\GameSceneFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="engine\audio\AudioSource.cpp">
-      <Filter>ソース ファイル\engine\audio</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -363,9 +360,6 @@
     </ClInclude>
     <ClInclude Include="engine\framework\scene\GameSceneFactory.h">
       <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="engine\audio\AudioSource.h">
-      <Filter>ヘッダー ファイル\engine\audio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
