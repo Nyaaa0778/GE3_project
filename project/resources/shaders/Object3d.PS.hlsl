@@ -8,7 +8,6 @@ struct Material
     float32_t4x4 uvTransform;
     float32_t shininess;
 };
-
 ConstantBuffer<Material> gMaterial : register(b0);
 
 // ----- 平行光源 -----
@@ -18,44 +17,28 @@ struct DirectionalLight
     float32_t3 direction; // ライトの向き
     float32_t intensity; // 輝度
 };
-
 ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 
-// ----- 点光源 -----
-struct PointLight
+// ----- ローカルライト (Point & Spot 統合) -----
+struct LocalLight
 {
-    float32_t4 color; // ライトの色
-    float32_t3 position; // ライトの位置
-    float32_t intensity; // 輝度
-    float32_t radius; // ライトの届く最大距離
-    float32_t decay; // 減衰率
-    int32_t lightType;
-};
-
-ConstantBuffer<PointLight> gPointLight : register(b3);
-
-// ----- スポットライト -----
-struct SpotLight
-{
-    float32_t4 color; // ライトの色
-    float32_t3 position; // ライトの位置
-    float32_t intensity; // 輝度
-    float32_t3 direction; // スポットライトの方向
-    float32_t distance; // ライトの届く最大距離
-    float32_t decay; // 減衰率
-    float32_t cosAngle; // スポットライトの余弦
+    float32_t4 color;
+    float32_t3 position;
+    float32_t intensity;
+    float32_t3 direction;
+    float32_t distance;
+    float32_t decay;
+    float32_t cosAngle;
     float32_t cosFalloffStart;
-    int32_t lightType;
+    int32_t type; // 0: Point, 1: Spot
 };
-
-ConstantBuffer<SpotLight> gSpotLight : register(b4);
+ConstantBuffer<LocalLight> gLocalLight : register(b3);
 
 // ----- カメラ -----
 struct Camera
 {
     float32_t3 worldPosition;
 };
-
 ConstantBuffer<Camera> gCamera : register(b2);
 
 Texture2D<float32_t4> gTexture : register(t0);
@@ -118,19 +101,23 @@ float3 CalculateDirectionalLight(float3 normal, float3 toEye, float3 baseColor)
 // ==========================================
 float3 CalculatePointLight(float3 normal, float3 worldPosition, float3 toEye, float3 baseColor)
 {
-    float3 lightDir = normalize(worldPosition - gPointLight.position);
-    float distance = length(gPointLight.position - worldPosition);
-    float factor = pow(saturate(-distance / gPointLight.radius + 1.0f), gPointLight.decay);
+    // ライトへの方向と距離
+    float3 lightVec = worldPosition - gLocalLight.position;
+    float3 lightDir = normalize(lightVec);
+    float distance = length(lightVec);
     
+    // 1. 距離による減衰 (Factor)
+    // gLocalLight.distance は有効半径として扱う
+    float factor = pow(saturate(-distance / gLocalLight.distance + 1.0f), gLocalLight.decay);
+    
+    // 2. 拡散反射 (Half-Lambert)
     float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
+    float3 diffuse = baseColor * gLocalLight.color.rgb * cos * gLocalLight.intensity * factor;
     
-    // 鏡面反射
+    // 3. 鏡面反射 (Blinn-Phong)
     float3 halfVector = normalize(-lightDir + toEye);
     float nDotH = dot(normal, halfVector);
-    float3 specular = gPointLight.color.rgb * gPointLight.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor;
-    
-    // 拡散反射
-    float3 diffuse = baseColor * gPointLight.color.rgb * cos * gPointLight.intensity * factor;
+    float3 specular = gLocalLight.color.rgb * gLocalLight.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor;
     
     return diffuse + specular;
 }
@@ -140,24 +127,28 @@ float3 CalculatePointLight(float3 normal, float3 worldPosition, float3 toEye, fl
 // ==========================================
 float3 CalculateSpotLight(float3 normal, float3 worldPosition, float3 toEye, float3 baseColor)
 {
-    // ※ ここに前回提示したスポットライトの計算処理を入れます
-    float3 lightDir = normalize(worldPosition - gSpotLight.position);
-    float distance = length(gSpotLight.position - worldPosition);
-    float factor = pow(saturate(-distance / gSpotLight.distance + 1.0f), gSpotLight.decay);
+    // 基本的なベクトル計算
+    float3 lightVec = worldPosition - gLocalLight.position;
+    float3 lightDir = normalize(lightVec);
+    float distance = length(lightVec);
     
-    // 角度による減衰
-    float cosAngle = dot(lightDir, normalize(gSpotLight.direction));
-    float falloffFactor = saturate((cosAngle - gSpotLight.cosAngle) / (gSpotLight.cosFalloffStart - gSpotLight.cosAngle));
+    // 1. 距離による減衰
+    float factor = pow(saturate(-distance / gLocalLight.distance + 1.0f), gLocalLight.decay);
     
+    // 2. 角度による減衰 (Spotlight Falloff)
+    // ライトの向きと、ピクセルへの方向の余弦（cos）を求める
+    float cosAngle = dot(lightDir, normalize(gLocalLight.direction));
+    // 指定された角度範囲で線形補間して減衰させる
+    float falloffFactor = saturate((cosAngle - gLocalLight.cosAngle) / (gLocalLight.cosFalloffStart - gLocalLight.cosAngle));
+    
+    // 3. 拡散反射 (Half-Lambert)
     float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
+    float3 diffuse = baseColor * gLocalLight.color.rgb * cos * gLocalLight.intensity * factor * falloffFactor;
     
-    // 鏡面反射
+    // 4. 鏡面反射 (Blinn-Phong)
     float3 halfVector = normalize(-lightDir + toEye);
     float nDotH = dot(normal, halfVector);
-    float3 specular = gSpotLight.color.rgb * gSpotLight.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor * falloffFactor;
-    
-    // 拡散反射
-    float3 diffuse = baseColor * gSpotLight.color.rgb * cos * gSpotLight.intensity * factor * falloffFactor;
+    float3 specular = gLocalLight.color.rgb * gLocalLight.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor * falloffFactor;
     
     return diffuse + specular;
 }
@@ -185,17 +176,18 @@ PixelShaderOutput main(VertexShaderOutput input)
     // ----------------------------------------------------
     if (gMaterial.lightingType != 0)
     {
-        // ① 平行光源は常に計算して足す
+        // ① 平行光源の計算
         finalColor += CalculateDirectionalLight(N, toEye, baseColor);
 
-        // ② もしC++側で設定されているのが PointLight なら
-        if (gPointLight.lightType == 1)
+        // ② ローカルライトの計算 (C++側から送られてきた type で分岐)
+        if (gLocalLight.type == 0)
         {
+            // PointLightとして計算 (必要な引数はgLocalLightから渡すように引数を調整してください)
             finalColor += CalculatePointLight(N, input.worldPosition, toEye, baseColor);
         }
-        // ③ もしC++側で設定されているのが SpotLight なら
-        if (gSpotLight.lightType == 2)
+        else if (gLocalLight.type == 1)
         {
+            // SpotLightとして計算
             finalColor += CalculateSpotLight(N, input.worldPosition, toEye, baseColor);
         }
     }
