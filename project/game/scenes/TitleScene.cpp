@@ -225,17 +225,17 @@ void TitleScene::UpdateImGui() {
 	// ① Directional Light の設定
 	// --------------------------------------------------
 	if (ImGui::TreeNode("Directional Light")) {
-		Vector4 color = lightManager->GetColor();
-		Vector3 direction = lightManager->GetDirection();
-		float intensity = lightManager->GetIntensity();
+		Vector4 color = lightManager->GetDirectionalLightColor();
+		Vector3 direction = lightManager->GetDirectionalLightDirection();
+		float intensity = lightManager->GetDirectionalLightIntensity();
 
 		ImGui::ColorEdit4("Color", &color.x);
 		ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
 		ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f);
 
-		lightManager->SetColor(color);
-		lightManager->SetDirection(direction);
-		lightManager->SetIntensity(intensity);
+		lightManager->SetDirectionalLightColor(color);
+		lightManager->SetDirectionalLightDirection(direction);
+		lightManager->SetDirectionalLightIntensity(intensity);
 
 		ImGui::TreePop(); // TreeNodeを閉じる
 	}
@@ -247,15 +247,21 @@ void TitleScene::UpdateImGui() {
 		Vector4 pointColor = lightManager->GetPointLightColor();
 		Vector3 position = lightManager->GetPointLightPosition();
 		float pointIntensity = lightManager->GetPointLightIntensity();
+		float pointRadius = lightManager->GetPointLightRadius();
+		float pointDecay = lightManager->GetPointLightDecay();
 
 		ImGui::ColorEdit4("Color", &pointColor.x);
 		// 位置は空間を自由に動かせるように下限・上限なしで設定
 		ImGui::DragFloat3("Position", &position.x, 0.1f);
 		ImGui::DragFloat("Intensity", &pointIntensity, 0.01f, 0.0f, 10.0f);
+		ImGui::DragFloat("Radius", &pointRadius, 0.1f, 0.0f, 10.0f); 
+		ImGui::DragFloat("Decay", &pointDecay, 0.1f, 0.0f, 10.0f);
 
 		lightManager->SetPointLightColor(pointColor);
 		lightManager->SetPointLightPosition(position);
 		lightManager->SetPointLightIntensity(pointIntensity);
+		lightManager->SetPointLightRadius(pointRadius);
+		lightManager->SetPointLightDecay(pointDecay);
 
 		ImGui::TreePop(); // TreeNodeを閉じる
 	}

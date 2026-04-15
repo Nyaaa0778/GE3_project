@@ -24,6 +24,8 @@ struct PointLight
     float32_t4 color; // ライトの色
     float32_t3 position; // ライトの位置
     float intensity; // 輝度
+    float radius; // ライトの届く最大距離
+    float decay; // 減衰率
 };
 
 ConstantBuffer<PointLight> gPointLight : register(b3);
@@ -59,6 +61,10 @@ PixelShaderOutput main(VertexShaderOutput input)
         // ==========================================
         float3 dirLightDir = normalize(gDirectionalLight.direction);
         float3 pointLightDir = normalize(input.worldPosition - gPointLight.position);
+        
+        // 逆乗算による減衰係数の計算
+        float32_t distance = length(gPointLight.position - input.worldPosition);
+        float32_t factor = pow(saturate(-distance / gPointLight.radius + 1.0f), gPointLight.decay);
         
         // 内積 (光のやってくる方向の逆ベクトルとの内積)
         float nDotLDir = dot(N, -dirLightDir);
@@ -101,7 +107,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             // 点光源の鏡面反射
             float3 reflectPoint = reflect(pointLightDir, N);
             float rDotEPoint = dot(reflectPoint, toEye);
-            specularPoint = gPointLight.color.rgb * gPointLight.intensity * pow(saturate(rDotEPoint), gMaterial.shininess);
+            specularPoint = gPointLight.color.rgb * gPointLight.intensity * pow(saturate(rDotEPoint), gMaterial.shininess) * factor;
         }
         else if (gMaterial.lightingType == 4) // ブリン・フォン
         {
@@ -116,7 +122,7 @@ PixelShaderOutput main(VertexShaderOutput input)
             // 点光源の鏡面反射
             float3 halfPoint = normalize(-pointLightDir + toEye);
             float nDotHPoint = dot(N, halfPoint);
-            specularPoint = gPointLight.color.rgb * gPointLight.intensity * pow(saturate(nDotHPoint), gMaterial.shininess);
+            specularPoint = gPointLight.color.rgb * gPointLight.intensity * pow(saturate(nDotHPoint), gMaterial.shininess) * factor;
         }
 
         // ==========================================
@@ -125,7 +131,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         float3 baseColor = gMaterial.color.rgb * textureColor.rgb;
 
         float3 diffuseDir = baseColor * gDirectionalLight.color.rgb * cosDir * gDirectionalLight.intensity;
-        float3 diffusePoint = baseColor * gPointLight.color.rgb * cosPoint * gPointLight.intensity;
+        float3 diffusePoint = baseColor * gPointLight.color.rgb * cosPoint * gPointLight.intensity * factor;
 
         // ==========================================
         // 5. 全部足す

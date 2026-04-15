@@ -84,7 +84,7 @@ void Object3d::Draw() {
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			3, LightManager::GetInstance()->GetConstantBufferVideoAddress());
+			3, LightManager::GetInstance()->GetDirectionalLightConstantBufferVideoAddress());
 
 	//	点光源CBufferの場所を設定
 	object3dRenderer_->GetDxCommon()
