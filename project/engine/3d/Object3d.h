@@ -165,7 +165,7 @@ private:
 	// 位置
 	Vector3 position_ = {0.0f, 0.0f, 0.0f};
 	// 回転
-	Vector3 rotation_ = {0.0f, 3.14f, 0.0f};
+	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
 	// 拡縮
 	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
 

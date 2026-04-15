@@ -2,10 +2,17 @@
 
 #include <d3d12.h>
 #include <wrl.h>
+#include <cstdint>
+
 #include "Vector3.h"
 #include "Vector4.h"
 
 class DirectXCommon;
+
+enum class LocalLightType {
+	kPoint = 0, // 点光源
+	kSpot = 1,  // スポットライト
+};
 
 //================================================================================
 // LightManager クラス
@@ -21,12 +28,16 @@ public:
 		float intensity;   // 輝度
 	};
 
-	struct PointLight {
-		Vector4 color;    // ライトの色
-		Vector3 position; // ライトの位置
-		float intensity;  // 輝度
-		float radius;     // ライトが届く最大距離
-		float decay;      // 減衰率
+	struct LocalLight {
+		Vector4 color;         // ライトの色
+		Vector3 position;      // ライトの位置
+		float intensity;       // 輝度
+		Vector3 direction;     // 向き (スポットライト用)
+		float distance;        // ライトの届く距離
+		float decay;           // 減衰率
+		float cosAngle;        // スポットライトの余弦
+		float cosFalloffStart; // falloffの開始角度
+		uint32_t type;          // ローカルライトの種類 (0:Point, 1:Spot)
 	};
 
 	//================================================================================
@@ -58,24 +69,32 @@ public:
 	void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
 
 	//================================================================================
-	// PointLight (点光源) の取得・設定
+	// LocalLight (PoinLight / SpotLight) の取得・設定
 	//================================================================================
-	// GPUアドレスの取得
-	D3D12_GPU_VIRTUAL_ADDRESS GetPointLightConstantBufferVideoAddress() const { return pointLightBuffer_->GetGPUVirtualAddress(); }
+
+	D3D12_GPU_VIRTUAL_ADDRESS GetLocalLightConstantBufferVideoAddress() const { return localLightBuffer_->GetGPUVirtualAddress(); }
 
 	// 各種Getter
-	const Vector4& GetPointLightColor() const { return pointLightData_->color; }
-	const Vector3& GetPointLightPosition() const { return pointLightData_->position; }
-	float GetPointLightIntensity() const { return pointLightData_->intensity; }
-	float GetPointLightRadius()const { return pointLightData_->radius; }
-	float GetPointLightDecay()const { return pointLightData_->decay; }
+	const Vector4& GetLocalLightColor() const { return localLightData_->color; }
+	const Vector3& GetLocalLightPosition() const { return localLightData_->position; }
+	float GetLocalLightIntensity() const { return localLightData_->intensity; }
+	const Vector3& GetLocalLightDirection() const { return localLightData_->direction; }
+	float GetLocalLightDistance() const { return localLightData_->distance; }
+	float GetLocalLightDecay() const { return localLightData_->decay; }
+	float GetLocalLightCosAngle() const { return localLightData_->cosAngle; }
+	float GetLocalLightCosFalloffStart() const { return localLightData_->cosFalloffStart; }
+	LocalLightType GetLocalLightType() const { return static_cast<LocalLightType>(localLightData_->type); }
 
 	// 各種Setter
-	void SetPointLightColor(const Vector4& color) { pointLightData_->color = color; }
-	void SetPointLightPosition(const Vector3& position) { pointLightData_->position = position; }
-	void SetPointLightIntensity(float intensity) { pointLightData_->intensity = intensity; }
-	void SetPointLightRadius(float radius) { pointLightData_->radius = radius; }
-	void SetPointLightDecay(float decay) { pointLightData_->decay = decay; }
+	void SetLocalLightColor(const Vector4& color) { localLightData_->color = color; }
+	void SetLocalLightPosition(const Vector3& position) { localLightData_->position = position; }
+	void SetLocalLightIntensity(float intensity) { localLightData_->intensity = intensity; }
+	void SetLocalLightDirection(const Vector3& direction) { localLightData_->direction = direction; }
+	void SetLocalLightDistance(float distance) { localLightData_->distance = distance; }
+	void SetLocalLightDecay(float decay) { localLightData_->decay = decay; }
+	void SetLocalLightCosAngle(float cosAngle) { localLightData_->cosAngle = cosAngle; }
+	void SetLocalLightCosFalloffStart(float cosFalloffStart) { localLightData_->cosFalloffStart = cosFalloffStart; }
+	void SetLocalLightType(LocalLightType type) { localLightData_->type = static_cast<uint32_t>(type); }
 
 private:
 	//================================================================================
@@ -90,8 +109,9 @@ private:
 
 	// 初期化処理の分割
 	void InitializeDirectionalLight(DirectXCommon* dxCommon);
-	void InitializePointLight(DirectXCommon* dxCommon);
+	void InitializeLocalLight(DirectXCommon* dxCommon);
 
+private:
 	//================================================================================
 	// メンバ変数
 	//================================================================================
@@ -99,7 +119,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightBuffer_; // 定数バッファ
 	DirectionalLight* directionalLightData_ = nullptr;              // マップ用ポインタ
 
-	// PointLight用
-	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightBuffer_;       // 定数バッファ
-	PointLight* pointLightData_ = nullptr;                          // マップ用ポインタ
+	Microsoft::WRL::ComPtr<ID3D12Resource> localLightBuffer_;
+	LocalLight* localLightData_ = nullptr;
 };

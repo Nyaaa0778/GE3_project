@@ -2,6 +2,7 @@
 
 #include <MyEngine.h>
 #include "LightManager.h"
+#include <numbers>
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -109,7 +110,7 @@ void TitleScene::Draw() {
 }
 
 void TitleScene::Finalize() {
-	
+
 }
 
 void TitleScene::UpdateImGui() {
@@ -242,30 +243,65 @@ void TitleScene::UpdateImGui() {
 		ImGui::TreePop(); // TreeNodeを閉じる
 	}
 
-	// --------------------------------------------------
-	// ② Point Light の設定 (追加部分)
-	// --------------------------------------------------
-	if (ImGui::TreeNode("Point Light")) {
-		Vector4 pointColor = lightManager->GetPointLightColor();
-		Vector3 position = lightManager->GetPointLightPosition();
-		float pointIntensity = lightManager->GetPointLightIntensity();
-		float pointRadius = lightManager->GetPointLightRadius();
-		float pointDecay = lightManager->GetPointLightDecay();
+	if (ImGui::TreeNode("Local Light")) {
+		// 現在の状態を取得
+		LocalLightType currentType = lightManager->GetLocalLightType();
+		Vector4 color = lightManager->GetLocalLightColor();
+		Vector3 position = lightManager->GetLocalLightPosition();
+		float intensity = lightManager->GetLocalLightIntensity();
+		float distance = lightManager->GetLocalLightDistance();
+		float decay = lightManager->GetLocalLightDecay();
 
-		ImGui::ColorEdit4("Color", &pointColor.x);
-		// 位置は空間を自由に動かせるように下限・上限なしで設定
+		// 1. ライトの種類切り替え
+		const char* localLightTypeNames[] = {"Point", "Spot"};
+		int typeIndex = static_cast<int>(currentType);
+		if (ImGui::Combo("Light Type", &typeIndex, localLightTypeNames, IM_ARRAYSIZE(localLightTypeNames))) {
+			lightManager->SetLocalLightType(static_cast<LocalLightType>(typeIndex));
+		}
+
+		ImGui::Separator();
+
+		// 2. 共通設定
+		ImGui::ColorEdit4("Color", &color.x);
 		ImGui::DragFloat3("Position", &position.x, 0.1f);
-		ImGui::DragFloat("Intensity", &pointIntensity, 0.01f, 0.0f, 10.0f);
-		ImGui::DragFloat("Radius", &pointRadius, 0.1f, 0.0f, 10.0f); 
-		ImGui::DragFloat("Decay", &pointDecay, 0.1f, 0.0f, 10.0f);
+		ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 100.0f);
+		ImGui::DragFloat("Distance", &distance, 0.1f, 0.0f, 100.0f);
+		ImGui::DragFloat("Decay", &decay, 0.01f, 0.0f, 10.0f);
 
-		lightManager->SetPointLightColor(pointColor);
-		lightManager->SetPointLightPosition(position);
-		lightManager->SetPointLightIntensity(pointIntensity);
-		lightManager->SetPointLightRadius(pointRadius);
-		lightManager->SetPointLightDecay(pointDecay);
+		// 反映
+		lightManager->SetLocalLightColor(color);
+		lightManager->SetLocalLightPosition(position);
+		lightManager->SetLocalLightIntensity(intensity);
+		lightManager->SetLocalLightDistance(distance);
+		lightManager->SetLocalLightDecay(decay);
 
-		ImGui::TreePop(); // TreeNodeを閉じる
+		// 3. スポットライト専用設定
+		if (currentType == LocalLightType::kSpot) {
+			ImGui::Text("Spotlight Settings");
+
+			Vector3 direction = lightManager->GetLocalLightDirection();
+			float cosAngle = lightManager->GetLocalLightCosAngle();
+			float cosFalloff = lightManager->GetLocalLightCosFalloffStart();
+
+			// コサインを角度(度数法)に戻して表示
+			float angleDeg = std::acos(cosAngle) * 180.0f / std::numbers::pi_v<float>;
+			float falloffDeg = std::acos(cosFalloff) * 180.0f / std::numbers::pi_v<float>;
+
+			ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
+			if (ImGui::DragFloat("Angle", &angleDeg, 0.1f, 0.0f, 90.0f)) {
+				// 変更があったらコサインに変換してセット
+				cosAngle = std::cos(angleDeg * std::numbers::pi_v<float> / 180.0f);
+			}
+			if (ImGui::DragFloat("Falloff Start", &falloffDeg, 0.1f, 0.0f, angleDeg)) {
+				cosFalloff = std::cos(falloffDeg * std::numbers::pi_v<float> / 180.0f);
+			}
+
+			lightManager->SetLocalLightDirection(direction);
+			lightManager->SetLocalLightCosAngle(cosAngle);
+			lightManager->SetLocalLightCosFalloffStart(cosFalloff);
+		}
+
+		ImGui::TreePop();
 	}
 
 	// ==========================================

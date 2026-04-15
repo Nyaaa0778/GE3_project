@@ -103,7 +103,7 @@ void Object3dRenderer::CreateRootSignature() {
 	rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange;
 	rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
 
-	// 5: PointLight
+	// 5: LocalLight
 	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファ
 	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[5].Descriptor.ShaderRegister = 3; // レジスタ番号 (b3)
