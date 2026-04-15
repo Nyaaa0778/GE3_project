@@ -8,6 +8,8 @@ TitleScene::~TitleScene() = default;
 
 void TitleScene::Initialize() {
 	camera_ = std::make_unique<Camera>();
+	camera_->SetRotate({0.5f, 0.0f, 0.0f});
+	camera_->SetTranslate({0.0f, 8.0f, -15.0f});
 	camera_->CreateConstantBuffer();
 
 	// object3dの初期化
