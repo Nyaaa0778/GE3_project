@@ -1,19 +1,23 @@
 #include "TitleScene.h"
 
-#include "ImGuiManager.h"
-#include "Input.h"
-#include "Object3d.h"
-#include "SceneManager.h"
-#include "Sprite.h"
-#include "AudioManager.h"
+#include <MyEngine.h>
+#include "LightManager.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
 
 void TitleScene::Initialize() {
+	camera_ = std::make_unique<Camera>();
+	camera_->CreateConstantBuffer();
+
 	// object3dの初期化
-	obj_ = std::make_unique<Object3d>();
-	obj_->Initialize("plane");
+	sphere_ = std::make_unique<Object3d>();
+	sphere_->Initialize("sphere");
+	sphere_->SetCamera(camera_.get());
+
+	terrain_ = std::make_unique<Object3d>();
+	terrain_->Initialize("terrain");
+	terrain_->SetCamera(camera_.get());
 
 	// spriteの初期化
 	sprite_ = std::make_unique<Sprite>();
@@ -25,15 +29,23 @@ void TitleScene::Initialize() {
 	bgm_ = AudioManager::LoadAudio("title.mp3");
 	se_ = AudioManager::LoadAudio("bgmGamePlay.wav", SoundGroup::SE);
 
-	// --------------------------------------------------
-	// ③ BGMをセットして、ループ再生スタート！
-	// --------------------------------------------------
-	
-	AudioManager::PlayAudio(bgm_, true); // trueを渡すとループ再生！
+	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png");
+
+	// 2. エミッタの生成（グループ名、追従するTransformのポインタ、発生間隔、1回の数）
+	// titleTransform_ はタイトルロゴや背景の座標を指す想定
+	emitter_ = std::make_unique<ParticleEmitter>("CircleParticle", &particleTransform_, 0.2f, 3);
 }
 
 void TitleScene::Update() {
 	auto input = Input::GetInstance();
+
+	camera_->Update();
+
+	if (emitter_) {
+		emitter_->Update();
+	}
+
+	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
 	// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
 	if (input->TriggerKey(DIK_SPACE)) {
@@ -71,12 +83,13 @@ void TitleScene::Update() {
 	}
 	// --- 3. スティック移動処理 ---
 	Input::Stick lStick = input->GetLeftStick();
-	Vector3 pos = obj_->GetPosition();
+	Vector3 pos = sphere_->GetPosition();
 	pos.x += lStick.x * speed;
 	pos.y += lStick.y * speed;
-	obj_->SetPosition(pos);
+	sphere_->SetPosition(pos);
 
-	obj_->Update();
+	sphere_->Update();
+	terrain_->Update();
 
 	UpdateImGui();
 
@@ -84,9 +97,13 @@ void TitleScene::Update() {
 }
 
 void TitleScene::Draw() {
-	obj_->Draw();
+	// パーティクルの描画（インスタンシング描画が実行される）
+	ParticleManager::GetInstance()->Draw();
 
-	sprite_->Draw();
+	sphere_->Draw();
+	terrain_->Draw();
+
+	//sprite_->Draw();
 }
 
 void TitleScene::Finalize() {
@@ -148,120 +165,123 @@ void TitleScene::UpdateImGui() {
 
 	ImGui::End();
 
-	static float volume = 1.0f;
-	static float pitch = 1.0f;
-	static float muffle = 0.0f;
+	// 1. カメラ操作用のウィンドウを作成
+	ImGui::Begin("Camera Control");
 
-	ImGui::Begin("BGM Controller");
-
-	static float globalBgmVolume = 1.0f;
-	if (ImGui::SliderFloat("Global BGM Volume", &globalBgmVolume, 0.0f, 1.0f)) {
-		AudioManager::SetBGMVolume(globalBgmVolume);
+	// 座標（Translation）の調整
+	// ※Cameraクラスのメンバ関数名が GetTranslate/SetTranslate であると仮定しています。
+	//   もしエラーが出る場合は GetPosition/SetPosition に読み替えてください。
+	Vector3 camPos = camera_->GetTranslate();
+	if (ImGui::DragFloat3("Position", &camPos.x, 0.1f)) {
+		camera_->SetTranslate(camPos);
 	}
 
-	static float globalSeVolume = 1.0f;
-	if (ImGui::SliderFloat("Global SE Volume", &globalSeVolume, 0.0f, 1.0f)) {
-		AudioManager::SetSEVolume(globalSeVolume);
+	// 回転（Rotation）の調整
+	Vector3 camRot = camera_->GetRotate();
+	if (ImGui::DragFloat3("Rotation", &camRot.x, 0.01f)) {
+		camera_->SetRotate(camRot);
 	}
 
-	ImGui::End();
-
-	// 2. ImGuiのウィンドウを作成
-	ImGui::Begin("BGM Controller");
-
-	if (AudioManager::IsPlaying(bgm_)) {
-		// 再生中の場合は緑色のテキストで表示
-		ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Status: Playing");
-	} else {
-		// 停止中の場合は赤色のテキストで表示
-		ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Status: Stopped");
-	}
-
-	ImGui::Separator();
-
-	static float pan = 0.0f; // 追加
-
-	// ---------------------------------------------------
-	// パラメータ調整（スライダー）
-	// ---------------------------------------------------
-	if (ImGui::SliderFloat("Pan", &pan, -1.0f, 1.0f)) {
-		AudioManager::SetPan(bgm_, pan);
-	}
-	// ダブルクリック等で中央に戻せるようにリセットボタンを置くと便利です
-	ImGui::SameLine();
-	if (ImGui::Button("Reset Pan")) {
-		pan = 0.0f;
-		AudioManager::SetPan(bgm_, pan);
-	}
-
-	ImGui::Separator();
-
-	// ---------------------------------------------------
-	// パラメータ調整（スライダー）
-	// ---------------------------------------------------
-	// ImGui::SliderFloat は、値が変更されたフレームでのみ true を返します。
-	if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f)) {
-		AudioManager::SetMasterVolume(volume);
-	}
-
-	// ピッチの範囲はゲームの要件に合わせて調整してください（例：0.1〜2.0）
-	if (ImGui::SliderFloat("Pitch", &pitch, 0.1f, 2.0f)) {
-		AudioManager::SetPitch(bgm_, pitch);
-	}
-
-	if (ImGui::SliderFloat("Muffle", &muffle, 0.0f, 1.0f)) {
-		AudioManager::SetMuffle(bgm_, muffle);
-	}
-
-	ImGui::Separator();
-
-	// ---------------------------------------------------
-	// 再生・停止コントロール（ボタン）
-	// ---------------------------------------------------
-	// セッターの確認には音を鳴らす必要があるので、ボタンも作っておくと便利です
-	if (ImGui::Button("Play")) {
-		AudioManager::PlayAudio(bgm_); // ループさせたい場合は PlayAudio(true)
-	}
-	ImGui::SameLine(); // 次のUIを右に並べる
-	if (ImGui::Button("Pause")) {
-		AudioManager::PauseAudio(bgm_);
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Resume")) {
-		AudioManager::ResumeAudio(bgm_);
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Stop")) {
-		AudioManager::StopAudio(bgm_);
+	// リセットボタン（あると便利です）
+	if (ImGui::Button("Reset Camera")) {
+		camera_->SetTranslate({0.0f, 0.0f, -10.0f}); // 初期位置へ
+		camera_->SetRotate({0.0f, 0.0f, 0.0f});
 	}
 
 	ImGui::End();
 
-	ImGui::Begin("SE Controller");
+	if (ImGui::Begin("Particle Debug")) {
+		// 特定のグループ（例: "CircleParticle"）のビルボード設定をいじる
+		// ※実際には全グループをループで回して表示するとより便利です
+		auto& groups = ParticleManager::GetInstance()->GetGroups(); // GetGroups()を自作して参照を返す
+		for (auto& [name, group] : groups) {
+			ImGui::Checkbox((name + " Billboard").c_str(), &group.useBillboard);
+		}
+	}
 
-	// ---------------------------------------------------
-	// 再生・停止コントロール（ボタン）
-	// ---------------------------------------------------
-	// セッターの確認には音を鳴らす必要があるので、ボタンも作っておくと便利です
-	if (ImGui::Button("Play")) {
-		AudioManager::PlayAudio(se_); // ループさせたい場合は PlayAudio(true)
+	ImGui::End();
+
+	ImGui::Begin("Object Settings"); // 新しいウィンドウを作る場合
+
+	// 1. 現在のスケールを取得
+	Vector3 scale = sphere_->GetScale();
+
+	// 2. ImGuiでX, Y, Zの値を操作する
+	// （0.01fは変化スピード。0.1f 〜 10.0f の間で制限をかけています）
+	if (ImGui::DragFloat3("Sphere Scale", &scale.x, 0.01f, 0.1f, 10.0f)) {
+		// 3. スライダーが動かされて値が変更されたら、Object3dにセットし直す
+		sphere_->SetScale(scale);
 	}
-	ImGui::SameLine(); // 次のUIを右に並べる
-	if (ImGui::Button("Pause")) {
-		AudioManager::PauseAudio(se_);
+
+	ImGui::End();
+
+	// ImGuiのウィンドウを作成
+	ImGui::Begin("Light Settings");
+
+	// LightManagerのインスタンスを取得
+	LightManager* lightManager = LightManager::GetInstance();
+
+	// --------------------------------------------------
+	// ① Directional Light の設定
+	// --------------------------------------------------
+	if (ImGui::TreeNode("Directional Light")) {
+		Vector4 color = lightManager->GetDirectionalLightColor();
+		Vector3 direction = lightManager->GetDirectionalLightDirection();
+		float intensity = lightManager->GetDirectionalLightIntensity();
+
+		ImGui::ColorEdit4("Color", &color.x);
+		ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
+		ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f);
+
+		lightManager->SetDirectionalLightColor(color);
+		lightManager->SetDirectionalLightDirection(direction);
+		lightManager->SetDirectionalLightIntensity(intensity);
+
+		ImGui::TreePop(); // TreeNodeを閉じる
 	}
-	ImGui::SameLine();
-	if (ImGui::Button("Resume")) {
-		AudioManager::ResumeAudio(se_);
+
+	// --------------------------------------------------
+	// ② Point Light の設定 (追加部分)
+	// --------------------------------------------------
+	if (ImGui::TreeNode("Point Light")) {
+		Vector4 pointColor = lightManager->GetPointLightColor();
+		Vector3 position = lightManager->GetPointLightPosition();
+		float pointIntensity = lightManager->GetPointLightIntensity();
+		float pointRadius = lightManager->GetPointLightRadius();
+		float pointDecay = lightManager->GetPointLightDecay();
+
+		ImGui::ColorEdit4("Color", &pointColor.x);
+		// 位置は空間を自由に動かせるように下限・上限なしで設定
+		ImGui::DragFloat3("Position", &position.x, 0.1f);
+		ImGui::DragFloat("Intensity", &pointIntensity, 0.01f, 0.0f, 10.0f);
+		ImGui::DragFloat("Radius", &pointRadius, 0.1f, 0.0f, 10.0f); 
+		ImGui::DragFloat("Decay", &pointDecay, 0.1f, 0.0f, 10.0f);
+
+		lightManager->SetPointLightColor(pointColor);
+		lightManager->SetPointLightPosition(position);
+		lightManager->SetPointLightIntensity(pointIntensity);
+		lightManager->SetPointLightRadius(pointRadius);
+		lightManager->SetPointLightDecay(pointDecay);
+
+		ImGui::TreePop(); // TreeNodeを閉じる
 	}
-	ImGui::SameLine();
-	if (ImGui::Button("Stop")) {
-		AudioManager::StopAudio(se_);
+
+	// ==========================================
+	// ここから追加：ライティングの種類の変更
+	// ==========================================
+	ImGui::Separator(); // 区切り線
+
+	// プルダウンに表示する名前の配列（LightingTypeの順番に合わせる）
+	const char* lightingTypeNames[] = {"None", "Lambert", "Half Lambert", "Phong", "Blinn-Phong"};
+
+	// 現在選択されている種類のインデックス（初期値はModelの初期化に合わせておく）
+	static int currentLightingType = static_cast<int>(LightingType::kHalfLambert);
+
+	// コンボボックスで変更があった場合、Object3d に反映させる
+	if (ImGui::Combo("Lighting Type", &currentLightingType, lightingTypeNames, IM_ARRAYSIZE(lightingTypeNames))) {
+		sphere_->SetLightingType(static_cast<LightingType>(currentLightingType));
 	}
-	ImGui::SameLine();
-	if (ImGui::Button("One Shot")) {
-		AudioManager::PlayOneShot(se_);
-	}
+	// ==========================================
 
 	ImGui::End();
 

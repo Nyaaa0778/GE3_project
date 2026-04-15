@@ -12,6 +12,8 @@
 #include <string>
 #include <wrl.h>
 
+#include "LightingType.h"
+
 class Model;
 class Camera;
 class Object3dRenderer;
@@ -51,15 +53,17 @@ public:
 	const Vector4& GetColor() const;
 	// BlendMode
 	Object3dRenderer::BlendMode GetBlendMode() const { return blendMode_; }
+	// ライティングの種類
+	void SetLightingType(LightingType type);
 
-	// ライトの色
-	const Vector4& GetLightColor() const { return directionalLightData_->color; }
-	// ライトの向き
-	const Vector3& GetLightDirection() const {
-		return directionalLightData_->direction;
-	}
-	// ライトの輝度
-	float GetLightIntensity() const { return directionalLightData_->intensity; }
+	//// ライトの色
+	//const Vector4& GetLightColor() const { return directionalLightData_->color; }
+	//// ライトの向き
+	//const Vector3& GetLightDirection() const {
+	//	return directionalLightData_->direction;
+	//}
+	//// ライトの輝度
+	//float GetLightIntensity() const { return directionalLightData_->intensity; }
 
 	//================================================================================
 	// Setter
@@ -80,18 +84,18 @@ public:
 	// モデル
 	void SetModel(const std::string& modelName);
 
-	// ライトの色
-	void SetLightColor(const Vector4& color) {
-		directionalLightData_->color = color;
-	}
-	// ライトの向き
-	void SetLightDirection(const Vector3& direction) {
-		directionalLightData_->direction = direction;
-	}
-	// ライトの輝度
-	void SetLightIntensity(float intensity) {
-		directionalLightData_->intensity = intensity;
-	}
+	//// ライトの色
+	//void SetLightColor(const Vector4& color) {
+	//	directionalLightData_->color = color;
+	//}
+	//// ライトの向き
+	//void SetLightDirection(const Vector3& direction) {
+	//	directionalLightData_->direction = direction;
+	//}
+	//// ライトの輝度
+	//void SetLightIntensity(float intensity) {
+	//	directionalLightData_->intensity = intensity;
+	//}
 
 	// カメラ
 	void SetCamera(Camera* camera) { camera_ = camera; }
@@ -105,14 +109,15 @@ private:
 	struct TransformationMatrix {
 		Matrix4x4 WVP;
 		Matrix4x4 World;
+		Matrix4x4 WorldInverseTranspose;
 	};
 
-	// 平行光源
-	struct DirectionalLight {
-		Vector4 color;     // ライトの色
-		Vector3 direction; // ライトの向き
-		float intensity;   // 輝度
-	};
+	//// 平行光源
+	//struct DirectionalLight {
+	//	Vector4 color;     // ライトの色
+	//	Vector3 direction; // ライトの向き
+	//	float intensity;   // 輝度
+	//};
 
 private:
 	//================================================================================
@@ -146,10 +151,10 @@ private:
 	// バッファリソース内のデータを指すポインタ
 	TransformationMatrix* transformationMatrixData_ = nullptr;
 
-	// バッファリソース
-	ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr;
-	// バッファリソースないのデータを指すポインタ
-	DirectionalLight* directionalLightData_ = nullptr;
+	//// バッファリソース
+	//ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr;
+	//// バッファリソースないのデータを指すポインタ
+	//DirectionalLight* directionalLightData_ = nullptr;
 
 	//================================================================================
 	// Transform
@@ -176,8 +181,8 @@ private:
 	/// 座標変換行列データの作成
 	/// </summary>
 	void CreateTransformationMatrixData();
-	/// <summary>
+	/*/// <summary>
 	/// 平行光源データの作成
 	/// </summary>
-	void CreateDirectionalLightData();
+	void CreateDirectionalLightData();*/
 };

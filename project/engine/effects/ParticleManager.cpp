@@ -114,10 +114,19 @@ void ParticleManager::Update(const Matrix4x4& viewMatrix,
 			// ---- 経過時間を加算 ----
 			p.currentTime += kDeltaTime;
 
-			// ---- World行列を計算（ビルボード固定）----
+			// ---- World行列を計算 ----
+			Matrix4x4 worldMatrix;
 			const Matrix4x4 S = MakeScaleMatrix(p.transform.scale);
 			const Matrix4x4 T = MakeTranslateMatrix(p.transform.translation);
-			const Matrix4x4 worldMatrix = Multiply(Multiply(S, billboardMatrix), T);
+
+			if (group.useBillboard) {
+				// 今までのビルボード処理
+				worldMatrix = Multiply(Multiply(S, billboardMatrix), T);
+			} else {
+				// 通常の回転を使用
+				const Matrix4x4 R = MakeRotateMatrix(p.transform.rotation);
+				worldMatrix = Multiply(Multiply(S, R), T);
+			}
 
 			// ---- WVPを合成 ----
 			const Matrix4x4 wvp = Multiply(worldMatrix, vp);

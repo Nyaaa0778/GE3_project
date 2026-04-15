@@ -1,6 +1,7 @@
 #include "Camera.h"
+
 #include "MathUtility.h"
-#include "WinApp.h"
+#include "DirectXCommon.h"
 
 using namespace MathUtility;
 
@@ -9,8 +10,8 @@ Camera::Camera()
 		{0.0f, 0.0f, 0.0f},
 		{0.0f, 0.0f, 0.0f}}), // transform
 	fovY_(0.45f),                     // 水平方向視野角
-	aspectRatio_(static_cast<float>(WinApp::kClientWidth) /
-		static_cast<float>(WinApp::kClientHeight)), // アスペクト比
+	aspectRatio_(static_cast<float>(DirectXCommon::GetInstance()->GetClientWidth()) /
+		static_cast<float>(DirectXCommon::GetInstance()->GetClientHeight())), // アスペクト比
 	nearClip_(0.1f),  // ニアクリップ距離
 	farClip_(100.0f), // ファークリップ距離
 	worldMatrix_(MakeAffineMatrix(transform_.scale, transform_.rotation,
@@ -30,4 +31,19 @@ void Camera::Update() {
 	projectionMatrix_ =
 		MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
 	viewProjectionMatrix_ = viewMatrix_ * projectionMatrix_;
+
+	if (cameraData_) {
+		cameraData_->worldPosition = transform_.translation;
+	}
+}
+
+void Camera::CreateConstantBuffer() {
+	// 定数バッファの作成
+	cameraBuffer_ = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(CameraForGPU));
+
+	// マッピングしてC++から書き込めるようにする
+	cameraBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&cameraData_));
+
+	// 初期値を書き込む
+	cameraData_->worldPosition = transform_.translation;
 }

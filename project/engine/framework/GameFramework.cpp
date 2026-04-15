@@ -11,13 +11,9 @@
 #include "AudioManager.h"
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
+#include "ParticleManager.h"
 #include "WinApp.h"
-
-#ifdef USE_IMGUI
-#include "../externals/imgui/imgui.h"
-#include "../externals/imgui/imgui_impl_dx12.h"
-#include "../externals/imgui/imgui_impl_win32.h"
-#endif
+#include "LightManager.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -124,12 +120,16 @@ void GameFramework::Initialize() {
 	camera_ = std::make_unique<Camera>();
 	camera_->SetRotate({0.0f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 0.0f, -10.0f});
+	camera_->CreateConstantBuffer();
 
 	// SpriteRenderer の初期化
 	SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// ModelCommon の初期化
 	ModelCommon::GetInstance()->Initialize(DirectXCommon::GetInstance());
+
+	// LightManager の初期化
+	LightManager::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// Object3dRenderer の初期化
 	Object3dRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
@@ -142,6 +142,9 @@ void GameFramework::Initialize() {
 	// TextureManafer の初期化
 	TextureManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
+
+	// ParticleManager の初期化
+	ParticleManager::GetInstance()->Initialize(DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
 
 	// Input の初期化
 	Input::GetInstance()->Initialize(WinApp::GetInstance());

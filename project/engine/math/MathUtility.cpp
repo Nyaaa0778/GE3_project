@@ -336,6 +336,21 @@ namespace MathUtility {
 
 		return result;
 	}
+	/// <summary>
+	/// 転置行列
+	/// </summary>
+	/// <param name="m">転置行列を求めたい元の行列</param>
+	/// <returns>matrixの転置行列</returns>
+	Matrix4x4 MakeTransposeMatrix(const Matrix4x4& m) {
+		Matrix4x4 result;
+
+		result.m[0][0] = m.m[0][0]; result.m[0][1] = m.m[1][0]; result.m[0][2] = m.m[2][0]; result.m[0][3] = m.m[3][0];
+		result.m[1][0] = m.m[0][1]; result.m[1][1] = m.m[1][1]; result.m[1][2] = m.m[2][1]; result.m[1][3] = m.m[3][1];
+		result.m[2][0] = m.m[0][2]; result.m[2][1] = m.m[1][2]; result.m[2][2] = m.m[2][2]; result.m[2][3] = m.m[3][2];
+		result.m[3][0] = m.m[0][3]; result.m[3][1] = m.m[1][3]; result.m[3][2] = m.m[2][3]; result.m[3][3] = m.m[3][3];
+
+		return result;
+	}
 
 	/// <summary>
 	/// 拡縮行列
@@ -409,6 +424,18 @@ namespace MathUtility {
 		result.m[3][2] = translate.z;
 
 		return result;
+	}
+	/// <summary>
+	/// 3軸の回転行列を合成
+	/// </summary>
+	/// <param name="rotate">各軸の回転角(ラジアン)</param>
+	/// <returns>XYZ順で合成された回転行列</returns>
+	Matrix4x4 MathUtility::MakeRotateMatrix(const Vector3& rotate) {
+		Matrix4x4 rotateX = MakeRotateXMatrix(rotate.x);
+		Matrix4x4 rotateY = MakeRotateYMatrix(rotate.y);
+		Matrix4x4 rotateZ = MakeRotateZMatrix(rotate.z);
+
+		return Multiply(rotateZ, Multiply(rotateX, rotateY));
 	}
 	/// <summary>
 	/// アフィン変換行列
