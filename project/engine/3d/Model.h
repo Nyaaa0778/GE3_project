@@ -10,6 +10,8 @@
 #include <vector>
 #include <wrl.h>
 
+#include "LightingType.h"
+
 class ModelCommon;
 
 class Model {
@@ -39,9 +41,10 @@ private:
 	// マテリアル
 	struct Material {
 		Vector4 color;
-		int32_t enableLighting;
+		int32_t lightingType;
 		float padding[3];
 		Matrix4x4 uvTransform;
+		float shininess;
 	};
 
 	// マテリアルデータ
@@ -94,6 +97,8 @@ public:
 
 	// 色
 	void SetColor(const Vector4& color) { materialData_->color = color; }
+	// ライティングの種類
+	void SetLightingType(LightingType type) { materialData_->lightingType = static_cast<int32_t>(type); }
 
 private:
 	//================================================================================

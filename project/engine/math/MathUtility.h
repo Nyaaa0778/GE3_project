@@ -95,6 +95,12 @@ namespace MathUtility {
 	/// <param name="m">逆行列を求めたい元の行列</param>
 	/// <returns>matrixの逆行列</returns>
 	Matrix4x4 MakeInverseMatrix(const Matrix4x4& matrix);
+	/// <summary>
+	/// 転置行列
+	/// </summary>
+	/// <param name="m">転置行列を求めたい元の行列</param>
+	/// <returns>matrixの転置行列</returns>
+	Matrix4x4 MakeTransposeMatrix(const Matrix4x4& m);
 
 	/// <summary>
 	/// 拡縮行列
@@ -126,6 +132,12 @@ namespace MathUtility {
 	/// <param name="translate">各軸方向の移動量</param>
 	/// <returns>translateに基づいた平行移動行列</returns>
 	Matrix4x4 MakeTranslateMatrix(const Vector3& translate);
+	/// <summary>
+	/// 3軸の回転行列を合成
+	/// </summary>
+	/// <param name="rotate">各軸の回転角(ラジアン)</param>
+	/// <returns>XYZ順で合成された回転行列</returns>
+	Matrix4x4 MakeRotateMatrix(const Vector3& rotate);
 	/// <summary>
 	/// アフィン変換行列
 	/// </summary>

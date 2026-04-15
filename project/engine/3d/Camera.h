@@ -2,6 +2,8 @@
 
 #include <Matrix4x4.h>
 #include <Transform.h>
+#include <d3d12.h>
+#include <wrl.h>
 
 class Camera {
 public:
@@ -18,6 +20,19 @@ public:
 	/// 更新
 	/// </summary>
 	void Update();
+
+public:
+	struct CameraForGPU {
+		Vector3 worldPosition;
+	};
+
+	// 定数バッファ作成関数
+	void CreateConstantBuffer();
+
+	// GPUアドレス取得用 Getter
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferVideoAddress() const {
+		return cameraBuffer_->GetGPUVirtualAddress();
+	}
 
 private:
 	//================================================================================
@@ -39,6 +54,10 @@ private:
 	float farClip_ = 100.0f;
 
 	Matrix4x4 viewProjectionMatrix_;
+
+	// クラスメンバとしてバッファやデータポインタを持つ
+	Microsoft::WRL::ComPtr<ID3D12Resource> cameraBuffer_;
+	CameraForGPU* cameraData_ = nullptr;
 
 public:
 	//================================================================================

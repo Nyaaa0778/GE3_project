@@ -5,6 +5,7 @@
 #include "Model.h"
 #include "ModelManager.h"
 #include "TextureManager.h"
+#include "LightManager.h"
 
 using namespace MathUtility;
 
@@ -25,8 +26,8 @@ void Object3d::Initialize(const std::string& modelName) {
 
 	// 座標変換行列データの作成
 	CreateTransformationMatrixData();
-	// 平行光源データの作成
-	CreateDirectionalLightData();
+	//// 平行光源データの作成
+	//CreateDirectionalLightData();
 
 	// Transform変数を作成
 	transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
@@ -58,6 +59,8 @@ void Object3d::Update() {
 
 	transformationMatrixData_->WVP = worldViewProjectionMatrix;
 	transformationMatrixData_->World = worldMatrix;
+
+	transformationMatrixData_->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldMatrix));
 }
 /// <summary>
 /// 描画
@@ -72,11 +75,22 @@ void Object3d::Draw() {
 		->SetGraphicsRootConstantBufferView(
 			1, transformationMatrixBuffer_->GetGPUVirtualAddress());
 
+	object3dRenderer_->GetDxCommon()
+		->GetCommandList()
+		->SetGraphicsRootConstantBufferView(
+			2, camera_->GetConstantBufferVideoAddress());
+
 	// 平行光源CBufferの場所を設定
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			3, directionalLightBuffer_->GetGPUVirtualAddress());
+			3, LightManager::GetInstance()->GetConstantBufferVideoAddress());
+
+	//	点光源CBufferの場所を設定
+	object3dRenderer_->GetDxCommon()
+		->GetCommandList()
+		->SetGraphicsRootConstantBufferView(
+		5, LightManager::GetInstance()->GetPointLightConstantBufferVideoAddress());
 
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_) {
@@ -104,25 +118,27 @@ void Object3d::CreateTransformationMatrixData() {
 	// 単位行列を書き込んでおく
 	transformationMatrixData_->WVP = MakeIdentityMatrix();
 	transformationMatrixData_->World = MakeIdentityMatrix();
-}
-/// <summary>
-/// 平行光源データの作成
-/// </summary>
-void Object3d::CreateDirectionalLightData() {
-	// 平行光源リソースを作成
-	directionalLightBuffer_ =
-		object3dRenderer_->GetDxCommon()->CreateBufferResource(
-			sizeof(DirectionalLight));
 
-	// directionalLightResourceに平行光源データを書き込む
-	directionalLightBuffer_->Map(
-		0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
-
-	// 平行光源データの初期値を書き込む
-	directionalLightData_->color = {1.0f, 1.0f, 1.0f, 1.0f};
-	directionalLightData_->direction = {0.0f, -1.0f, 0.5f};
-	directionalLightData_->intensity = 1.5f;
+	transformationMatrixData_->WorldInverseTranspose = MakeIdentityMatrix();
 }
+///// <summary>
+///// 平行光源データの作成
+///// </summary>
+//void Object3d::CreateDirectionalLightData() {
+//	// 平行光源リソースを作成
+//	directionalLightBuffer_ =
+//		object3dRenderer_->GetDxCommon()->CreateBufferResource(
+//			sizeof(DirectionalLight));
+//
+//	// directionalLightResourceに平行光源データを書き込む
+//	directionalLightBuffer_->Map(
+//		0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
+//
+//	// 平行光源データの初期値を書き込む
+//	directionalLightData_->color = {1.0f, 1.0f, 1.0f, 1.0f};
+//	directionalLightData_->direction = {0.0f, -1.0f, 0.5f};
+//	directionalLightData_->intensity = 1.5f;
+//}
 
 //================================================================================
 // Getter
@@ -146,4 +162,9 @@ void Object3d::SetModel(const std::string& modelName) {
 	// モデルの検索
 	model_ = modelManager->FindModel(modelName);
 	assert(model_);
+}
+
+// ライティングの種類
+void Object3d::SetLightingType(LightingType type) {
+	return model_->SetLightingType(type);
 }

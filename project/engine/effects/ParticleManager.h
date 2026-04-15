@@ -175,6 +175,9 @@ private:
 
 		// instancingResource を Map したポインタ
 		ParticleForGPU* instancingMappedPtr = nullptr;
+
+		// ビルボードを使うか？
+		bool useBillboard = true;
 	};
 
 	// BlendMode
@@ -189,6 +192,13 @@ private:
 	};
 
 	BlendMode blendMode_ = BlendMode::kAdd;
+
+public:
+	/// <summary>
+	/// パーティクルグループのコンテナへの参照を取得
+	/// (ImGui等のデバッグ操作用)
+	/// </summary>
+	std::unordered_map<std::string, ParticleGroup>& GetGroups() { return particleGroups_; }
 
 private:
 	//================================================================================

@@ -58,7 +58,7 @@ void Model::Draw() {
 
 	// SRVのDescriptorTableの先頭を設定
 	modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(
-		2, TextureManager::GetInstance()->GetSrvHandleGPU(
+		4, TextureManager::GetInstance()->GetSrvHandleGPU(
 			modelData_.material.textureFilePath));
 
 	// 描画
@@ -217,6 +217,7 @@ void Model::CreateMaterialData() {
 
 	// マテリアルデータの初期値を書き込む
 	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	materialData_->enableLighting = true;
+	materialData_->lightingType = static_cast<int32_t>(LightingType::kBlinnPhong);
 	materialData_->uvTransform = MakeIdentityMatrix();
+	materialData_->shininess = 70.0f;
 }

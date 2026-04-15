@@ -1,13 +1,6 @@
 #include "GamePlayScene.h"
 
-#include "Object3d.h"
-#include "Object3dRenderer.h"
-
-#ifdef USE_IMGUI
-#include "../externals/imgui/imgui.h"
-#include "../externals/imgui/imgui_impl_dx12.h"
-#include "../externals/imgui/imgui_impl_win32.h"
-#endif
+#include <MyEngine.h>
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -84,14 +77,6 @@ void GamePlayScene::Update() {
 
 			// Object3d 経由で Model に反映
 			obj_->SetColor(newColor);
-		}
-	}
-
-	{
-		int mode = static_cast<int>(obj_->GetBlendMode());
-		if (ImGui::Combo("BlendMode", &mode,
-			"None\0Normal\0Add\0Subtract\0Multiply\0Screen")) {
-			obj_->SetBlendMode(static_cast<Object3dRenderer::BlendMode>(mode));
 		}
 	}
 
