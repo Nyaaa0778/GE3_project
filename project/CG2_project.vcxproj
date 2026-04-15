@@ -111,7 +111,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,6 +120,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\generated\Outputs\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalOptions>/ignore:4865 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
@@ -141,7 +142,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -151,6 +152,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <LinkTimeCodeGeneration />
       <AdditionalDependencies>imgui.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\generated\Outputs\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalOptions>/ignore:4865 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
