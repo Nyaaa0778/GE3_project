@@ -2,10 +2,17 @@
 
 #include <d3d12.h>
 #include <wrl.h>
+
 #include "Vector3.h"
 #include "Vector4.h"
 
 class DirectXCommon;
+
+enum class LightSourceType {
+	kNone = 0,   // 無効
+	kPoint = 1,  // 点光源
+	kSpot = 2,   // スポットライト
+};
 
 //================================================================================
 // LightManager クラス
@@ -22,11 +29,26 @@ public:
 	};
 
 	struct PointLight {
-		Vector4 color;    // ライトの色
-		Vector3 position; // ライトの位置
-		float intensity;  // 輝度
-		float radius;     // ライトが届く最大距離
-		float decay;      // 減衰率
+		Vector4 color;     // ライトの色
+		Vector3 position;  // ライトの位置
+		float intensity;   // 輝度
+		float radius;      // ライトが届く最大距離
+		float decay;       // 減衰率
+		int lightType;
+		float padding;
+	};
+
+	struct SpotLight {
+		Vector4 color;     // ライトの色
+		Vector3 position;  // ライトの位置
+		float intensity;   // 輝度
+		Vector3 direction; // スポットライトの方向
+		float distance;    // ライトの届く最大距離
+		float decay;       // 減衰率
+		float cosAngle;    // スポットライトの余弦
+		float cosFalloffStart;
+		int lightType;
+		float padding;
 	};
 
 	//================================================================================
@@ -77,6 +99,30 @@ public:
 	void SetPointLightRadius(float radius) { pointLightData_->radius = radius; }
 	void SetPointLightDecay(float decay) { pointLightData_->decay = decay; }
 
+	//================================================================================
+	// SpotLight の取得・設定
+	//================================================================================
+	// GPUアドレスの取得
+	D3D12_GPU_VIRTUAL_ADDRESS GetSpotLightConstantBufferVideoAddress() const { return spotLightBuffer_->GetGPUVirtualAddress(); }
+
+	// 各種Getter
+	const Vector4& GetSpotLightColor() const { return spotLightData_->color; }
+	const Vector3& GetSpotLightPosition() const { return spotLightData_->position; }
+	float GetSpotLightIntensity() const { return spotLightData_->intensity; }
+	float GetSpotLightDistance()const { return spotLightData_->distance; }
+	float GetSpotLightDecay()const { return spotLightData_->decay; }
+	float GetSpotLightCosAngle()const { return spotLightData_->cosAngle; }
+	float GetSpotLightCosFalloffStart()const { return spotLightData_->cosFalloffStart; }
+
+	// 各種Setter
+	void SetSpotLightColor(const Vector4& color) { spotLightData_->color = color; }
+	void SetSpotLightPosition(const Vector3& position) { spotLightData_->position = position; }
+	void SetSpotLightIntensity(float intensity) { spotLightData_->intensity = intensity; }
+	void SetSpotLightDistance(float distance) { spotLightData_->distance = distance; }
+	void SetSpotLightDecay(float decay) { spotLightData_->decay = decay; }
+	void SetSpotLightCosAngle(float cosAngle) { spotLightData_->cosAngle = cosAngle; }
+	void SetSpotLightCosFalloffStart(float cosFalloffStart);
+
 private:
 	//================================================================================
 	// プライベート関数 (シングルトン・肥大化防止用)
@@ -91,6 +137,7 @@ private:
 	// 初期化処理の分割
 	void InitializeDirectionalLight(DirectXCommon* dxCommon);
 	void InitializePointLight(DirectXCommon* dxCommon);
+	void InitializeSpotLight(DirectXCommon* dxCommon);
 
 	//================================================================================
 	// メンバ変数
@@ -102,4 +149,8 @@ private:
 	// PointLight用
 	Microsoft::WRL::ComPtr<ID3D12Resource> pointLightBuffer_;       // 定数バッファ
 	PointLight* pointLightData_ = nullptr;                          // マップ用ポインタ
+
+	// SpotLight用
+	Microsoft::WRL::ComPtr<ID3D12Resource> spotLightBuffer_;
+	SpotLight* spotLightData_ = nullptr;
 };

@@ -69,7 +69,7 @@ void Object3dRenderer::CreateRootSignature() {
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	D3D12_ROOT_PARAMETER rootParameters[6] = {};
+	D3D12_ROOT_PARAMETER rootParameters[7] = {};
 
 	// 0: Material (PS b0)
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -107,6 +107,11 @@ void Object3dRenderer::CreateRootSignature() {
 	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファ
 	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
 	rootParameters[5].Descriptor.ShaderRegister = 3; // レジスタ番号 (b3)
+
+	// 6: SpotLight
+	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;    // 定数バッファ
+	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
+	rootParameters[6].Descriptor.ShaderRegister = 4;                    // b4 レジスタ
 
 	descriptionRootSignature.pParameters =
 		rootParameters; // ルートパラメータ配列へのポインタ

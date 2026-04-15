@@ -109,7 +109,7 @@ void TitleScene::Draw() {
 }
 
 void TitleScene::Finalize() {
-	
+
 }
 
 void TitleScene::UpdateImGui() {
@@ -256,7 +256,7 @@ void TitleScene::UpdateImGui() {
 		// 位置は空間を自由に動かせるように下限・上限なしで設定
 		ImGui::DragFloat3("Position", &position.x, 0.1f);
 		ImGui::DragFloat("Intensity", &pointIntensity, 0.01f, 0.0f, 10.0f);
-		ImGui::DragFloat("Radius", &pointRadius, 0.1f, 0.0f, 10.0f); 
+		ImGui::DragFloat("Radius", &pointRadius, 0.1f, 0.0f, 10.0f);
 		ImGui::DragFloat("Decay", &pointDecay, 0.1f, 0.0f, 10.0f);
 
 		lightManager->SetPointLightColor(pointColor);
@@ -264,6 +264,32 @@ void TitleScene::UpdateImGui() {
 		lightManager->SetPointLightIntensity(pointIntensity);
 		lightManager->SetPointLightRadius(pointRadius);
 		lightManager->SetPointLightDecay(pointDecay);
+
+		ImGui::TreePop(); // TreeNodeを閉じる
+	}
+
+	if (ImGui::TreeNode("Spot Light")) {
+		Vector4 spotColor = lightManager->GetSpotLightColor();
+		Vector3 position = lightManager->GetSpotLightPosition();
+		float spotIntensity = lightManager->GetSpotLightIntensity();
+		float spotRadius = lightManager->GetSpotLightDistance();
+		float spotDecay = lightManager->GetSpotLightDecay();
+		float spotCosFalloffStart = lightManager->GetSpotLightCosFalloffStart();
+
+		ImGui::ColorEdit4("Color", &spotColor.x);
+		// 位置は空間を自由に動かせるように下限・上限なしで設定
+		ImGui::DragFloat3("Position", &position.x, 0.1f);
+		ImGui::DragFloat("Intensity", &spotIntensity, 0.01f, 0.0f, 10.0f);
+		ImGui::DragFloat("Radius", &spotRadius, 0.1f, 0.0f, 10.0f);
+		ImGui::DragFloat("Decay", &spotDecay, 0.1f, 0.0f, 10.0f); 
+		ImGui::DragFloat("cosFalloffStart", &spotCosFalloffStart, 0.01f, 0.0f, 1.0f);
+
+		lightManager->SetSpotLightColor(spotColor);
+		lightManager->SetSpotLightPosition(position);
+		lightManager->SetSpotLightIntensity(spotIntensity);
+		lightManager->SetSpotLightDistance(spotRadius);
+		lightManager->SetSpotLightDecay(spotDecay);
+		lightManager->SetSpotLightCosFalloffStart(spotCosFalloffStart);
 
 		ImGui::TreePop(); // TreeNodeを閉じる
 	}

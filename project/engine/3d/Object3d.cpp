@@ -92,6 +92,12 @@ void Object3d::Draw() {
 		->SetGraphicsRootConstantBufferView(
 		5, LightManager::GetInstance()->GetPointLightConstantBufferVideoAddress());
 
+	// スポットライトCBufferの場所を特定
+	object3dRenderer_->GetDxCommon()
+		->GetCommandList()
+		->SetGraphicsRootConstantBufferView(
+		6, LightManager::GetInstance()->GetSpotLightConstantBufferVideoAddress());
+
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_) {
 		model_->Draw();
