@@ -17,12 +17,13 @@ using namespace MathUtility;
 /// 初期化
 /// </summary>
 /// <param name="modelName">モデル名</param>
-void Object3d::Initialize(const std::string& modelName) {
+	/// /// <param name="extension">拡張子 (デフォルトは "obj")</param>
+void Object3d::Initialize(const std::string& modelName, const std::string& extension) {
 
 	object3dRenderer_ = Object3dRenderer::GetInstance();
 
 	// モデルをセット
-	SetModel(modelName);
+	SetModel(modelName, extension);
 
 	// 座標変換行列データの作成
 	CreateTransformationMatrixData();
@@ -57,8 +58,8 @@ void Object3d::Update() {
 		worldViewProjectionMatrix = worldMatrix;
 	}
 
-	transformationMatrixData_->WVP = worldViewProjectionMatrix;
-	transformationMatrixData_->World = worldMatrix;
+	transformationMatrixData_->WVP = model_->GetModelData().rootNode.localMatrix * worldViewProjectionMatrix;
+	transformationMatrixData_->World = model_->GetModelData().rootNode.localMatrix * worldMatrix;
 
 	transformationMatrixData_->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldMatrix));
 }
@@ -153,14 +154,14 @@ const Vector4& Object3d::GetColor() const { return model_->GetColor(); }
 // 色
 void Object3d::SetColor(const Vector4& color) { model_->SetColor(color); }
 // モデル
-void Object3d::SetModel(const std::string& modelName) {
+void Object3d::SetModel(const std::string& modelName, const std::string& extension) {
 	auto modelManager = ModelManager::GetInstance();
 
-	// モデルファイルを読み込む
-	modelManager->LoadModel(modelName);
-	// モデルの検索
+	// ★ ModelManager::LoadModel に extension を渡す
+	modelManager->LoadModel(modelName, extension);
+
+	// 読み込んだモデルを検索してセット
 	model_ = modelManager->FindModel(modelName);
-	assert(model_);
 }
 
 // ライティングの種類

@@ -25,8 +25,9 @@ public:
 
 private:
 	// モデル
-	std::unique_ptr<Object3d> sphere_;
-	std::unique_ptr<Object3d> terrain_;
+	/*std::unique_ptr<Object3d> sphere_;
+	std::unique_ptr<Object3d> terrain_;*/
+	std::unique_ptr<Object3d> plane_;
 
 	// スプライト
 	std::unique_ptr<Sprite> sprite_;

@@ -53,11 +53,11 @@ public:
 	// Modelの読み込み
 	//================================================================================
 
-	/// <summary>
 	/// モデルファイルの読み込み
 	/// </summary>
-	/// <param name="ModelName">モデル名</param>
-	void LoadModel(const std::string& modelName);
+	/// <param name="modelName">モデル名</param>
+	/// <param name="extension">拡張子（デフォルトは "obj"）</param>
+	void LoadModel(const std::string& modelName, const std::string& extension = "obj");
 
 public:
 	//================================================================================

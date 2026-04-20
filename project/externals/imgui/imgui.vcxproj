@@ -136,6 +136,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <Optimization>
       </Optimization>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>

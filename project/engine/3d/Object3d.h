@@ -28,7 +28,8 @@ public:
 	/// 初期化
 	/// </summary>
 	/// <param name="filePath">モデルファイルのパス</param>
-	void Initialize(const std::string& filePath);
+	/// /// <param name="extension">拡張子 (デフォルトは "obj")</param>
+	void Initialize(const std::string& filePath, const std::string& extension = "obj");
 	/// <summary>
 	/// 更新
 	/// </summary>
@@ -82,7 +83,7 @@ public:
 		blendMode_ = blendMode;
 	}
 	// モデル
-	void SetModel(const std::string& modelName);
+	void SetModel(const std::string& modelName, const std::string& extension = "obj");
 
 	//// ライトの色
 	//void SetLightColor(const Vector4& color) {

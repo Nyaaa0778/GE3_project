@@ -11,6 +11,7 @@
 #include <wrl.h>
 
 #include "LightingType.h"
+#include <assimp/scene.h>
 
 class ModelCommon;
 
@@ -53,10 +54,18 @@ private:
 		uint32_t textureIndex = 0;
 	};
 
+	// ノード
+	struct Node {
+		Matrix4x4 localMatrix;
+		std::string name;
+		std::vector<Node> children;
+	};
+
 	// モデルデータ
 	struct ModelData {
 		std::vector<VertexData> vertices;
 		MaterialData material;
+		Node rootNode;
 	};
 
 public:
@@ -80,7 +89,7 @@ public:
 	/// <param
 	/// name="directoryPath">.objファイルが置いてあるディレクトリのパス</param>
 	/// <param name="filename">読み込む.objファイル名</param>
-	void LoadObjFile(const std::string& directoryPath,
+	void LoadModelFile(const std::string& directoryPath,
 		const std::string& filename);
 
 public:
@@ -90,6 +99,8 @@ public:
 
 	// 色
 	const Vector4& GetColor() const { return materialData_->color; }
+
+	const ModelData& GetModelData() const { return modelData_; }
 
 	//================================================================================
 	// Setter
@@ -144,6 +155,9 @@ private:
 	ModelData modelData_;
 
 private:
+
+	Node ReadNode(aiNode* node);
+
 	//================================================================================
 	// データ作成処理
 	//================================================================================

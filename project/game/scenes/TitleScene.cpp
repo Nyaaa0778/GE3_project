@@ -13,14 +13,19 @@ void TitleScene::Initialize() {
 	camera_->SetTranslate({0.0f, 8.0f, -15.0f});
 	camera_->CreateConstantBuffer();
 
-	// object3dの初期化
-	sphere_ = std::make_unique<Object3d>();
-	sphere_->Initialize("sphere");
-	sphere_->SetCamera(camera_.get());
+	//// object3dの初期化
+	//sphere_ = std::make_unique<Object3d>();
+	//sphere_->Initialize("sphere");
+	//sphere_->SetCamera(camera_.get());
 
-	terrain_ = std::make_unique<Object3d>();
-	terrain_->Initialize("terrain");
-	terrain_->SetCamera(camera_.get());
+	//terrain_ = std::make_unique<Object3d>();
+	//terrain_->Initialize("terrain");
+	//terrain_->SetRotation({0.0f, -1.5708f, 0.0f});
+	//terrain_->SetCamera(camera_.get());
+
+	plane_ = std::make_unique<Object3d>();
+	plane_->Initialize("plane", "gltf");
+	plane_->SetCamera(camera_.get());
 
 	// spriteの初期化
 	sprite_ = std::make_unique<Sprite>();
@@ -85,14 +90,16 @@ void TitleScene::Update() {
 		input->SetShake(1.0f, 1.0f, 3.0f); // 1秒間ドカン！と震えて勝手に止まる
 	}
 	// --- 3. スティック移動処理 ---
-	Input::Stick lStick = input->GetLeftStick();
+	/*Input::Stick lStick = input->GetLeftStick();
 	Vector3 pos = sphere_->GetPosition();
 	pos.x += lStick.x * speed;
 	pos.y += lStick.y * speed;
-	sphere_->SetPosition(pos);
+	sphere_->SetPosition(pos);*/
 
-	sphere_->Update();
-	terrain_->Update();
+	/*sphere_->Update();
+	terrain_->Update();*/
+
+	plane_->Update();
 
 	UpdateImGui();
 
@@ -103,8 +110,10 @@ void TitleScene::Draw() {
 	// パーティクルの描画（インスタンシング描画が実行される）
 	ParticleManager::GetInstance()->Draw();
 
-	sphere_->Draw();
-	terrain_->Draw();
+	/*sphere_->Draw();
+	terrain_->Draw();*/
+
+	plane_->Draw();
 
 	//sprite_->Draw();
 }
@@ -207,121 +216,121 @@ void TitleScene::UpdateImGui() {
 	ImGui::Begin("Object Settings"); // 新しいウィンドウを作る場合
 
 	// 1. 現在のスケールを取得
-	Vector3 scale = sphere_->GetScale();
+	Vector3 rotate = plane_->GetRotate();
 
 	// 2. ImGuiでX, Y, Zの値を操作する
 	// （0.01fは変化スピード。0.1f 〜 10.0f の間で制限をかけています）
-	if (ImGui::DragFloat3("Sphere Scale", &scale.x, 0.01f, 0.1f, 10.0f)) {
+	if (ImGui::DragFloat3("Sphere rotate", &rotate.x, 0.01f, 0.1f, 100.0f)) {
 		// 3. スライダーが動かされて値が変更されたら、Object3dにセットし直す
-		sphere_->SetScale(scale);
+		plane_->SetRotation(rotate);
 	}
 
 	ImGui::End();
 
-	// ImGuiのウィンドウを作成
-	ImGui::Begin("Light Settings");
+	//// ImGuiのウィンドウを作成
+	//ImGui::Begin("Light Settings");
 
-	// LightManagerのインスタンスを取得
-	LightManager* lightManager = LightManager::GetInstance();
+	//// LightManagerのインスタンスを取得
+	//LightManager* lightManager = LightManager::GetInstance();
 
-	// --------------------------------------------------
-	// ① Directional Light の設定
-	// --------------------------------------------------
-	if (ImGui::TreeNode("Directional Light")) {
-		Vector4 color = lightManager->GetDirectionalLightColor();
-		Vector3 direction = lightManager->GetDirectionalLightDirection();
-		float intensity = lightManager->GetDirectionalLightIntensity();
+	//// --------------------------------------------------
+	//// ① Directional Light の設定
+	//// --------------------------------------------------
+	//if (ImGui::TreeNode("Directional Light")) {
+	//	Vector4 color = lightManager->GetDirectionalLightColor();
+	//	Vector3 direction = lightManager->GetDirectionalLightDirection();
+	//	float intensity = lightManager->GetDirectionalLightIntensity();
 
-		ImGui::ColorEdit4("Color", &color.x);
-		ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
-		ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f);
+	//	ImGui::ColorEdit4("Color", &color.x);
+	//	ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
+	//	ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f);
 
-		lightManager->SetDirectionalLightColor(color);
-		lightManager->SetDirectionalLightDirection(direction);
-		lightManager->SetDirectionalLightIntensity(intensity);
+	//	lightManager->SetDirectionalLightColor(color);
+	//	lightManager->SetDirectionalLightDirection(direction);
+	//	lightManager->SetDirectionalLightIntensity(intensity);
 
-		ImGui::TreePop(); // TreeNodeを閉じる
-	}
+	//	ImGui::TreePop(); // TreeNodeを閉じる
+	//}
 
-	if (ImGui::TreeNode("Local Light")) {
-		// 現在の状態を取得
-		LocalLightType currentType = lightManager->GetLocalLightType();
-		Vector4 color = lightManager->GetLocalLightColor();
-		Vector3 position = lightManager->GetLocalLightPosition();
-		float intensity = lightManager->GetLocalLightIntensity();
-		float distance = lightManager->GetLocalLightDistance();
-		float decay = lightManager->GetLocalLightDecay();
+	//if (ImGui::TreeNode("Local Light")) {
+	//	// 現在の状態を取得
+	//	LocalLightType currentType = lightManager->GetLocalLightType();
+	//	Vector4 color = lightManager->GetLocalLightColor();
+	//	Vector3 position = lightManager->GetLocalLightPosition();
+	//	float intensity = lightManager->GetLocalLightIntensity();
+	//	float distance = lightManager->GetLocalLightDistance();
+	//	float decay = lightManager->GetLocalLightDecay();
 
-		// 1. ライトの種類切り替え
-		const char* localLightTypeNames[] = {"Point", "Spot"};
-		int typeIndex = static_cast<int>(currentType);
-		if (ImGui::Combo("Light Type", &typeIndex, localLightTypeNames, IM_ARRAYSIZE(localLightTypeNames))) {
-			lightManager->SetLocalLightType(static_cast<LocalLightType>(typeIndex));
-		}
+	//	// 1. ライトの種類切り替え
+	//	const char* localLightTypeNames[] = {"Point", "Spot"};
+	//	int typeIndex = static_cast<int>(currentType);
+	//	if (ImGui::Combo("Light Type", &typeIndex, localLightTypeNames, IM_ARRAYSIZE(localLightTypeNames))) {
+	//		lightManager->SetLocalLightType(static_cast<LocalLightType>(typeIndex));
+	//	}
 
-		ImGui::Separator();
+	//	ImGui::Separator();
 
-		// 2. 共通設定
-		ImGui::ColorEdit4("Color", &color.x);
-		ImGui::DragFloat3("Position", &position.x, 0.1f);
-		ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 100.0f);
-		ImGui::DragFloat("Distance", &distance, 0.1f, 0.0f, 100.0f);
-		ImGui::DragFloat("Decay", &decay, 0.01f, 0.0f, 10.0f);
+	//	// 2. 共通設定
+	//	ImGui::ColorEdit4("Color", &color.x);
+	//	ImGui::DragFloat3("Position", &position.x, 0.1f);
+	//	ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 100.0f);
+	//	ImGui::DragFloat("Distance", &distance, 0.1f, 0.0f, 100.0f);
+	//	ImGui::DragFloat("Decay", &decay, 0.01f, 0.0f, 10.0f);
 
-		// 反映
-		lightManager->SetLocalLightColor(color);
-		lightManager->SetLocalLightPosition(position);
-		lightManager->SetLocalLightIntensity(intensity);
-		lightManager->SetLocalLightDistance(distance);
-		lightManager->SetLocalLightDecay(decay);
+	//	// 反映
+	//	lightManager->SetLocalLightColor(color);
+	//	lightManager->SetLocalLightPosition(position);
+	//	lightManager->SetLocalLightIntensity(intensity);
+	//	lightManager->SetLocalLightDistance(distance);
+	//	lightManager->SetLocalLightDecay(decay);
 
-		// 3. スポットライト専用設定
-		if (currentType == LocalLightType::kSpot) {
-			ImGui::Text("Spotlight Settings");
+	//	// 3. スポットライト専用設定
+	//	if (currentType == LocalLightType::kSpot) {
+	//		ImGui::Text("Spotlight Settings");
 
-			Vector3 direction = lightManager->GetLocalLightDirection();
-			float cosAngle = lightManager->GetLocalLightCosAngle();
-			float cosFalloff = lightManager->GetLocalLightCosFalloffStart();
+	//		Vector3 direction = lightManager->GetLocalLightDirection();
+	//		float cosAngle = lightManager->GetLocalLightCosAngle();
+	//		float cosFalloff = lightManager->GetLocalLightCosFalloffStart();
 
-			// コサインを角度(度数法)に戻して表示
-			float angleDeg = std::acos(cosAngle) * 180.0f / std::numbers::pi_v<float>;
-			float falloffDeg = std::acos(cosFalloff) * 180.0f / std::numbers::pi_v<float>;
+	//		// コサインを角度(度数法)に戻して表示
+	//		float angleDeg = std::acos(cosAngle) * 180.0f / std::numbers::pi_v<float>;
+	//		float falloffDeg = std::acos(cosFalloff) * 180.0f / std::numbers::pi_v<float>;
 
-			ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
-			if (ImGui::DragFloat("Angle", &angleDeg, 0.1f, 0.0f, 90.0f)) {
-				// 変更があったらコサインに変換してセット
-				cosAngle = std::cos(angleDeg * std::numbers::pi_v<float> / 180.0f);
-			}
-			if (ImGui::DragFloat("Falloff Start", &falloffDeg, 0.1f, 0.0f, angleDeg)) {
-				cosFalloff = std::cos(falloffDeg * std::numbers::pi_v<float> / 180.0f);
-			}
+	//		ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
+	//		if (ImGui::DragFloat("Angle", &angleDeg, 0.1f, 0.0f, 90.0f)) {
+	//			// 変更があったらコサインに変換してセット
+	//			cosAngle = std::cos(angleDeg * std::numbers::pi_v<float> / 180.0f);
+	//		}
+	//		if (ImGui::DragFloat("Falloff Start", &falloffDeg, 0.1f, 0.0f, angleDeg)) {
+	//			cosFalloff = std::cos(falloffDeg * std::numbers::pi_v<float> / 180.0f);
+	//		}
 
-			lightManager->SetLocalLightDirection(direction);
-			lightManager->SetLocalLightCosAngle(cosAngle);
-			lightManager->SetLocalLightCosFalloffStart(cosFalloff);
-		}
+	//		lightManager->SetLocalLightDirection(direction);
+	//		lightManager->SetLocalLightCosAngle(cosAngle);
+	//		lightManager->SetLocalLightCosFalloffStart(cosFalloff);
+	//	}
 
-		ImGui::TreePop();
-	}
+	//	ImGui::TreePop();
+	//}
 
-	// ==========================================
-	// ここから追加：ライティングの種類の変更
-	// ==========================================
-	ImGui::Separator(); // 区切り線
+	//// ==========================================
+	//// ここから追加：ライティングの種類の変更
+	//// ==========================================
+	//ImGui::Separator(); // 区切り線
 
-	// プルダウンに表示する名前の配列（LightingTypeの順番に合わせる）
-	const char* lightingTypeNames[] = {"None", "Lambert", "Half Lambert", "Phong", "Blinn-Phong"};
+	//// プルダウンに表示する名前の配列（LightingTypeの順番に合わせる）
+	//const char* lightingTypeNames[] = {"None", "Lambert", "Half Lambert", "Phong", "Blinn-Phong"};
 
-	// 現在選択されている種類のインデックス（初期値はModelの初期化に合わせておく）
-	static int currentLightingType = static_cast<int>(LightingType::kHalfLambert);
+	//// 現在選択されている種類のインデックス（初期値はModelの初期化に合わせておく）
+	//static int currentLightingType = static_cast<int>(LightingType::kHalfLambert);
 
-	// コンボボックスで変更があった場合、Object3d に反映させる
-	if (ImGui::Combo("Lighting Type", &currentLightingType, lightingTypeNames, IM_ARRAYSIZE(lightingTypeNames))) {
-		sphere_->SetLightingType(static_cast<LightingType>(currentLightingType));
-	}
-	// ==========================================
+	//// コンボボックスで変更があった場合、Object3d に反映させる
+	//if (ImGui::Combo("Lighting Type", &currentLightingType, lightingTypeNames, IM_ARRAYSIZE(lightingTypeNames))) {
+	//	sphere_->SetLightingType(static_cast<LightingType>(currentLightingType));
+	//}
+	//// ==========================================
 
-	ImGui::End();
+	//ImGui::End();
 
 #endif
 }

@@ -32,8 +32,9 @@ void ModelManager::Finalize() { instance.reset(); }
 /// <summary>
 /// モデルファイルの読み込み
 /// </summary>
-/// <param name="ModelName">モデル名</param>
-void ModelManager::LoadModel(const std::string& modelName) {
+/// <param name="modelName">モデル名</param>
+/// <param name="extension">拡張子（デフォルトは "obj"）</param>
+void ModelManager::LoadModel(const std::string& modelName, const std::string& extension) {
 	// 読み込み済みのモデルを検索
 	if (models_.contains(modelName)) {
 		// 読み込み済みなら早期に return
@@ -41,7 +42,9 @@ void ModelManager::LoadModel(const std::string& modelName) {
 	}
 
 	std::string directoryPath = "resources/models/" + modelName;
-	std::string fileName = modelName + ".obj";
+
+	// 拡張子を指定
+	std::string fileName = modelName + "." + extension;
 
 	// モデルの生成とファイル読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();
