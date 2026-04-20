@@ -9,6 +9,7 @@ class Object3d;
 class Sprite;
 class ParticleEmitter;
 class Camera;
+class Skybox;
 
 class TitleScene : public IScene {
 public:
@@ -40,6 +41,8 @@ private:
 	std::unique_ptr<ParticleEmitter> emitter_;
 	Transform particleTransform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 10.0f}};
 	std::unique_ptr<Camera> camera_;
+
+	std::unique_ptr<Skybox> skybox_;
 
 private:
 	void UpdateImGui();

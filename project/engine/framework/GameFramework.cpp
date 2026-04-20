@@ -14,6 +14,7 @@
 #include "ParticleManager.h"
 #include "WinApp.h"
 #include "LightManager.h"
+#include "SkyboxRenderer.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -135,6 +136,9 @@ void GameFramework::Initialize() {
 	Object3dRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	// カメラをセット
 	Object3dRenderer::GetInstance()->SetDefaultCamera(camera_.get());
+
+	// SkyboxRenderer の初期化
+	SkyboxRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// AudioManager の初期化
 	AudioManager::GetInstance()->Initialize();

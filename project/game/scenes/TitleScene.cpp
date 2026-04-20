@@ -4,6 +4,8 @@
 #include "LightManager.h"
 #include <numbers>
 
+#include "Skybox.h"
+
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
 
@@ -12,6 +14,9 @@ void TitleScene::Initialize() {
 	camera_->SetRotate({0.5f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 8.0f, -15.0f});
 	camera_->CreateConstantBuffer();
+
+	skybox_ = std::make_unique<Skybox>();
+	skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds",camera_.get());
 
 	//// object3dの初期化
 	//sphere_ = std::make_unique<Object3d>();
@@ -114,6 +119,7 @@ void TitleScene::Draw() {
 	terrain_->Draw();*/
 
 	plane_->Draw();
+	skybox_->Draw();
 
 	//sprite_->Draw();
 }

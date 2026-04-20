@@ -210,6 +210,12 @@
     <ClCompile Include="engine\3d\LightManager.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\Skybox.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\SkyboxRenderer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -230,6 +236,8 @@
     <FxCompile Include="resources\shaders\Particle.PS.hlsl">
       <Filter>リソース ファイル\shaders</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\Skybox.VS.hlsl" />
+    <FxCompile Include="resources\shaders\Skybox.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -373,6 +381,12 @@
     <ClInclude Include="engine\3d\LightingType.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="engine\3d\Skybox.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\SkyboxRenderer.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">
@@ -389,5 +403,6 @@
     <None Include="resources\shaders\Particle.hlsli">
       <Filter>リソース ファイル\shaders</Filter>
     </None>
+    <None Include="resources\shaders\Skybox.hlsli" />
   </ItemGroup>
 </Project>
