@@ -1,41 +1,32 @@
 #include "Skybox.h"
-#include "DirectXCommon.h" // バッファ作成用の関数があるクラスをインクルード
+#include "DirectXCommon.h"
 #include "MathUtility.h"
 #include "Camera.h"
 #include "TextureManager.h"
 #include "SkyboxRenderer.h"
+#include <cassert>
 
 using namespace MathUtility;
 
-void Skybox::Initialize(const std::string& textureFilePath, Camera* camera) {
-
-    textureFilePath_ = textureFilePath;
+void Skybox::Initialize(const std::array<std::string, 6>& filePaths, Camera* camera) {
     camera_ = camera;
 
-    TextureManager::GetInstance()->LoadTexture(textureFilePath_);
-
-    const auto& meta = TextureManager::GetInstance()->GetMetaData(textureFilePath_);
-    assert(meta.IsCubemap());
+    // --------------------------------------------------------
+    // 0. テクスチャのロードとキューブマップ合成
+    // --------------------------------------------------------
+    textureSrvHandleGPU_ = TextureManager::GetInstance()->CreateCubemapFromFiles(filePaths);
 
     // --------------------------------------------------------
-    // 1. 頂点バッファの作成とデータ転送
+    // 1. 頂点バッファの作成（提供された頂点データを使用）
     // --------------------------------------------------------
     const uint32_t kNumVertices = 8;
-
-    // 頂点バッファの作成 (DirectXCommon等で用意している関数を使ってください)
     vertexBuffer_ = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(VertexData) * kNumVertices);
-
-    // バッファビューの設定
     vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
     vertexBufferView_.SizeInBytes = sizeof(VertexData) * kNumVertices;
     vertexBufferView_.StrideInBytes = sizeof(VertexData);
 
-    // 頂点データの書き込み
     VertexData* vertexData = nullptr;
     vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-
-    // 画像資料の頂点データ
-    // 右、上、奥〜手前など
     vertexData[0].position = {1.0f, 1.0f, 1.0f, 1.0f};
     vertexData[1].position = {1.0f, 1.0f, -1.0f, 1.0f};
     vertexData[2].position = {1.0f, -1.0f, 1.0f, 1.0f};
@@ -44,27 +35,19 @@ void Skybox::Initialize(const std::string& textureFilePath, Camera* camera) {
     vertexData[5].position = {-1.0f, 1.0f, -1.0f, 1.0f};
     vertexData[6].position = {-1.0f, -1.0f, 1.0f, 1.0f};
     vertexData[7].position = {-1.0f, -1.0f, -1.0f, 1.0f};
-
     vertexBuffer_->Unmap(0, nullptr);
 
     // --------------------------------------------------------
-    // 2. インデックスバッファの作成とデータ転送
+    // 2. インデックスバッファの作成（12個の三角形）
     // --------------------------------------------------------
     const uint32_t kNumIndices = 36;
-
-    // インデックスバッファの作成
     indexBuffer_ = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(uint32_t) * kNumIndices);
-
-    // インデックスバッファビューの設定
     indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
     indexBufferView_.SizeInBytes = sizeof(uint32_t) * kNumIndices;
     indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
-    // インデックスデータの書き込み
     uint32_t* indexData = nullptr;
     indexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
-
-    // 画像資料のインデックスデータ (12個の三角形)
     // 右面
     indexData[0] = 0;  indexData[1] = 1;  indexData[2] = 2;
     indexData[3] = 2;  indexData[4] = 1;  indexData[5] = 3;
@@ -83,30 +66,26 @@ void Skybox::Initialize(const std::string& textureFilePath, Camera* camera) {
     // 下面
     indexData[30] = 2; indexData[31] = 3; indexData[32] = 6;
     indexData[33] = 6; indexData[34] = 3; indexData[35] = 7;
-
     indexBuffer_->Unmap(0, nullptr);
 
     // --------------------------------------------------------
-    // 3. 定数バッファ（行列用）の作成
+    // 3. 定数バッファの作成
     // --------------------------------------------------------
     constBuffer_ = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(ConstBufferData));
     constBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&constMap_));
-
-    textureSrvHandleGPU_ = TextureManager::GetInstance()->GetSrvHandleGPU(textureFilePath_);
 }
 
 void Skybox::Draw() {
     auto commandList = DirectXCommon::GetInstance()->GetCommandList();
 
+    // カメラの位置に合わせる
+    //Vector3 cameraPos = camera_->GetTranslate();
     Matrix4x4 worldMatrix = MakeAffineMatrix(
         {500.0f, 500.0f, 500.0f},
         {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f});   // ← カメラ追従をやめる
+        {0,0,0});
 
-    Matrix4x4 wvpMatrix =
-        Multiply(worldMatrix,
-            Multiply(camera_->GetViewMatrix(), camera_->GetProjectionMatrix()));
-
+    Matrix4x4 wvpMatrix = Multiply(worldMatrix, Multiply(camera_->GetViewMatrix(), camera_->GetProjectionMatrix()));
     constMap_->wvp = wvpMatrix;
 
     SkyboxRenderer::GetInstance()->PreDraw();

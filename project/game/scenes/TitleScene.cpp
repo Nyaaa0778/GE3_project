@@ -16,7 +16,16 @@ void TitleScene::Initialize() {
 	camera_->CreateConstantBuffer();
 
 	skybox_ = std::make_unique<Skybox>();
-	skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds",camera_.get());
+	std::array<std::string, 6> skyboxPaths = {
+		"resources/sprites/pink.png",  // +X
+		"resources/sprites/red.png",   // -X
+		"resources/sprites/blue.png",     // +Y
+		"resources/sprites/green.png",   // -Y
+		"resources/sprites/purple.png",  // +Z
+		"resources/sprites/yellow.png",   // -Z
+	};
+
+	skybox_->Initialize(skyboxPaths, camera_.get());
 
 	//// object3dの初期化
 	//sphere_ = std::make_unique<Object3d>();
