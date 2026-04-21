@@ -78,14 +78,21 @@ void Skybox::Initialize(const std::array<std::string, 6>& filePaths, Camera* cam
 void Skybox::Draw() {
     auto commandList = DirectXCommon::GetInstance()->GetCommandList();
 
-    // カメラの位置に合わせる
-    //Vector3 cameraPos = camera_->GetTranslate();
+    // SkyboxのスケーリングをFarClip(100.0f)より小さい値に調整
     Matrix4x4 worldMatrix = MakeAffineMatrix(
-        {500.0f, 500.0f, 500.0f},
+        {50.0f, 50.0f, 50.0f}, // 500.0fから50.0fに変更
         {0.0f, 0.0f, 0.0f},
-        {0,0,0});
+        {0.0f, 0.0f, 0.0f});
 
-    Matrix4x4 wvpMatrix = Multiply(worldMatrix, Multiply(camera_->GetViewMatrix(), camera_->GetProjectionMatrix()));
+    // View行列から平行移動成分を除去する
+    Matrix4x4 viewMatrix = camera_->GetViewMatrix();
+    viewMatrix.m[3][0] = 0.0f; // X軸の移動をリセット
+    viewMatrix.m[3][1] = 0.0f; // Y軸の移動をリセット
+    viewMatrix.m[3][2] = 0.0f; // Z軸の移動をリセット
+    // ※ m[3][3] は 1.0f のままにしておきます
+
+    // viewMatrixを使用してWVP行列を計算
+    Matrix4x4 wvpMatrix = Multiply(worldMatrix, Multiply(viewMatrix, camera_->GetProjectionMatrix()));
     constMap_->wvp = wvpMatrix;
 
     SkyboxRenderer::GetInstance()->PreDraw();
