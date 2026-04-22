@@ -85,6 +85,8 @@ public:
 	// モデル
 	void SetModel(const std::string& modelName, const std::string& extension = "obj");
 
+	float GetEnvironmentCoefficient();
+
 	//// ライトの色
 	//void SetLightColor(const Vector4& color) {
 	//	directionalLightData_->color = color;

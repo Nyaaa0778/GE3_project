@@ -101,6 +101,9 @@ public:
 	// 色
 	const Vector4& GetColor() const { return materialData_->color; }
 
+	// 環境光の映り込み具合
+	float GetEnvironmentCofficient() { return materialData_->environmentCoefficient; }
+
 	const ModelData& GetModelData() const { return modelData_; }
 
 	//================================================================================

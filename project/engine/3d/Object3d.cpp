@@ -150,6 +150,10 @@ void Object3d::CreateTransformationMatrixData() {
 // 色
 const Vector4& Object3d::GetColor() const { return model_->GetColor(); }
 
+float Object3d::GetEnvironmentCoefficient() {
+	return model_->GetEnvironmentCofficient();
+}
+
 //================================================================================
 // Setter
 //================================================================================

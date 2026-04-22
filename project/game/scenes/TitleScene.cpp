@@ -259,7 +259,7 @@ void TitleScene::UpdateImGui() {
 		sphere_->SetRotation(rotate);
 	}
 
-	float envCoeff = 0.3f;
+	float envCoeff = sphere_->GetEnvironmentCoefficient();
 
 	if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
 		// ③ 変更された値をSetterでモデル（マテリアル）に反映
