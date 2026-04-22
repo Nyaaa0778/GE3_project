@@ -5,18 +5,22 @@
 #include <wrl.h>
 
 class DirectXCommon;
-class Camera;
 
 class SkyboxRenderer {
 public:
-	// シングルトンインスタンスの取得
+	//================================================================================
+	// シングルトン管理
+	//================================================================================
 	static SkyboxRenderer* GetInstance();
+	static void Finalize();
 
 	SkyboxRenderer() = default;
 	~SkyboxRenderer() = default;
 
-	// 終了処理
-	static void Finalize();
+public:
+	//================================================================================
+	// パブリック関数
+	//================================================================================
 
 	// 初期化
 	void Initialize(DirectXCommon* dxCommon);
@@ -24,31 +28,33 @@ public:
 	// 描画前共通設定
 	void PreDraw();
 
-	// デフォルトカメラの設定
-	void SetDefaultCamera(Camera* camera) { defaultCamera_ = camera; }
-	Camera* GetDefaultCamera() const { return defaultCamera_; }
-
 	// DirectXCommonの取得
 	DirectXCommon* GetDxCommon() const { return dxCommon_; }
 
 private:
-	static std::unique_ptr<SkyboxRenderer> instance;
+	//================================================================================
+	// プライベート関数
+	//================================================================================
+	SkyboxRenderer(const SkyboxRenderer&) = delete;
+	SkyboxRenderer& operator=(const SkyboxRenderer&) = delete;
 
-	SkyboxRenderer(SkyboxRenderer&) = delete;
-	SkyboxRenderer& operator=(SkyboxRenderer&) = delete;
-
-	// ルートシグネチャの作成
+	// パイプラインの構成要素生成
 	void CreateRootSignature();
-	// グラフィックスパイプラインの生成
 	void CreateGraphicsPipeline();
 
 private:
+	//================================================================================
+	// メンバ変数
+	//================================================================================
+	static std::unique_ptr<SkyboxRenderer> instance;
+
 	template <class InterfaceType>
 	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
+	// 共通基盤
 	DirectXCommon* dxCommon_ = nullptr;
-	Camera* defaultCamera_ = nullptr;
 
+	// パイプラインステート
 	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
 	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
 };

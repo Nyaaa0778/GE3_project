@@ -101,6 +101,11 @@ public:
 	// カメラ
 	void SetCamera(Camera* camera) { camera_ = camera; }
 
+	void SetEnvironmentTextureHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle) {
+		environmentTextureSrvHandleGPU_ = handle;
+	}
+	void SetEnvironmentCoefficient(float coeff);
+
 private:
 	//================================================================================
 	// 内部構造体
@@ -172,6 +177,8 @@ private:
 
 	// BlendMode
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_ {};
 
 private:
 	//================================================================================

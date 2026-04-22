@@ -92,6 +92,9 @@ void Object3d::Draw() {
 		->SetGraphicsRootConstantBufferView(
 			5, LightManager::GetInstance()->GetLocalLightConstantBufferVideoAddress());
 
+	object3dRenderer_->GetDxCommon()->GetCommandList()
+		->SetGraphicsRootDescriptorTable(6, environmentTextureSrvHandleGPU_);
+
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_) {
 		model_->Draw();
@@ -162,6 +165,12 @@ void Object3d::SetModel(const std::string& modelName, const std::string& extensi
 
 	// 読み込んだモデルを検索してセット
 	model_ = modelManager->FindModel(modelName);
+}
+
+void Object3d::SetEnvironmentCoefficient(float coeff) {
+	if (model_) {
+		model_->SetEnvironmentCoefficient(coeff);
+	}
 }
 
 // ライティングの種類

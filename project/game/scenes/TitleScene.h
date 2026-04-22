@@ -9,6 +9,7 @@ class Object3d;
 class Sprite;
 class ParticleEmitter;
 class Camera;
+class DebugCamera;
 class Skybox;
 
 class TitleScene : public IScene {
@@ -26,9 +27,9 @@ public:
 
 private:
 	// モデル
-	/*std::unique_ptr<Object3d> sphere_;
-	std::unique_ptr<Object3d> terrain_;*/
-	std::unique_ptr<Object3d> plane_;
+	std::unique_ptr<Object3d> sphere_;
+	//std::unique_ptr<Object3d> terrain_;
+	//std::unique_ptr<Object3d> plane_;
 
 	// スプライト
 	std::unique_ptr<Sprite> sprite_;
@@ -40,7 +41,11 @@ private:
 	// パーティクル
 	std::unique_ptr<ParticleEmitter> emitter_;
 	Transform particleTransform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 10.0f}};
+	
+	// カメラ
 	std::unique_ptr<Camera> camera_;
+	std::unique_ptr<DebugCamera> debugCamera_;
+	bool useDebugCamera_ = true;
 
 	std::unique_ptr<Skybox> skybox_;
 

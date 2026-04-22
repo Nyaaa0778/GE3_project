@@ -7,6 +7,7 @@ struct Material
     int32_t lightingType;
     float32_t4x4 uvTransform;
     float32_t shininess;
+    float32_t environmentCoefficient;
 };
 ConstantBuffer<Material> gMaterial : register(b0);
 
@@ -42,6 +43,8 @@ struct Camera
 ConstantBuffer<Camera> gCamera : register(b2);
 
 Texture2D<float32_t4> gTexture : register(t0);
+TextureCube<float32_t4> gEnvironmentTexture : register(t1);
+
 SamplerState gSampler : register(s0);
 
 struct PixelShaderOutput
@@ -202,6 +205,13 @@ PixelShaderOutput main(VertexShaderOutput input)
     // ----------------------------------------------------
     output.color.rgb = finalColor;
     output.color.a = gMaterial.color.a * textureColor.a;
+    
+    // 環境マップによる環境光の計算と加算
+    float3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
+    float3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
+    float4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
+    
+    output.color.rgb += environmentColor.rgb * gMaterial.environmentCoefficient;
 
     return output;
 }

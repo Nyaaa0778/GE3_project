@@ -46,6 +46,7 @@ private:
 		float padding[3];
 		Matrix4x4 uvTransform;
 		float shininess;
+		float environmentCoefficient;
 	};
 
 	// マテリアルデータ
@@ -110,6 +111,8 @@ public:
 	void SetColor(const Vector4& color) { materialData_->color = color; }
 	// ライティングの種類
 	void SetLightingType(LightingType type) { materialData_->lightingType = static_cast<int32_t>(type); }
+	// 環境光の映り込み具合
+	void SetEnvironmentCoefficient(float coeff) { materialData_->environmentCoefficient = coeff; }
 
 private:
 	//================================================================================
