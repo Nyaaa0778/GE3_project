@@ -83,7 +83,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -111,7 +111,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,7 +142,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,9 +161,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\effects\primitive\Box.cpp" />
     <ClCompile Include="engine\debug\DebugCamera.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
-    <ClCompile Include="engine\effects\ParticleManager.cpp" />
+    <ClCompile Include="engine\effects\particle\ParticleManager.cpp" />
     <ClCompile Include="engine\core\utility\Random.cpp" />
     <ClCompile Include="engine\core\debug\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\core\graphics\DirectXCommon.cpp" />
@@ -222,11 +223,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\ModelCommon.cpp" />
     <ClCompile Include="engine\graphics\ModelManager.cpp" />
     <ClCompile Include="engine\graphics\ShaderResourceViewManager.cpp" />
-    <ClCompile Include="engine\effects\ParticleEmitter.cpp" />
+    <ClCompile Include="engine\effects\particle\ParticleEmitter.cpp" />
     <ClCompile Include="game\scenes\TitleScene.cpp" />
     <ClCompile Include="engine\framework\scene\SceneManager.cpp" />
     <ClCompile Include="engine\3d\Skybox.cpp" />
     <ClCompile Include="engine\3d\SkyboxRenderer.cpp" />
+    <ClCompile Include="engine\effects\primitive\Plane.cpp" />
+    <ClCompile Include="engine\effects\primitive\Primitive.cpp" />
+    <ClCompile Include="engine\effects\primitive\PrimitiveRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d.PS.hlsl">
@@ -254,6 +258,22 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="resources\shaders\Particle.VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Development|x64'">Vertex</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\Primitive.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Development|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="resources\shaders\PrimitiveVS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Development|x64'">Vertex</ShaderType>
@@ -295,6 +315,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\effects\primitive\Box.h" />
     <ClInclude Include="engine\debug\DebugCamera.h" />
     <ClInclude Include="engine\3d\Camera.h" />
     <ClInclude Include="engine\core\graphics\Transform.h" />
@@ -331,8 +352,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\graphics\ModelManager.h" />
     <ClInclude Include="engine\graphics\ShaderResourceViewManager.h" />
     <ClInclude Include="engine\debug\ImGuiManager.h" />
-    <ClInclude Include="engine\effects\ParticleManager.h" />
-    <ClInclude Include="engine\effects\ParticleEmitter.h" />
+    <ClInclude Include="engine\effects\particle\ParticleManager.h" />
+    <ClInclude Include="engine\effects\particle\ParticleEmitter.h" />
     <ClInclude Include="engine\framework\scene\GameSceneFactory.h" />
     <ClInclude Include="game\core\GameManager.h" />
     <ClInclude Include="engine\framework\GameFramework.h" />
@@ -345,6 +366,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\LightManager.h" />
     <ClInclude Include="engine\3d\Skybox.h" />
     <ClInclude Include="engine\3d\SkyboxRenderer.h" />
+    <ClInclude Include="engine\effects\primitive\Plane.h" />
+    <ClInclude Include="engine\effects\primitive\Primitive.h" />
+    <ClInclude Include="engine\effects\primitive\PrimitiveRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
@@ -364,6 +388,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       </ExcludedFromBuild>
     </None>
     <None Include="resources\shaders\Particle.hlsli" />
+    <None Include="resources\shaders\Primitive.hlsli" />
     <None Include="resources\shaders\Sprite.hlsli" />
     <None Include="resources\shaders\Skybox.hlsli" />
   </ItemGroup>

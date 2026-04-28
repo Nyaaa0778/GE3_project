@@ -15,6 +15,7 @@
 #include "WinApp.h"
 #include "LightManager.h"
 #include "SkyboxRenderer.h"
+#include "PrimitiveRenderer.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -139,6 +140,9 @@ void GameFramework::Initialize() {
 	// SkyboxRenderer の初期化
 	SkyboxRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
+	// PrimitiveRenderer の初期化
+	PrimitiveRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
+
 	// AudioManager の初期化
 	AudioManager::GetInstance()->Initialize();
 
@@ -197,6 +201,9 @@ void GameFramework::Finalize() {
 
 	// object3dRendererを解放
 	Object3dRenderer::GetInstance()->Finalize();
+
+	// PrimitiveRendererを解放
+	PrimitiveRenderer::GetInstance()->Finalize();
 
 	// modelCommonを解放
 	ModelCommon::GetInstance()->Finalize();

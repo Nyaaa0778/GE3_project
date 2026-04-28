@@ -6,6 +6,7 @@
 
 #include "Skybox.h"
 #include "DebugCamera.h"
+#include "Box.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -50,9 +51,13 @@ void TitleScene::Initialize() {
 	//terrain_->SetRotation({0.0f, -1.5708f, 0.0f});
 	//terrain_->SetCamera(camera_.get());
 
-	/*plane_ = std::make_unique<Object3d>();
-	plane_->Initialize("plane", "gltf");
-	plane_->SetCamera(camera_.get());*/
+	primitive_ = std::make_unique<Box>();
+	primitive_->Initialize("monsterBall.png");
+	primitive_->SetCamera(camera_.get());
+	// Plane へのキャストが必要な初期設定があればここで行うか、Plane内で完結させる
+	if (auto* box = dynamic_cast<Box*>(primitive_.get())) {
+		box->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
+	}
 
 	// spriteの初期化
 	sprite_ = std::make_unique<Sprite>();
@@ -132,7 +137,7 @@ void TitleScene::Update() {
 	sphere_->Update();
 	//terrain_->Update();
 
-	//plane_->Update();
+	primitive_->Update();
 
 	UpdateImGui();
 
@@ -146,8 +151,8 @@ void TitleScene::Draw() {
 	sphere_->Draw();
 	//terrain_->Draw();
 
-	//plane_->Draw();
-	skybox_->Draw();
+	primitive_->Draw();
+	//skybox_->Draw();
 
 	//sprite_->Draw();
 }
@@ -246,6 +251,8 @@ void TitleScene::UpdateImGui() {
 	}
 
 	ImGui::End();
+
+	primitive_->DrawImGui("Primitive Settings");
 
 	ImGui::Begin("Object Settings"); // 新しいウィンドウを作る場合
 

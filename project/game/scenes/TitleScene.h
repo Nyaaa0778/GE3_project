@@ -11,6 +11,7 @@ class ParticleEmitter;
 class Camera;
 class DebugCamera;
 class Skybox;
+#include "Plane.h"
 
 class TitleScene : public IScene {
 public:
@@ -28,8 +29,7 @@ public:
 private:
 	// モデル
 	std::unique_ptr<Object3d> sphere_;
-	//std::unique_ptr<Object3d> terrain_;
-	//std::unique_ptr<Object3d> plane_;
+	std::unique_ptr<Primitive> primitive_;
 
 	// スプライト
 	std::unique_ptr<Sprite> sprite_;
