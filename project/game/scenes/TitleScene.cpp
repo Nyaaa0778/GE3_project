@@ -6,7 +6,7 @@
 
 #include "Skybox.h"
 #include "DebugCamera.h"
-#include "Box.h"
+#include "Plane.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -51,12 +51,12 @@ void TitleScene::Initialize() {
 	//terrain_->SetRotation({0.0f, -1.5708f, 0.0f});
 	//terrain_->SetCamera(camera_.get());
 
-	primitive_ = std::make_unique<Box>();
+	primitive_ = std::make_unique<Plane>();
 	primitive_->Initialize("monsterBall.png");
 	primitive_->SetCamera(camera_.get());
 	// Plane へのキャストが必要な初期設定があればここで行うか、Plane内で完結させる
-	if (auto* box = dynamic_cast<Box*>(primitive_.get())) {
-		box->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
+	if (auto* palne = dynamic_cast<Plane*>(primitive_.get())) {
+		palne->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
 	}
 
 	// spriteの初期化

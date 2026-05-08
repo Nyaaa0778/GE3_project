@@ -54,7 +54,7 @@ void Plane::Draw()
 	auto commandList = primitiveRenderer->GetDxCommon()->GetCommandList();
 
 	// 共通の描画設定 (BlendModeを指定)
-	primitiveRenderer->SetupCommonRenderState(blendMode_);
+	primitiveRenderer->SetupCommonRenderState(blendMode_, false);
 
 	// 頂点バッファとインデックスバッファのセット
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
