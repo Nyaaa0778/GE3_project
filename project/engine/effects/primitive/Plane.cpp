@@ -133,6 +133,8 @@ void Plane::CreateMesh()
 	// 三角形ポリゴン2枚
 	indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
 	indexData_[3] = 2; indexData_[4] = 1; indexData_[5] = 3;
+
+	indexCount_ = kNumIndices;
 }
 
 void Plane::CreateMaterialData()

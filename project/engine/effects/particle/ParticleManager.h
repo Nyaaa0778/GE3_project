@@ -16,6 +16,7 @@
 
 class DirectXCommon;
 class ShaderResourceViewManager;
+class Primitive;
 
 class ParticleManager {
 private:
@@ -23,6 +24,12 @@ private:
 	const uint32_t kMaxInstancePerGroup = 1024;
 
 public:
+	// パーティクルの形状
+	enum class ParticleShape {
+		kPlane,
+		kBox
+	};
+
 	//================================================================================
 	// シングルトン
 	//================================================================================
@@ -102,7 +109,7 @@ public:
 	/// <param
 	/// name="textureFilePath">グループで使用するテクスチャのファイルパス</param>
 	void CreateParticleGroup(const std::string groupName,
-		const std::string textureFilePath);
+		const std::string textureFilePath, ParticleShape shape = ParticleShape::kPlane);
 
 	/// <summary>
 	/// 指定したパーティクルグループからパーティクルを発生させる
@@ -176,6 +183,9 @@ private:
 		// instancingResource を Map したポインタ
 		ParticleForGPU* instancingMappedPtr = nullptr;
 
+		// 形状データ
+		std::unique_ptr<Primitive> primitiveGeometry;
+
 		// ビルボードを使うか？
 		bool useBillboard = true;
 	};
@@ -233,18 +243,8 @@ private:
 	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
 
 	//================================================================================
-	// GPUリソース（頂点）
+	// GPU リソース
 	//================================================================================
-
-	// 頂点リソース
-	ComPtr<ID3D12Resource> vertexBuffer_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	VertexData* vertexData_ = nullptr;
-	// バッファリソースの使い道を補足するバッファビュー
-	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_ {};
-
-	// 板ポリゴン（パーティクル）描画用の頂点データ
-	std::vector<VertexData> vertices_;
 
 private:
 	//================================================================================
@@ -259,19 +259,6 @@ private:
 	/// グラフィックスパイプラインの生成
 	/// </summary>
 	void CreateGraphicsPipeline();
-
-	//================================================================================
-	// データ作成処理
-	//================================================================================
-
-	/// <summary>
-	/// 頂点データの初期化
-	/// </summary>
-	void InitializeVertexData();
-	/// <summary>
-	/// 頂点データの作成
-	/// </summary>
-	void CreateVertexData();
 
 	//================================================================================
 	// パーティクル生成

@@ -69,7 +69,7 @@ void TitleScene::Initialize() {
 	bgm_ = AudioManager::LoadAudio("title.mp3");
 	se_ = AudioManager::LoadAudio("bgmGamePlay.wav", SoundGroup::SE);
 
-	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png");
+	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
 
 	// 2. エミッタの生成（グループ名、追従するTransformのポインタ、発生間隔、1回の数）
 	// titleTransform_ はタイトルロゴや背景の座標を指す想定
@@ -145,14 +145,15 @@ void TitleScene::Update() {
 }
 
 void TitleScene::Draw() {
-	// パーティクルの描画（インスタンシング描画が実行される）
-	ParticleManager::GetInstance()->Draw();
 
 	sphere_->Draw();
 	//terrain_->Draw();
 
 	primitive_->Draw();
 	//skybox_->Draw();
+
+	// パーティクルの描画（インスタンシング描画が実行される）
+	ParticleManager::GetInstance()->Draw();
 
 	//sprite_->Draw();
 }

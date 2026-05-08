@@ -49,6 +49,11 @@ public:
 	// Texture Setter
 	void SetTexture(const std::string& textureFilePath);
 
+	// Buffer Getters
+	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const override { return vertexBufferView_; }
+	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const override { return indexBufferView_; }
+	uint32_t GetIndexCount() const override { return indexCount_; }
+
 private:
 	// namespace
 	template <class InterfaceType>
@@ -91,7 +96,8 @@ private:
 
 	ComPtr<ID3D12Resource> indexBuffer_ = nullptr;
 	uint32_t* indexData_ = nullptr;
-	D3D12_INDEX_BUFFER_VIEW indexBufferView_ {};
+	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
+	uint32_t indexCount_ = 0;
 
 	ComPtr<ID3D12Resource> materialBuffer_ = nullptr;
 	Material* materialData_ = nullptr;

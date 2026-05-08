@@ -160,6 +160,8 @@ void Box::CreateMesh()
 		indexData_[i * 6 + 4] = i * 4 + 1;
 		indexData_[i * 6 + 5] = i * 4 + 3;
 	}
+
+	indexCount_ = kNumIndices;
 }
 
 void Box::CreateMaterialData()

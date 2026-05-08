@@ -1,5 +1,6 @@
 #pragma once
 
+#include <d3d12.h>
 #include <string>
 
 class Camera;
@@ -18,4 +19,9 @@ public:
 	// 共通インターフェース
 	virtual void SetCamera(Camera* camera) = 0;
 	virtual void DrawImGui(const char* windowName) = 0;
+
+	// Buffer Getters
+	virtual const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const = 0;
+	virtual const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const = 0;
+	virtual uint32_t GetIndexCount() const = 0;
 };
