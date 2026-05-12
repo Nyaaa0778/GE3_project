@@ -24,12 +24,23 @@ Camera::Camera()
 {
 }
 
-void Camera::Update() {
-	worldMatrix_ = MakeAffineMatrix(transform_.scale, transform_.rotation,
-		transform_.translation);
+//void Camera::Update() {
+//	worldMatrix_ = MakeAffineMatrix(transform_.scale, transform_.rotation,
+//		transform_.translation);
+//	viewMatrix_ = MakeInverseMatrix(worldMatrix_);
+//	projectionMatrix_ =
+//		MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
+//	viewProjectionMatrix_ = viewMatrix_ * projectionMatrix_;
+//
+//	if (cameraData_) {
+//		cameraData_->worldPosition = transform_.translation;
+//	}
+//}
+
+void Camera::CalculateMatrix() {
+	worldMatrix_ = MakeAffineMatrix(transform_.scale, transform_.rotation, transform_.translation);
 	viewMatrix_ = MakeInverseMatrix(worldMatrix_);
-	projectionMatrix_ =
-		MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
+	projectionMatrix_ = MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
 	viewProjectionMatrix_ = viewMatrix_ * projectionMatrix_;
 
 	if (cameraData_) {

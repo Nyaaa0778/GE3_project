@@ -226,4 +226,5 @@ void Model::CreateMaterialData() {
 	materialData_->lightingType = static_cast<int32_t>(LightingType::kBlinnPhong);
 	materialData_->uvTransform = MakeIdentityMatrix();
 	materialData_->shininess = 70.0f;
+	materialData_->environmentCoefficient = 0.0f;
 }

@@ -70,16 +70,29 @@ void TextureManager::LoadTexture(const std::string& filePath) {
 	// テクスチャファイルを読んでプログラムで扱えるようにする
 	DirectX::ScratchImage image {};
 	std::wstring filePathW = ConvertString(filePath); // Wはワイド文字列を意味する
-	HRESULT hr = DirectX::LoadFromWICFile(
-		filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
-	assert(SUCCEEDED(hr));
+	HRESULT hr;
+
+	// 拡張子が .dds かどうかで読み込み関数を分岐
+	if (filePathW.ends_with(L".dds")) {
+		hr = DirectX::LoadFromDDSFile(
+			filePathW.c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);
+	} else {
+		hr = DirectX::LoadFromWICFile(
+			filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	}
 
 	// ミニマップの作成
 	// mipMap: 元画像より小さなテクスチャ群
 	DirectX::ScratchImage mipImages {};
-	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
-		image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
-		0, mipImages);
+
+	if (DirectX::IsCompressed(image.GetMetadata().format)) {
+		mipImages = std::move(image);
+	} else {
+		hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
+			image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
+			4, mipImages);
+	}
+
 	assert(SUCCEEDED(hr));
 
 	textureData.metadata = mipImages.GetMetadata();
@@ -94,10 +107,33 @@ void TextureManager::LoadTexture(const std::string& filePath) {
 		ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(
 			textureData.srvIndex);
 
-	ShaderResourceViewManager::GetInstance()->CreateSRVfortexture2D(
+	/*ShaderResourceViewManager::GetInstance()->CreateSRVfortexture2D(
 		textureData.srvIndex, textureData.resource.Get(),
 		textureData.metadata.format,
-		static_cast<UINT>(textureData.metadata.mipLevels));
+		static_cast<UINT>(textureData.metadata.mipLevels));*/
+
+	// SRVの設定
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
+	srvDesc.Format = textureData.metadata.format; // テクスチャのフォーマット
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+	if (textureData.metadata.IsCubemap()) {
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+		srvDesc.TextureCube.MostDetailedMip = 0;
+		srvDesc.TextureCube.MipLevels = UINT_MAX;
+		srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+	} else {
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D; // 通常の2Dテクスチャとして扱う
+		srvDesc.Texture2D.MipLevels = UINT(textureData.metadata.mipLevels); // ミップマップの数を指定}
+	}
+
+	// SRVの生成
+	// デバイスを使って、取得したCPUハンドルの場所にSRVを作る
+	dxCommon_->GetDevice()->CreateShaderResourceView(
+		textureData.resource.Get(),
+		&srvDesc,
+		textureData.srvHandleCPU
+	);
 
 	// 転送用に生成した中間リソースをテクスチャデータ構造体に格納
 	textureData.intermediateResource =
@@ -117,6 +153,81 @@ void TextureManager::ReleaseIntermediateResources() {
 		// 中間リソースを解放
 		textureData.intermediateResource.Reset();
 	}
+}
+
+/// <summary>
+/// 6枚の画像ファイルから1つのキューブマップを生成
+/// </summary>
+D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::CreateCubemapFromFiles(const std::array<std::string, 6>& filePaths) {
+	// 識別用のキー作成（最初のファイル名などを利用）
+	std::string key = filePaths[0] + "_cubemap";
+	if (textureDatas_.contains(key)) {
+		return textureDatas_[key].srvHandleGPU;
+	}
+
+	TextureData& textureData = textureDatas_[key];
+
+	// 1. まず6枚の画像を個別に一時ロードしてサイズ等を確認する
+	std::array<DirectX::ScratchImage, 6> loadedImages;
+	for (int i = 0; i < 6; ++i) {
+		std::wstring filePathW = StringUtility::ConvertString(filePaths[i]);
+		HRESULT hr = DirectX::LoadFromWICFile(filePathW.c_str(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, loadedImages[i]);
+		assert(SUCCEEDED(hr));
+	}
+
+	// 2. キューブマップとしてのメタデータを構成
+	const DirectX::TexMetadata& baseMeta = loadedImages[0].GetMetadata();
+	DirectX::TexMetadata cubeMeta = baseMeta;
+	cubeMeta.arraySize = 6; // 6枚
+	cubeMeta.miscFlags |= DirectX::TEX_MISC_TEXTURECUBE; // キューブマップフラグ
+
+	// 3. 合成用の ScratchImage を作成
+	DirectX::ScratchImage mipImages;
+	mipImages.Initialize2D(
+		cubeMeta.format,
+		cubeMeta.width,
+		cubeMeta.height,
+		cubeMeta.arraySize,
+		cubeMeta.mipLevels,
+		DirectX::CP_FLAGS_NONE
+	);
+
+	// 4. 各画像を合成用 ScratchImage の各スライスにコピー
+	for (int i = 0; i < 6; ++i) {
+		const DirectX::Image* srcImage = loadedImages[i].GetImage(0, 0, 0);
+		const DirectX::Image* destImage = mipImages.GetImage(0, i, 0); // i番目のスライス
+
+		assert(srcImage->width == destImage->width && srcImage->height == destImage->height);
+
+		// ピクセルデータのコピー
+		std::memcpy(destImage->pixels, srcImage->pixels, srcImage->slicePitch);
+	}
+
+	// 5. リソース作成
+	textureData.metadata = cubeMeta;
+	textureData.resource = dxCommon_->CreateTextureResource(textureData.metadata);
+
+	// 6. 指定された形式の UploadTextureData を使用して転送
+	// 返り値の中間リソースを保持しておく（TextureData構造体にメンバがある場合）
+	textureData.intermediateResource = dxCommon_->UploadTextureData(textureData.resource, mipImages);
+
+	// 7. SRV作成
+	textureData.srvIndex = srvManager_->Allocate();
+	textureData.srvHandleCPU = srvManager_->GetCPUDescriptorHandle(textureData.srvIndex);
+	textureData.srvHandleGPU = srvManager_->GetGPUDescriptorHandle(textureData.srvIndex);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = textureData.metadata.format;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE; // ここでCubeとして認識させる
+	srvDesc.TextureCube.MostDetailedMip = 0;
+	srvDesc.TextureCube.MipLevels = (UINT) textureData.metadata.mipLevels;
+	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+	dxCommon_->GetDevice()->CreateShaderResourceView(
+		textureData.resource.Get(), &srvDesc, textureData.srvHandleCPU);
+
+	return textureData.srvHandleGPU;
 }
 
 //================================================================================

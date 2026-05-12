@@ -14,6 +14,8 @@
 #include "ParticleManager.h"
 #include "WinApp.h"
 #include "LightManager.h"
+#include "SkyboxRenderer.h"
+#include "PrimitiveRenderer.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -81,8 +83,6 @@ void GameFramework::Execute() {
 			break;
 		}
 
-		camera_->Update();
-
 		// 描画前処理
 		BeginFrame();
 
@@ -120,6 +120,7 @@ void GameFramework::Initialize() {
 	camera_ = std::make_unique<Camera>();
 	camera_->SetRotate({0.3f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 6.0f, -10.0f});
+	camera_->CalculateMatrix();
 	camera_->CreateConstantBuffer();
 
 	// SpriteRenderer の初期化
@@ -135,6 +136,12 @@ void GameFramework::Initialize() {
 	Object3dRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 	// カメラをセット
 	Object3dRenderer::GetInstance()->SetDefaultCamera(camera_.get());
+
+	// SkyboxRenderer の初期化
+	SkyboxRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
+
+	// PrimitiveRenderer の初期化
+	PrimitiveRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// AudioManager の初期化
 	AudioManager::GetInstance()->Initialize();
@@ -194,6 +201,9 @@ void GameFramework::Finalize() {
 
 	// object3dRendererを解放
 	Object3dRenderer::GetInstance()->Finalize();
+
+	// PrimitiveRendererを解放
+	PrimitiveRenderer::GetInstance()->Finalize();
 
 	// modelCommonを解放
 	ModelCommon::GetInstance()->Finalize();

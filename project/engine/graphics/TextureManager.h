@@ -81,6 +81,11 @@ public:
 	/// </summary>
 	void ReleaseIntermediateResources();
 
+	/// <summary>
+	/// 6枚の画像ファイルから1つのキューブマップを生成
+	/// </summary>
+	D3D12_GPU_DESCRIPTOR_HANDLE CreateCubemapFromFiles(const std::array<std::string, 6>& filePaths);
+
 public:
 	//================================================================================
 	// Getter

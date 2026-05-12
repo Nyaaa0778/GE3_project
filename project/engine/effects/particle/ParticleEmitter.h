@@ -48,4 +48,7 @@ private:
 
 	uint32_t count_ = 1;
 	bool isActive_ = true;
+
+	// パーティクルの大きさ
+	Vector3 particleScale = {1.0f, 1.0f, 1.0f};
 };

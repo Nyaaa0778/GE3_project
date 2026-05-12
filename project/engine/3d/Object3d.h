@@ -85,6 +85,8 @@ public:
 	// モデル
 	void SetModel(const std::string& modelName, const std::string& extension = "obj");
 
+	float GetEnvironmentCoefficient();
+
 	//// ライトの色
 	//void SetLightColor(const Vector4& color) {
 	//	directionalLightData_->color = color;
@@ -100,6 +102,11 @@ public:
 
 	// カメラ
 	void SetCamera(Camera* camera) { camera_ = camera; }
+
+	void SetEnvironmentTextureHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle) {
+		environmentTextureSrvHandleGPU_ = handle;
+	}
+	void SetEnvironmentCoefficient(float coeff);
 
 private:
 	//================================================================================
@@ -172,6 +179,8 @@ private:
 
 	// BlendMode
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
+
+	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_ {};
 
 private:
 	//================================================================================

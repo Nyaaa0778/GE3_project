@@ -173,11 +173,11 @@ void SpriteRenderer::CreateGraphicsPipeline() {
 
 	// Shaderをコンパイル
 	ComPtr<IDxcBlob> vertexShaderBlob =
-		dxCommon_->CompileShader(L"resources/shaders/Sprite.VS.hlsl", L"vs_6_0");
+		dxCommon_->CompileShader(L"resources/shaders/sprite/Sprite.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
 	ComPtr<IDxcBlob> pixelShaderBlob =
-		dxCommon_->CompileShader(L"resources/shaders/Sprite.PS.hlsl", L"ps_6_0");
+		dxCommon_->CompileShader(L"resources/shaders/sprite/Sprite.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilStateの設定

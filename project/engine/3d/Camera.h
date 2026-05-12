@@ -16,10 +16,15 @@ public:
 	/// </summary>
 	Camera();
 
-	/// <summary>
+	/*/// <summary>
 	/// 更新
 	/// </summary>
-	void Update();
+	void Update();*/
+
+	/// <summary>
+	/// 行列の計算
+	/// </summary>
+	void CalculateMatrix();
 
 public:
 	struct CameraForGPU {

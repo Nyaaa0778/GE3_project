@@ -4,6 +4,10 @@
 #include "LightManager.h"
 #include <numbers>
 
+#include "Skybox.h"
+#include "DebugCamera.h"
+#include "Plane.h"
+
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
 
@@ -13,19 +17,47 @@ void TitleScene::Initialize() {
 	camera_->SetTranslate({0.0f, 8.0f, -15.0f});
 	camera_->CreateConstantBuffer();
 
-	//// object3dの初期化
-	//sphere_ = std::make_unique<Object3d>();
-	//sphere_->Initialize("sphere");
-	//sphere_->SetCamera(camera_.get());
+	// ② デバッグカメラの初期化（★追加）
+	debugCamera_ = std::make_unique<DebugCamera>();
+	debugCamera_->Initialize(); // Inputの取得など
+	// 通常カメラの初期位置に合わせる
+	debugCamera_->SetRotate(camera_->GetRotate());
+	debugCamera_->SetTranslate(camera_->GetTranslate());
+	debugCamera_->CalculateMatrix();
+	debugCamera_->CreateConstantBuffer();
+
+	skybox_ = std::make_unique<Skybox>();
+	//std::array<std::string, 6> skyboxPaths = {
+	//	"resources/sprites/pink.png",  // +X
+	//	"resources/sprites/red.png",   // -X
+	//	"resources/sprites/blue.png",     // +Y
+	//	"resources/sprites/green.png",   // -Y
+	//	"resources/sprites/purple.png",  // +Z
+	//	"resources/sprites/yellow.png",   // -Z
+	//};
+
+	//skybox_->Initialize(skyboxPaths, camera_.get());
+
+	skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds", camera_.get());
+
+	// object3dの初期化
+	sphere_ = std::make_unique<Object3d>();
+	sphere_->Initialize("sphere");
+	sphere_->SetCamera(camera_.get());
+	sphere_->SetEnvironmentTextureHandle(skybox_->GetTextureSrvHandleGPU());
 
 	//terrain_ = std::make_unique<Object3d>();
 	//terrain_->Initialize("terrain");
 	//terrain_->SetRotation({0.0f, -1.5708f, 0.0f});
 	//terrain_->SetCamera(camera_.get());
 
-	plane_ = std::make_unique<Object3d>();
-	plane_->Initialize("plane", "gltf");
-	plane_->SetCamera(camera_.get());
+	primitive_ = std::make_unique<Plane>();
+	primitive_->Initialize("monsterBall.png");
+	primitive_->SetCamera(camera_.get());
+	// Plane へのキャストが必要な初期設定があればここで行うか、Plane内で完結させる
+	if (auto* palne = dynamic_cast<Plane*>(primitive_.get())) {
+		palne->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
+	}
 
 	// spriteの初期化
 	sprite_ = std::make_unique<Sprite>();
@@ -37,7 +69,7 @@ void TitleScene::Initialize() {
 	bgm_ = AudioManager::LoadAudio("title.mp3");
 	se_ = AudioManager::LoadAudio("bgmGamePlay.wav", SoundGroup::SE);
 
-	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png");
+	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
 
 	// 2. エミッタの生成（グループ名、追従するTransformのポインタ、発生間隔、1回の数）
 	// titleTransform_ はタイトルロゴや背景の座標を指す想定
@@ -47,7 +79,13 @@ void TitleScene::Initialize() {
 void TitleScene::Update() {
 	auto input = Input::GetInstance();
 
-	camera_->Update();
+	if (useDebugCamera_) {
+		// ★ debugCameraController_ に camera_ を「操作してくれ」と頼む
+		debugCamera_->Update(camera_.get());
+	} else {
+		// 通常時のカメラ挙動（固定やパス移動など）
+	camera_->CalculateMatrix();
+	}
 
 	if (emitter_) {
 		emitter_->Update();
@@ -96,10 +134,10 @@ void TitleScene::Update() {
 	pos.y += lStick.y * speed;
 	sphere_->SetPosition(pos);*/
 
-	/*sphere_->Update();
-	terrain_->Update();*/
+	sphere_->Update();
+	//terrain_->Update();
 
-	plane_->Update();
+	primitive_->Update();
 
 	UpdateImGui();
 
@@ -107,13 +145,15 @@ void TitleScene::Update() {
 }
 
 void TitleScene::Draw() {
+
+	sphere_->Draw();
+	//terrain_->Draw();
+
+	primitive_->Draw();
+	//skybox_->Draw();
+
 	// パーティクルの描画（インスタンシング描画が実行される）
 	ParticleManager::GetInstance()->Draw();
-
-	/*sphere_->Draw();
-	terrain_->Draw();*/
-
-	plane_->Draw();
 
 	//sprite_->Draw();
 }
@@ -213,18 +253,42 @@ void TitleScene::UpdateImGui() {
 
 	ImGui::End();
 
+	primitive_->DrawImGui("Primitive Settings");
+
 	ImGui::Begin("Object Settings"); // 新しいウィンドウを作る場合
 
 	// 1. 現在のスケールを取得
-	Vector3 rotate = plane_->GetRotate();
+	Vector3 rotate = sphere_->GetRotate();
 
 	// 2. ImGuiでX, Y, Zの値を操作する
 	// （0.01fは変化スピード。0.1f 〜 10.0f の間で制限をかけています）
 	if (ImGui::DragFloat3("Sphere rotate", &rotate.x, 0.01f, 0.1f, 100.0f)) {
 		// 3. スライダーが動かされて値が変更されたら、Object3dにセットし直す
-		plane_->SetRotation(rotate);
+		sphere_->SetRotation(rotate);
 	}
 
+	float envCoeff = sphere_->GetEnvironmentCoefficient();
+
+	if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
+		// ③ 変更された値をSetterでモデル（マテリアル）に反映
+		sphere_->SetEnvironmentCoefficient(envCoeff);
+	}
+
+	ImGui::End();
+
+	ImGui::Begin("Debug Console");
+
+	// ★追加: チェックボックスでカメラを切り替え
+	if (ImGui::Checkbox("Use Debug Camera", &useDebugCamera_)) {
+		// チェックを入れた瞬間、通常カメラの位置をデバッグカメラにコピーするとスムーズです
+		if (useDebugCamera_) {
+			debugCamera_->SetRotate(camera_->GetRotate());
+			debugCamera_->SetTranslate(camera_->GetTranslate());
+			debugCamera_->CalculateMatrix();
+		}
+	}
+
+	// ... 略 ...
 	ImGui::End();
 
 	//// ImGuiのウィンドウを作成

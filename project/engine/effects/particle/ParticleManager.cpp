@@ -5,6 +5,8 @@
 #include "Random.h"
 #include "ShaderResourceViewManager.h"
 #include "TextureManager.h"
+#include "Plane.h"
+#include "Box.h"
 
 #include <cassert>
 #include <numbers>
@@ -20,7 +22,8 @@ std::unique_ptr<ParticleManager> ParticleManager::instance = nullptr;
 /// <summary>
 /// シングルトンインスタンスの取得
 /// </summary>
-ParticleManager* ParticleManager::GetInstance() {
+ParticleManager* ParticleManager::GetInstance()
+{
 	if (instance == nullptr) {
 		instance = std::make_unique<ParticleManager>();
 	}
@@ -43,7 +46,8 @@ void ParticleManager::Finalize() { instance.reset(); }
 /// <param name="dxCommon">DirectXCommonのポインタ</param>
 /// <param name="srvManager">SrvManagerのポインタ</param>
 void ParticleManager::Initialize(DirectXCommon* dxCommon,
-	ShaderResourceViewManager* srvManager) {
+	ShaderResourceViewManager* srvManager)
+{
 	assert(dxCommon);
 	assert(srvManager);
 
@@ -51,12 +55,6 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,
 
 	dxCommon_ = dxCommon;
 	srvManager_ = srvManager;
-
-	// 頂点データの初期化
-	InitializeVertexData();
-
-	// 頂点データの作成
-	CreateVertexData();
 
 	//==================================================
 	// パイプライン生成
@@ -70,12 +68,11 @@ void ParticleManager::Initialize(DirectXCommon* dxCommon,
 /// <param name="viewMatrix">カメラのビュー行列</param>
 /// <param name="projectionMatrix">カメラの射影行列</param>
 void ParticleManager::Update(const Matrix4x4& viewMatrix,
-	const Matrix4x4& projectionMatrix) {
+	const Matrix4x4& projectionMatrix)
+{
 	const Matrix4x4 cameraWorld = MakeInverseMatrix(viewMatrix);
 
-	Matrix4x4 billboardMatrix = MakeIdentityMatrix();
-	const Matrix4x4 backToFront = MakeRotateYMatrix(std::numbers::pi_v<float>);
-	billboardMatrix = Multiply(backToFront, cameraWorld);
+	Matrix4x4 billboardMatrix = cameraWorld;
 
 	billboardMatrix.m[3][0] = 0.0f;
 	billboardMatrix.m[3][1] = 0.0f;
@@ -120,8 +117,14 @@ void ParticleManager::Update(const Matrix4x4& viewMatrix,
 			const Matrix4x4 T = MakeTranslateMatrix(p.transform.translation);
 
 			if (group.useBillboard) {
-				// 今までのビルボード処理
-				worldMatrix = Multiply(Multiply(S, billboardMatrix), T);
+				// パーティクル自身の回転(R)を計算に含める
+				const Matrix4x4 R = MakeRotateMatrix(p.transform.rotation);
+
+				// スケール(S) × 自身の回転(R) を先に行う
+				Matrix4x4 localSR = Multiply(S, R);
+
+				// その結果にビルボード行列を掛けて、最後に平行移動(T)させる
+				worldMatrix = Multiply(Multiply(localSR, billboardMatrix), T);
 			} else {
 				// 通常の回転を使用
 				const Matrix4x4 R = MakeRotateMatrix(p.transform.rotation);
@@ -153,7 +156,8 @@ void ParticleManager::Update(const Matrix4x4& viewMatrix,
 /// <summary>
 /// 描画
 /// </summary>
-void ParticleManager::Draw() {
+void ParticleManager::Draw()
+{
 	assert(dxCommon_);
 	assert(srvManager_);
 
@@ -167,11 +171,7 @@ void ParticleManager::Draw() {
 	cmd->SetPipelineState(graphicsPipelineState_.Get());
 
 	// コマンド：プリミティブトポロジー（描画形状）を設定
-	// ※4頂点の板ポリなので TRIANGLESTRIP が自然
-	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-	// コマンド：VBV を設定
-	cmd->IASetVertexBuffers(0, 1, &vertexBufferView_);
+	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// （RootParameter[0]のMaterial CBV と [3]ライトCBV を使うシェーダなら、ここで
 	// SetGraphicsRootConstantBufferView を入れる）
@@ -190,9 +190,13 @@ void ParticleManager::Draw() {
 		cmd->SetGraphicsRootDescriptorTable(
 			0, srvManager_->GetGPUDescriptorHandle(group.instancingSrvIndex));
 
+		// 頂点バッファ・インデックスバッファのセット
+		cmd->IASetVertexBuffers(0, 1, &group.primitiveGeometry->GetVertexBufferView());
+		cmd->IASetIndexBuffer(&group.primitiveGeometry->GetIndexBufferView());
+
 		// コマンド：DrawCall（インスタンシング描画）
-		cmd->DrawInstanced(static_cast<UINT>(vertices_.size()), group.instanceCount,
-			0, 0);
+		cmd->DrawIndexedInstanced(group.primitiveGeometry->GetIndexCount(), group.instanceCount,
+			0, 0, 0);
 	}
 }
 
@@ -203,7 +207,8 @@ void ParticleManager::Draw() {
 /// <summary>
 /// ルートシグネチャの生成
 /// </summary>
-void ParticleManager::CreateRootSignature() {
+void ParticleManager::CreateRootSignature()
+{
 	// RootSignature作成
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature {};
 	descriptionRootSignature.Flags =
@@ -275,7 +280,8 @@ void ParticleManager::CreateRootSignature() {
 /// <summary>
 /// グラフィックスパイプラインの生成
 /// </summary>
-void ParticleManager::CreateGraphicsPipeline() {
+void ParticleManager::CreateGraphicsPipeline()
+{
 	// ルートシグネチャを生成
 	CreateRootSignature();
 
@@ -310,18 +316,18 @@ void ParticleManager::CreateGraphicsPipeline() {
 
 	// Shaderをコンパイル
 	ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-		L"resources/shaders/Particle.VS.hlsl", L"vs_6_0");
+		L"resources/shaders/particle/Particle.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
 	ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-		L"resources/shaders/Particle.PS.hlsl", L"ps_6_0");
+		L"resources/shaders/particle/Particle.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilStateの設定
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc {};
 	// Depthの機能を有効化
-	depthStencilDesc.DepthEnable = false;
-	// 書き込む（※あなたの元コードは ZERO だったので、必要ならここを ZERO に戻す）
+	depthStencilDesc.DepthEnable = true;
+	// 書き込む（必要ならここを ZERO に戻す）
 	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 	// 比較関数はLessEqual、近ければ描画される
 	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
@@ -361,55 +367,19 @@ void ParticleManager::CreateGraphicsPipeline() {
 // データ作成処理
 //================================================================================
 
-/// <summary>
-/// 頂点データの初期化
-/// </summary>
-void ParticleManager::InitializeVertexData() {
-	vertices_.clear();
-	vertices_.reserve(4);
+	//================================================================================
+	// パーティクル生成
+	//================================================================================
 
-	vertices_.push_back(
-		{{-0.5f, 0.5f, 0.0f, 1.0f}, {0.0f, 0.0f}, {0, 0, -1}}); // 左上
-	vertices_.push_back(
-		{{-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 1.0f}, {0, 0, -1}}); // 左下
-	vertices_.push_back(
-		{{0.5f, 0.5f, 0.0f, 1.0f}, {1.0f, 0.0f}, {0, 0, -1}}); // 右上
-	vertices_.push_back(
-		{{0.5f, -0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}, {0, 0, -1}}); // 右下
-}
-/// <summary>
-/// 頂点データの作成
-/// </summary>
-void ParticleManager::CreateVertexData() {
-	// vertexResourceを作成
-	const size_t vertexBufferSize = sizeof(VertexData) * vertices_.size();
-
-	vertexBuffer_ = dxCommon_->CreateBufferResource(vertexBufferSize);
-
-	// vertexBufferViewを作成
-	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
-	vertexBufferView_.SizeInBytes = static_cast<UINT>(vertexBufferSize);
-	vertexBufferView_.StrideInBytes = sizeof(VertexData);
-
-	// vertexResourceに頂点データを書き込む
-	void* mappedVertex = nullptr;
-	vertexBuffer_->Map(0, nullptr, &mappedVertex);
-	std::memcpy(mappedVertex, vertices_.data(), vertexBufferSize);
-	vertexBuffer_->Unmap(0, nullptr);
-}
-
-//================================================================================
-// パーティクルグループ作成 / パーティクル生成
-//================================================================================
-
-/// <summary>
-/// パーティクルグループを作成
-/// </summary>
-/// <param name="name">作成するパーティクルグループ名</param>
-/// <param
-/// name="textureFilePath">グループで使用するテクスチャのファイルパス</param>
+	/// <summary>
+	/// パーティクルグループを作成
+	/// </summary>
+	/// <param name="name">作成するパーティクルグループ名</param>
+	/// <param
+	/// name="textureFilePath">グループで使用するテクスチャのファイルパス</param>
 void ParticleManager::CreateParticleGroup(const std::string groupName,
-	const std::string textureFilePath) {
+	const std::string textureFilePath, ParticleShape shape)
+{
 	// 登録済みの名前かチェック
 	const bool alreadyExists =
 		(particleGroups_.find(groupName) != particleGroups_.end());
@@ -430,6 +400,27 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 	TextureManager::GetInstance()->LoadTexture(textureFilePath);
 	group.material.textureSrvIndex =
 		TextureManager::GetInstance()->GetTextureIndexByFilePath(textureFilePath);
+
+	// Primitiveの生成と初期化
+	switch (shape) {
+	case ParticleShape::kBox:
+		group.primitiveGeometry = std::make_unique<Box>();
+		group.useBillboard = false; // 3Dオブジェクトなのでビルボードはオフ
+		break;
+	case ParticleShape::kPlane:
+	default:
+		group.primitiveGeometry = std::make_unique<Plane>();
+		group.useBillboard = true; // 2D板ポリなのでビルボードをオン
+		break;
+	}
+
+	// Primitive側は内部で "resources/sprites/" を付与するため、ファイル名だけを抽出して渡す
+	std::string fileName = textureFilePath;
+	size_t pos = fileName.find_last_of('/');
+	if (pos != std::string::npos) {
+		fileName = fileName.substr(pos + 1);
+	}
+	group.primitiveGeometry->Initialize(fileName);
 
 	// インスタンシング用リソース生成
 	const size_t instanceBufferSize =
@@ -462,7 +453,8 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 /// <param name="emitPosition">パーティクルの発生位置</param>
 /// <param name="count">発生させるパーティクル数</param>
 void ParticleManager::Emit(const std::string groupName,
-	const Vector3& emitPosition, uint32_t count) {
+	const Vector3& emitPosition, uint32_t count)
+{
 	// 登録済みのグループかチェックして assert
 	auto it = particleGroups_.find(groupName);
 	assert(it != particleGroups_.end() && "Particle group not found.");
@@ -484,30 +476,34 @@ void ParticleManager::Emit(const std::string groupName,
 /// <param name="translate">パーティクル生成位置</param>
 /// <returns>生成されたパーティクル</returns>
 ParticleManager::Particle
-ParticleManager::MakeParticle(const Vector3& translate) {
+ParticleManager::MakeParticle(const Vector3& translate)
+{
 	// -1.0f ～ 1.0f の一様乱数を使う
 	Particle particle {};
 
-	particle.transform.scale = {1.0f, 1.0f, 1.0f};
-	particle.transform.rotation = {0.0f, 0.0f, 0.0f};
+	particle.transform.scale = {0.05f, 1.0f, 1.0f};
+	float randomZ = Random::RangeFloat(0.0f, std::numbers::pi_v<float> *2.0f);/*0.0f;*/
+	particle.transform.rotation = {0.0f, 0.0f, randomZ};
 
-	Vector3 randomTranslate = Random::RangeVector3(-1.0f, 1.0f);
+	Vector3 randomTranslate = translate;
 
-	// 位置をランダム配置
-	particle.transform.translation = {
-		randomTranslate.x + translate.x, // x
-		randomTranslate.y + translate.y, // y
-		randomTranslate.z + translate.z  // z
-	};
+	//// 位置をランダム配置
+	//particle.transform.translation = {
+	//	randomTranslate.x + translate.x, // x
+	//	randomTranslate.y + translate.y, // y
+	//	randomTranslate.z + translate.z  // z
+	//};
 
-	// 速度もランダム
-	particle.velocity = Random::RangeVector3(-1.0f, 1.0f);
+	//// 速度もランダム
+	//particle.velocity = Random::RangeVector3(-1.0f, 1.0f);
 
-	particle.color = {Random::RangeFloat(0.0f, 1.0f),
+	particle.transform.translation = translate;
+
+	particle.color = /*{Random::RangeFloat(0.0f, 1.0f),
 		Random::RangeFloat(0.0f, 1.0f),
-		Random::RangeFloat(0.0f, 1.0f), 1.0f};
+		Random::RangeFloat(0.0f, 1.0f), 1.0f};*/ {1.0f,1.0f,1.0f,1.0f};
 
-	particle.lifeTime = Random::RangeFloat(1.0f, 3.0f);
+	particle.lifeTime = 1.0f;
 	particle.currentTime = 0;
 
 	return particle;
@@ -522,7 +518,8 @@ ParticleManager::MakeParticle(const Vector3& translate) {
 /// </summary>
 /// <param name="mode">使いたいBlendMode</param>
 /// <returns>ブレンド設定を格納したD3D12_BLEND_DESC</returns>
-D3D12_BLEND_DESC ParticleManager::MakeBlendDesc(BlendMode mode) {
+D3D12_BLEND_DESC ParticleManager::MakeBlendDesc(BlendMode mode)
+{
 	D3D12_BLEND_DESC blendDesc {};
 	blendDesc.RenderTarget[0].RenderTargetWriteMask =
 		D3D12_COLOR_WRITE_ENABLE_ALL;
