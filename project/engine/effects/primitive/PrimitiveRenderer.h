@@ -3,6 +3,8 @@
 #include <d3d12.h>
 #include <memory>
 #include <wrl.h>
+#include <string>
+#include <unordered_map>
 
 class DirectXCommon;
 
@@ -41,6 +43,25 @@ public:
 		kCountOfBlendMode,
 	};
 
+	//================================================================================
+	// 共有ジオメトリ (Flyweightパターン用)
+	//================================================================================
+
+	// 複数のPrimitive（例：BoxやPlane）間で頂点・インデックスバッファを共有するための構造体
+	struct SharedGeometry {
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer;
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};
+		Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer;
+		D3D12_INDEX_BUFFER_VIEW indexBufferView{};
+		uint32_t indexCount = 0;
+	};
+
+	// 共有ジオメトリの取得（まだ作られていなければ nullptr を返す）
+	SharedGeometry* GetSharedGeometry(const std::string& name);
+
+	// 生成した共有ジオメトリを登録する
+	void SetSharedGeometry(const std::string& name, const SharedGeometry& geometry);
+
 public:
 	//================================================================================
 	// 初期化 / 描画設定
@@ -56,6 +77,9 @@ public:
 private:
 	template <class InterfaceType>
 	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
+
+	// 登録された共有ジオメトリを保管するマップ
+	std::unordered_map<std::string, SharedGeometry> sharedGeometries_;
 
 	DirectXCommon* dxCommon_ = nullptr;
 

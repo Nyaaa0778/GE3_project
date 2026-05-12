@@ -102,8 +102,8 @@ void SkyboxRenderer::CreateRootSignature() {
 
 void SkyboxRenderer::CreateGraphicsPipeline() {
     // シェーダのコンパイル
-    ComPtr<IDxcBlob> vsBlob = dxCommon_->CompileShader(L"resources/shaders/Skybox.VS.hlsl", L"vs_6_0");
-    ComPtr<IDxcBlob> psBlob = dxCommon_->CompileShader(L"resources/shaders/Skybox.PS.hlsl", L"ps_6_0");
+    ComPtr<IDxcBlob> vsBlob = dxCommon_->CompileShader(L"resources/shaders/skybox/Skybox.VS.hlsl", L"vs_6_0");
+    ComPtr<IDxcBlob> psBlob = dxCommon_->CompileShader(L"resources/shaders/skybox/Skybox.PS.hlsl", L"ps_6_0");
 
     // 入力レイアウトの設定
     D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {

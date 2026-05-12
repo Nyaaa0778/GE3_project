@@ -316,11 +316,11 @@ void ParticleManager::CreateGraphicsPipeline()
 
 	// Shaderをコンパイル
 	ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-		L"resources/shaders/Particle.VS.hlsl", L"vs_6_0");
+		L"resources/shaders/particle/Particle.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
 	ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-		L"resources/shaders/Particle.PS.hlsl", L"ps_6_0");
+		L"resources/shaders/particle/Particle.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// DepthStencilStateの設定

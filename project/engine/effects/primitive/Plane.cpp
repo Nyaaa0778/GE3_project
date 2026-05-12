@@ -89,52 +89,77 @@ void Plane::SetTexture(const std::string& textureFilePath)
 
 void Plane::CreateMesh()
 {
+	auto renderer = PrimitiveRenderer::GetInstance();
+
+	// 1. すでにPlaneのメッシュが作られて保管されているかチェック
+	auto sharedGeom = renderer->GetSharedGeometry("Plane");
+	if (sharedGeom) {
+		// すでに存在する場合は、ビュー（参照情報）だけをコピーして終了（高速化）
+		vertexBufferView_ = sharedGeom->vertexBufferView;
+		indexBufferView_ = sharedGeom->indexBufferView;
+		indexCount_ = sharedGeom->indexCount;
+		return;
+	}
+
+	// 2. まだ作られていない場合（最初の1個目）はバッファを生成する
 	auto dxCommon = DirectXCommon::GetInstance();
 
 	// --- 頂点バッファの作成 ---
 	const uint32_t kNumVertices = 4;
-	vertexBuffer_ = dxCommon->CreateBufferResource(sizeof(VertexData) * kNumVertices);
+	Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer = dxCommon->CreateBufferResource(sizeof(VertexData) * kNumVertices);
 	
-	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
+	vertexBufferView_.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 	vertexBufferView_.SizeInBytes = sizeof(VertexData) * kNumVertices;
 	vertexBufferView_.StrideInBytes = sizeof(VertexData);
 
-	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
+	VertexData* vertexData = nullptr;
+	vertexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
 
 	// Planeの頂点データ（ローカル座標系）
 	// Z軸のマイナス方向を向くPlaneとする
 	// v0 (左上), v1 (右上), v2 (左下), v3 (右下)
-	vertexData_[0].position = {-1.0f, 1.0f, 0.0f, 1.0f};
-	vertexData_[0].texcoord = {0.0f, 0.0f};
-	vertexData_[0].normal = {0.0f, 0.0f, -1.0f};
+	vertexData[0].position = {-1.0f, 1.0f, 0.0f, 1.0f};
+	vertexData[0].texcoord = {0.0f, 0.0f};
+	vertexData[0].normal = {0.0f, 0.0f, -1.0f};
 
-	vertexData_[1].position = {1.0f, 1.0f, 0.0f, 1.0f};
-	vertexData_[1].texcoord = {1.0f, 0.0f};
-	vertexData_[1].normal = {0.0f, 0.0f, -1.0f};
+	vertexData[1].position = {1.0f, 1.0f, 0.0f, 1.0f};
+	vertexData[1].texcoord = {1.0f, 0.0f};
+	vertexData[1].normal = {0.0f, 0.0f, -1.0f};
 
-	vertexData_[2].position = {-1.0f, -1.0f, 0.0f, 1.0f};
-	vertexData_[2].texcoord = {0.0f, 1.0f};
-	vertexData_[2].normal = {0.0f, 0.0f, -1.0f};
+	vertexData[2].position = {-1.0f, -1.0f, 0.0f, 1.0f};
+	vertexData[2].texcoord = {0.0f, 1.0f};
+	vertexData[2].normal = {0.0f, 0.0f, -1.0f};
 
-	vertexData_[3].position = {1.0f, -1.0f, 0.0f, 1.0f};
-	vertexData_[3].texcoord = {1.0f, 1.0f};
-	vertexData_[3].normal = {0.0f, 0.0f, -1.0f};
+	vertexData[3].position = {1.0f, -1.0f, 0.0f, 1.0f};
+	vertexData[3].texcoord = {1.0f, 1.0f};
+	vertexData[3].normal = {0.0f, 0.0f, -1.0f};
 
 	// --- インデックスバッファの作成 ---
 	const uint32_t kNumIndices = 6;
-	indexBuffer_ = dxCommon->CreateBufferResource(sizeof(uint32_t) * kNumIndices);
+	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer = dxCommon->CreateBufferResource(sizeof(uint32_t) * kNumIndices);
 
-	indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+	indexBufferView_.BufferLocation = indexBuffer->GetGPUVirtualAddress();
 	indexBufferView_.SizeInBytes = sizeof(uint32_t) * kNumIndices;
 	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
 
-	indexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
+	uint32_t* indexData = nullptr;
+	indexBuffer->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
 	
 	// 三角形ポリゴン2枚
-	indexData_[0] = 0; indexData_[1] = 1; indexData_[2] = 2;
-	indexData_[3] = 2; indexData_[4] = 1; indexData_[5] = 3;
+	indexData[0] = 0; indexData[1] = 1; indexData[2] = 2;
+	indexData[3] = 2; indexData[4] = 1; indexData[5] = 3;
 
 	indexCount_ = kNumIndices;
+
+	// 3. 生成したバッファをSharedGeometryにまとめ、Rendererに保管してもらう
+	PrimitiveRenderer::SharedGeometry newGeom;
+	newGeom.vertexBuffer = vertexBuffer;
+	newGeom.vertexBufferView = vertexBufferView_;
+	newGeom.indexBuffer = indexBuffer;
+	newGeom.indexBufferView = indexBufferView_;
+	newGeom.indexCount = indexCount_;
+
+	renderer->SetSharedGeometry("Plane", newGeom);
 }
 
 void Plane::CreateMaterialData()

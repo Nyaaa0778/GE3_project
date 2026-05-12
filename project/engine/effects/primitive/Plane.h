@@ -86,13 +86,9 @@ private:
 	std::string textureFilePath_ = "uvChecker.png";
 	PrimitiveRenderer::BlendMode blendMode_ = PrimitiveRenderer::BlendMode::kNormal;
 
-	// GPUリソース
-	ComPtr<ID3D12Resource> vertexBuffer_ = nullptr;
-	VertexData* vertexData_ = nullptr;
+	// GPUリソース (共有メッシュを参照するためのViewのみ保持)
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
 
-	ComPtr<ID3D12Resource> indexBuffer_ = nullptr;
-	uint32_t* indexData_ = nullptr;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 	uint32_t indexCount_ = 0;
 

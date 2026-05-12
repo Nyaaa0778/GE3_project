@@ -110,11 +110,11 @@ void PrimitiveRenderer::CreateGraphicsPipelines() {
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
-		L"resources/shaders/Primitive.VS.hlsl", L"vs_6_0");
+		L"resources/shaders/primitive/Primitive.VS.hlsl", L"vs_6_0");
 	assert(vertexShaderBlob != nullptr);
 
 	ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
-		L"resources/shaders/Primitive.PS.hlsl", L"ps_6_0");
+		L"resources/shaders/primitive/Primitive.PS.hlsl", L"ps_6_0");
 	assert(pixelShaderBlob != nullptr);
 
 	// エフェクト用のため、Depth Write は ZERO に設定
@@ -205,3 +205,16 @@ D3D12_BLEND_DESC PrimitiveRenderer::MakeBlendDesc(BlendMode mode) {
 
 	return blendDesc;
 }
+
+PrimitiveRenderer::SharedGeometry* PrimitiveRenderer::GetSharedGeometry(const std::string& name) {
+	auto it = sharedGeometries_.find(name);
+	if (it != sharedGeometries_.end()) {
+		return &it->second;
+	}
+	return nullptr;
+}
+
+void PrimitiveRenderer::SetSharedGeometry(const std::string& name, const SharedGeometry& geometry) {
+	sharedGeometries_[name] = geometry;
+}
+
