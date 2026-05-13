@@ -7,6 +7,7 @@
 #include "TextureManager.h"
 #include "Plane.h"
 #include "Box.h"
+#include "Ring.h"
 
 #include <cassert>
 #include <numbers>
@@ -407,6 +408,10 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 		group.primitiveGeometry = std::make_unique<Box>();
 		group.useBillboard = false; // 3Dオブジェクトなのでビルボードはオフ
 		break;
+	case ParticleShape::kRing:
+		group.primitiveGeometry = std::make_unique<Ring>();
+		group.useBillboard = true; // 2D板ポリなのでビルボードをオン
+		break;
 	case ParticleShape::kPlane:
 	default:
 		group.primitiveGeometry = std::make_unique<Plane>();
@@ -481,7 +486,7 @@ ParticleManager::MakeParticle(const Vector3& translate)
 	// -1.0f ～ 1.0f の一様乱数を使う
 	Particle particle {};
 
-	particle.transform.scale = {0.05f, 1.0f, 1.0f};
+	particle.transform.scale = {1.0f, 1.0f, 1.0f};
 	float randomZ = Random::RangeFloat(0.0f, std::numbers::pi_v<float> *2.0f);/*0.0f;*/
 	particle.transform.rotation = {0.0f, 0.0f, randomZ};
 

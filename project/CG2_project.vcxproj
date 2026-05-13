@@ -231,6 +231,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effects\primitive\Plane.cpp" />
     <ClCompile Include="engine\effects\primitive\Primitive.cpp" />
     <ClCompile Include="engine\effects\primitive\PrimitiveRenderer.cpp" />
+    <ClCompile Include="engine\effects\primitive\Ring.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -366,6 +367,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\effects\primitive\Plane.h" />
     <ClInclude Include="engine\effects\primitive\Primitive.h" />
     <ClInclude Include="engine\effects\primitive\PrimitiveRenderer.h" />
+    <ClInclude Include="engine\effects\primitive\Ring.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

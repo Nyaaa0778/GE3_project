@@ -6,7 +6,7 @@
 
 #include "Skybox.h"
 #include "DebugCamera.h"
-#include "Plane.h"
+#include "Box.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -51,12 +51,12 @@ void TitleScene::Initialize() {
 	//terrain_->SetRotation({0.0f, -1.5708f, 0.0f});
 	//terrain_->SetCamera(camera_.get());
 
-	primitive_ = std::make_unique<Plane>();
-	primitive_->Initialize("monsterBall.png");
+	primitive_ = std::make_unique<Box>();
+	primitive_->Initialize("pink.png");
 	primitive_->SetCamera(camera_.get());
 	// Plane へのキャストが必要な初期設定があればここで行うか、Plane内で完結させる
-	if (auto* palne = dynamic_cast<Plane*>(primitive_.get())) {
-		palne->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
+	if (auto* box = dynamic_cast<Box*>(primitive_.get())) {
+		box->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
 	}
 
 	// spriteの初期化
@@ -69,11 +69,11 @@ void TitleScene::Initialize() {
 	bgm_ = AudioManager::LoadAudio("title.mp3");
 	se_ = AudioManager::LoadAudio("bgmGamePlay.wav", SoundGroup::SE);
 
-	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
+	ParticleManager::GetInstance()->CreateParticleGroup("RingParticle", "resources/sprites/gradationLine.png", ParticleManager::ParticleShape::kRing);
 
 	// 2. エミッタの生成（グループ名、追従するTransformのポインタ、発生間隔、1回の数）
 	// titleTransform_ はタイトルロゴや背景の座標を指す想定
-	emitter_ = std::make_unique<ParticleEmitter>("CircleParticle", &particleTransform_, 0.2f, 3);
+	emitter_ = std::make_unique<ParticleEmitter>("RingParticle", &particleTransform_, 0.2f, 3);
 }
 
 void TitleScene::Update() {
