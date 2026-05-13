@@ -16,6 +16,7 @@
 #include "LightManager.h"
 #include "SkyboxRenderer.h"
 #include "PrimitiveRenderer.h"
+#include "PostProcessRenderer.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -116,6 +117,8 @@ void GameFramework::Initialize() {
 	// srvManage rの初期化
 	ShaderResourceViewManager::GetInstance()->Initialize();
 
+	DirectXCommon::GetInstance()->InitializeRenderTexture();
+
 	// カメラの初期化
 	camera_ = std::make_unique<Camera>();
 	camera_->SetRotate({0.3f, 0.0f, 0.0f});
@@ -149,6 +152,9 @@ void GameFramework::Initialize() {
 	// TextureManafer の初期化
 	TextureManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
+
+	// PostProcessRenderer の初期化
+	PostProcessRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// ParticleManager の初期化
 	ParticleManager::GetInstance()->Initialize(DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
@@ -199,6 +205,9 @@ void GameFramework::Finalize() {
 	// inputを解放
 	Input::GetInstance()->Finalize();
 
+	// PostProcessRenderer を解放
+	PostProcessRenderer::GetInstance()->Finalize();
+
 	// object3dRendererを解放
 	Object3dRenderer::GetInstance()->Finalize();
 
@@ -225,7 +234,7 @@ void GameFramework::Finalize() {
 	// DirectXを解放
 	DirectXCommon::GetInstance()->Finalize();
 
-	// WIndowsAPIを解放
+	// WindowsAPIを解放
 	WinApp::GetInstance()->Finalize();
 }
 
@@ -269,11 +278,16 @@ void GameFramework::BeginFrame() {
 /// </summary>
 void GameFramework::EndFrame() {
 
-#ifdef USE_IMGUI
+	// 1. 描画先を Swapchain（画面）に切り替える
+	DirectXCommon::GetInstance()->PreDrawImGui();
 
+	// 2. RenderTextureの画像を Swapchain にコピーして描画する
+	uint32_t rtexSrvIndex = DirectXCommon::GetInstance()->GetRenderTextureSrvIndex();
+	D3D12_GPU_DESCRIPTOR_HANDLE rtexSrvHandle = ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(rtexSrvIndex);
+	PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
+
+	// 3. コピーした画像の上に ImGui を重ねて描画する
 	ImGuiManager::GetInstance()->Draw();
-
-#endif
 
 	DirectXCommon::GetInstance()->EndDraw();
 

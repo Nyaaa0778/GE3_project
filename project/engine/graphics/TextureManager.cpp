@@ -141,6 +141,74 @@ void TextureManager::LoadTexture(const std::string& filePath) {
 			mipImages);
 }
 
+Microsoft::WRL::ComPtr<ID3D12Resource> TextureManager::CreateRenderTextureResource(Microsoft::WRL::ComPtr<ID3D12Device> device, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor)
+{
+	// ==========================================
+	// 1. resourceDescの設定
+	// ==========================================
+	
+	D3D12_RESOURCE_DESC resourceDesc {};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; // 2Dテクスチャ
+	resourceDesc.Width = width;                                  // 引数の幅
+	resourceDesc.Height = height;                                // 引数の高さ
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = format;                                // 引数のフォーマット
+	resourceDesc.SampleDesc.Count = 1;                           // アンチエイリアスしない場合
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+	// RenderTargetとして利用可能にする
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+
+	// ==========================================
+	// 2. Heapの設定 
+	// ==========================================
+	// 当然VRAM上に作る
+	D3D12_HEAP_PROPERTIES heapProperties {};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+
+	// ==========================================
+	// 3. ClearValueの設定 
+	// ==========================================
+	// 最適化のためのクリア値設定
+	D3D12_CLEAR_VALUE clearValue;
+	clearValue.Format = format;
+	clearValue.Color[0] = clearColor.x;
+	clearValue.Color[1] = clearColor.y;
+	clearValue.Color[2] = clearColor.z;
+	clearValue.Color[3] = clearColor.w;
+
+
+	// ==========================================
+	// 4. Resourceの作成 
+	// ==========================================
+	Microsoft::WRL::ComPtr<ID3D12Resource> resource = nullptr;
+
+	// CreateCommittedResourceの呼び出し
+	HRESULT hr = device->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_RENDER_TARGET, // これから描画することを前提としたTextureなのでRenderTargetとして使う
+		&clearValue,                        // Clear最適値
+		IID_PPV_ARGS(&resource)
+	);
+
+	// ※HRESULTのチェック
+	if (FAILED(hr)) {
+		assert(false);
+	}
+
+	// ==========================================
+	// 5. 戻り値
+	// ==========================================
+	// 作ったResourceを返す
+	return resource;
+}
+
 /// <summary>
 /// 中間リソースの解放
 /// </summary>

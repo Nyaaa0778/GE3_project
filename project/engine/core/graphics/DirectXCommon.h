@@ -13,7 +13,8 @@
 
 class WinApp;
 
-class DirectXCommon {
+class DirectXCommon
+{
 public:
 	//================================================================================
 	// 定数
@@ -73,6 +74,11 @@ public:
 	void Initialize(WinApp* winApp);
 
 	/// <summary>
+	/// RenderTextureの初期化
+	/// </summary>
+	void InitializeRenderTexture();
+
+	/// <summary>
 	/// 描画前処理
 	/// </summary>
 	void BeginDraw();
@@ -80,6 +86,11 @@ public:
 	/// 描画後処理
 	/// </summary>
 	void EndDraw();
+
+	/// <summary>
+	/// Swapchainに対してImGuiを描画する設定
+	/// </summary>
+	void PreDrawImGui();
 
 public:
 	//================================================================================
@@ -119,6 +130,8 @@ public:
 	/// <param name="index">取得したいSRVのインデックス番号</param>
 	/// <returns>SRVのCPUディスクリプタハンドル</returns>
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGPUDescriptorHandle(uint32_t index);
+
+	uint32_t GetRenderTextureSrvIndex() const { return srvIndexRenderTexture_; }
 
 private:
 	//================================================================================
@@ -224,6 +237,13 @@ private:
 	IDxcUtils* dxcUtils_ = nullptr;
 	IDxcCompiler3* dxcCompiler_ = nullptr;
 	IDxcIncludeHandler* includeHandler_ = nullptr;
+
+	//================================================================================
+	// RenderTexture
+	//================================================================================
+	ComPtr<ID3D12Resource> renderTextureResource_ = nullptr;
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandleRenderTexture_ {}; // RenderTexture用のRTV
+	uint32_t srvIndexRenderTexture_ = 0;                   // RenderTexture用のSRVインデックス
 
 public:
 	//================================================================================
