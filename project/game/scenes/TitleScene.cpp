@@ -6,7 +6,7 @@
 
 #include "Skybox.h"
 #include "DebugCamera.h"
-#include "Box.h"
+#include "Ring.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -51,12 +51,12 @@ void TitleScene::Initialize() {
 	//terrain_->SetRotation({0.0f, -1.5708f, 0.0f});
 	//terrain_->SetCamera(camera_.get());
 
-	primitive_ = std::make_unique<Box>();
-	primitive_->Initialize("pink.png");
+	primitive_ = std::make_unique<Ring>();
+	primitive_->Initialize("gradationLine.png");
 	primitive_->SetCamera(camera_.get());
 	// Plane へのキャストが必要な初期設定があればここで行うか、Plane内で完結させる
-	if (auto* box = dynamic_cast<Box*>(primitive_.get())) {
-		box->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
+	if (auto* ring = dynamic_cast<Ring*>(primitive_.get())) {
+		ring->SetPosition({ 2.0f, 0.0f, 0.0f }); // 少しずらしておく
 	}
 
 	// spriteの初期化
@@ -87,11 +87,11 @@ void TitleScene::Update() {
 	camera_->CalculateMatrix();
 	}
 
-	if (emitter_) {
+	/*if (emitter_) {
 		emitter_->Update();
 	}
 
-	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());*/
 
 	// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
 	if (input->TriggerKey(DIK_SPACE)) {
@@ -153,7 +153,7 @@ void TitleScene::Draw() {
 	//skybox_->Draw();
 
 	// パーティクルの描画（インスタンシング描画が実行される）
-	ParticleManager::GetInstance()->Draw();
+	//ParticleManager::GetInstance()->Draw();
 
 	//sprite_->Draw();
 }
@@ -165,236 +165,140 @@ void TitleScene::Finalize() {
 void TitleScene::UpdateImGui() {
 #ifdef USE_IMGUI
 
-	// 【要件クリア】1. ウィンドウのサイズを固定する (例: 幅400, 高さ300)
-	// ImGuiCond_Once
-	// を指定すると、最初の1回だけサイズを設定し、以後はそのサイズを維持します。
-	ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Once);
+	// ウィンドウ全体のサイズと位置の初期設定（必要に応じて調整してください）
+	ImGui::SetNextWindowSize(ImVec2(400.0f, 500.0f), ImGuiCond_Once);
 
-	// もしユーザーのドラッグによるリサイズ自体を完全に禁止したい場合は、フラグを渡します。
-	ImGui::Begin("Sprite Control", nullptr, ImGuiWindowFlags_NoResize);
+	// 1つの大きな親ウィンドウを作成
+	ImGui::Begin("Debug Menu", nullptr);
 
-	ImGui::SeparatorText("Sprite Object");
-
-	// 【要件クリア】2. Spriteの操作 & 3. 小数点1桁表示 ("%.1f")
-
-	// 位置 (2D想定で Vector2 にしていますが、エンジン仕様が Vector3 なら
-	// DragFloat3 にしてください)
-	{
+	// ==========================================
+	// 1. Sprite Control
+	// ==========================================
+	if (ImGui::CollapsingHeader("Sprite Control")) {
 		Vector2 pos = sprite_->GetPosition();
-		// 引数: ラベル, 変数のアドレス, 変化量, 最小値, 最大値(0で制限なし),
-		// フォーマット
-		if (ImGui::DragFloat2("Position", &pos.x, 1.0f, 0.0f, 0.0f, "%.1f")) {
+		// ※ImGuiは同じラベル名("Position"など)が複数あると誤動作するため、名前を固有にしています
+		if (ImGui::DragFloat2("Sprite Position", &pos.x, 1.0f, 0.0f, 0.0f, "%.1f")) {
 			sprite_->SetPosition(pos);
 		}
-	}
 
-	// スケール
-	{
 		Vector2 scale = sprite_->GetScale();
-		if (ImGui::DragFloat2("Scale", &scale.x, 0.1f, -10.0f, 10.0f, "%.1f")) {
+		if (ImGui::DragFloat2("Sprite Scale", &scale.x, 0.1f, -10.0f, 10.0f, "%.1f")) {
 			sprite_->SetScale(scale);
 		}
-	}
 
-	// 回転 (2DのZ軸回転を想定し、単一の float で扱う場合)
-	{
 		float rot = sprite_->GetRotate();
-		if (ImGui::DragFloat("Rotation", &rot, 0.1f, -6.28f, 6.28f, "%.1f")) {
+		if (ImGui::DragFloat("Sprite Rotation", &rot, 0.1f, -6.28f, 6.28f, "%.1f")) {
 			sprite_->SetRotation(rot);
 		}
-	}
 
-	// 色・透明度 (アルファ値)
-	{
 		Vector4 color = sprite_->GetColor();
 		float col[4] = {color.x, color.y, color.z, color.w};
-
-		if (ImGui::ColorEdit4("Color", col)) {
+		if (ImGui::ColorEdit4("Sprite Color", col)) {
 			Vector4 newColor(col[0], col[1], col[2], col[3]);
 			sprite_->SetColor(newColor);
 		}
 	}
 
-	ImGui::End();
+	// ==========================================
+	// 2. Camera Control
+	// ==========================================
+	if (ImGui::CollapsingHeader("Camera Control")) {
+		Vector3 camPos = camera_->GetTranslate();
+		if (ImGui::DragFloat3("Camera Position", &camPos.x, 0.1f)) {
+			camera_->SetTranslate(camPos);
+		}
 
-	// 1. カメラ操作用のウィンドウを作成
-	ImGui::Begin("Camera Control");
+		Vector3 camRot = camera_->GetRotate();
+		if (ImGui::DragFloat3("Camera Rotation", &camRot.x, 0.01f)) {
+			camera_->SetRotate(camRot);
+		}
 
-	// 座標（Translation）の調整
-	// ※Cameraクラスのメンバ関数名が GetTranslate/SetTranslate であると仮定しています。
-	//   もしエラーが出る場合は GetPosition/SetPosition に読み替えてください。
-	Vector3 camPos = camera_->GetTranslate();
-	if (ImGui::DragFloat3("Position", &camPos.x, 0.1f)) {
-		camera_->SetTranslate(camPos);
+		if (ImGui::Button("Reset Camera")) {
+			camera_->SetTranslate({0.0f, 0.0f, -10.0f});
+			camera_->SetRotate({0.0f, 0.0f, 0.0f});
+		}
 	}
 
-	// 回転（Rotation）の調整
-	Vector3 camRot = camera_->GetRotate();
-	if (ImGui::DragFloat3("Rotation", &camRot.x, 0.01f)) {
-		camera_->SetRotate(camRot);
-	}
-
-	// リセットボタン（あると便利です）
-	if (ImGui::Button("Reset Camera")) {
-		camera_->SetTranslate({0.0f, 0.0f, -10.0f}); // 初期位置へ
-		camera_->SetRotate({0.0f, 0.0f, 0.0f});
-	}
-
-	ImGui::End();
-
-	if (ImGui::Begin("Particle Debug")) {
-		// 特定のグループ（例: "CircleParticle"）のビルボード設定をいじる
-		// ※実際には全グループをループで回して表示するとより便利です
-		auto& groups = ParticleManager::GetInstance()->GetGroups(); // GetGroups()を自作して参照を返す
+	// ==========================================
+	// 3. Particle Debug
+	// ==========================================
+	if (ImGui::CollapsingHeader("Particle Debug")) {
+		auto& groups = ParticleManager::GetInstance()->GetGroups();
 		for (auto& [name, group] : groups) {
 			ImGui::Checkbox((name + " Billboard").c_str(), &group.useBillboard);
 		}
 	}
 
-	ImGui::End();
-
-	primitive_->DrawImGui("Primitive Settings");
-
-	ImGui::Begin("Object Settings"); // 新しいウィンドウを作る場合
-
-	// 1. 現在のスケールを取得
-	Vector3 rotate = sphere_->GetRotate();
-
-	// 2. ImGuiでX, Y, Zの値を操作する
-	// （0.01fは変化スピード。0.1f 〜 10.0f の間で制限をかけています）
-	if (ImGui::DragFloat3("Sphere rotate", &rotate.x, 0.01f, 0.1f, 100.0f)) {
-		// 3. スライダーが動かされて値が変更されたら、Object3dにセットし直す
-		sphere_->SetRotation(rotate);
+	// ==========================================
+	// 4. Primitive Settings
+	// ==========================================
+	if (ImGui::CollapsingHeader("Primitive Settings")) {
+		// ⚠️注意: primitive_->DrawImGui() の実装内で ImGui::Begin() / ImGui::End() が
+		// 呼ばれている場合、このウィンドウとは別に独立して表示されてしまいます。
+		// 1つのウィンドウにまとめるには、DrawImGui() 側の Begin/End を削除してください。
+		primitive_->DrawImGui("Primitive Settings");
 	}
 
-	float envCoeff = sphere_->GetEnvironmentCoefficient();
+	// ==========================================
+	// 5. Object Settings
+	// ==========================================
+	if (ImGui::CollapsingHeader("Object Settings")) {
+		Vector3 rotate = sphere_->GetRotate();
+		if (ImGui::DragFloat3("Sphere Rotate", &rotate.x, 0.01f, 0.1f, 100.0f)) {
+			sphere_->SetRotation(rotate);
+		}
 
-	if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
-		// ③ 変更された値をSetterでモデル（マテリアル）に反映
-		sphere_->SetEnvironmentCoefficient(envCoeff);
-	}
-
-	ImGui::End();
-
-	ImGui::Begin("Debug Console");
-
-	// ★追加: チェックボックスでカメラを切り替え
-	if (ImGui::Checkbox("Use Debug Camera", &useDebugCamera_)) {
-		// チェックを入れた瞬間、通常カメラの位置をデバッグカメラにコピーするとスムーズです
-		if (useDebugCamera_) {
-			debugCamera_->SetRotate(camera_->GetRotate());
-			debugCamera_->SetTranslate(camera_->GetTranslate());
-			debugCamera_->CalculateMatrix();
+		float envCoeff = sphere_->GetEnvironmentCoefficient();
+		if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
+			sphere_->SetEnvironmentCoefficient(envCoeff);
 		}
 	}
 
-	// ... 略 ...
+	// ==========================================
+	// 6. Debug Console
+	// ==========================================
+	if (ImGui::CollapsingHeader("Debug Console")) {
+		if (ImGui::Checkbox("Use Debug Camera", &useDebugCamera_)) {
+			if (useDebugCamera_) {
+				debugCamera_->SetRotate(camera_->GetRotate());
+				debugCamera_->SetTranslate(camera_->GetTranslate());
+				debugCamera_->CalculateMatrix();
+			}
+		}
+	}
+
+	// ==========================================
+	// 7. Light Settings (元々コメントアウトされていた部分)
+	// ==========================================
+	/*
+	if (ImGui::CollapsingHeader("Light Settings")) {
+		LightManager* lightManager = LightManager::GetInstance();
+
+		if (ImGui::TreeNode("Directional Light")) {
+			Vector4 color = lightManager->GetDirectionalLightColor();
+			Vector3 direction = lightManager->GetDirectionalLightDirection();
+			float intensity = lightManager->GetDirectionalLightIntensity();
+
+			ImGui::ColorEdit4("Dir Color", &color.x);
+			ImGui::DragFloat3("Dir Direction", &direction.x, 0.01f, -1.0f, 1.0f);
+			ImGui::DragFloat("Dir Intensity", &intensity, 0.01f, 0.0f, 10.0f);
+
+			lightManager->SetDirectionalLightColor(color);
+			lightManager->SetDirectionalLightDirection(direction);
+			lightManager->SetDirectionalLightIntensity(intensity);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNode("Local Light")) {
+			// ... 略(元のコードのまま配置できます) ...
+			ImGui::TreePop();
+		}
+	}
+	*/
+
+	// 親ウィンドウを閉じる（全体でこれ1つだけ！）
 	ImGui::End();
-
-	//// ImGuiのウィンドウを作成
-	//ImGui::Begin("Light Settings");
-
-	//// LightManagerのインスタンスを取得
-	//LightManager* lightManager = LightManager::GetInstance();
-
-	//// --------------------------------------------------
-	//// ① Directional Light の設定
-	//// --------------------------------------------------
-	//if (ImGui::TreeNode("Directional Light")) {
-	//	Vector4 color = lightManager->GetDirectionalLightColor();
-	//	Vector3 direction = lightManager->GetDirectionalLightDirection();
-	//	float intensity = lightManager->GetDirectionalLightIntensity();
-
-	//	ImGui::ColorEdit4("Color", &color.x);
-	//	ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
-	//	ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 10.0f);
-
-	//	lightManager->SetDirectionalLightColor(color);
-	//	lightManager->SetDirectionalLightDirection(direction);
-	//	lightManager->SetDirectionalLightIntensity(intensity);
-
-	//	ImGui::TreePop(); // TreeNodeを閉じる
-	//}
-
-	//if (ImGui::TreeNode("Local Light")) {
-	//	// 現在の状態を取得
-	//	LocalLightType currentType = lightManager->GetLocalLightType();
-	//	Vector4 color = lightManager->GetLocalLightColor();
-	//	Vector3 position = lightManager->GetLocalLightPosition();
-	//	float intensity = lightManager->GetLocalLightIntensity();
-	//	float distance = lightManager->GetLocalLightDistance();
-	//	float decay = lightManager->GetLocalLightDecay();
-
-	//	// 1. ライトの種類切り替え
-	//	const char* localLightTypeNames[] = {"Point", "Spot"};
-	//	int typeIndex = static_cast<int>(currentType);
-	//	if (ImGui::Combo("Light Type", &typeIndex, localLightTypeNames, IM_ARRAYSIZE(localLightTypeNames))) {
-	//		lightManager->SetLocalLightType(static_cast<LocalLightType>(typeIndex));
-	//	}
-
-	//	ImGui::Separator();
-
-	//	// 2. 共通設定
-	//	ImGui::ColorEdit4("Color", &color.x);
-	//	ImGui::DragFloat3("Position", &position.x, 0.1f);
-	//	ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 100.0f);
-	//	ImGui::DragFloat("Distance", &distance, 0.1f, 0.0f, 100.0f);
-	//	ImGui::DragFloat("Decay", &decay, 0.01f, 0.0f, 10.0f);
-
-	//	// 反映
-	//	lightManager->SetLocalLightColor(color);
-	//	lightManager->SetLocalLightPosition(position);
-	//	lightManager->SetLocalLightIntensity(intensity);
-	//	lightManager->SetLocalLightDistance(distance);
-	//	lightManager->SetLocalLightDecay(decay);
-
-	//	// 3. スポットライト専用設定
-	//	if (currentType == LocalLightType::kSpot) {
-	//		ImGui::Text("Spotlight Settings");
-
-	//		Vector3 direction = lightManager->GetLocalLightDirection();
-	//		float cosAngle = lightManager->GetLocalLightCosAngle();
-	//		float cosFalloff = lightManager->GetLocalLightCosFalloffStart();
-
-	//		// コサインを角度(度数法)に戻して表示
-	//		float angleDeg = std::acos(cosAngle) * 180.0f / std::numbers::pi_v<float>;
-	//		float falloffDeg = std::acos(cosFalloff) * 180.0f / std::numbers::pi_v<float>;
-
-	//		ImGui::DragFloat3("Direction", &direction.x, 0.01f, -1.0f, 1.0f);
-	//		if (ImGui::DragFloat("Angle", &angleDeg, 0.1f, 0.0f, 90.0f)) {
-	//			// 変更があったらコサインに変換してセット
-	//			cosAngle = std::cos(angleDeg * std::numbers::pi_v<float> / 180.0f);
-	//		}
-	//		if (ImGui::DragFloat("Falloff Start", &falloffDeg, 0.1f, 0.0f, angleDeg)) {
-	//			cosFalloff = std::cos(falloffDeg * std::numbers::pi_v<float> / 180.0f);
-	//		}
-
-	//		lightManager->SetLocalLightDirection(direction);
-	//		lightManager->SetLocalLightCosAngle(cosAngle);
-	//		lightManager->SetLocalLightCosFalloffStart(cosFalloff);
-	//	}
-
-	//	ImGui::TreePop();
-	//}
-
-	//// ==========================================
-	//// ここから追加：ライティングの種類の変更
-	//// ==========================================
-	//ImGui::Separator(); // 区切り線
-
-	//// プルダウンに表示する名前の配列（LightingTypeの順番に合わせる）
-	//const char* lightingTypeNames[] = {"None", "Lambert", "Half Lambert", "Phong", "Blinn-Phong"};
-
-	//// 現在選択されている種類のインデックス（初期値はModelの初期化に合わせておく）
-	//static int currentLightingType = static_cast<int>(LightingType::kHalfLambert);
-
-	//// コンボボックスで変更があった場合、Object3d に反映させる
-	//if (ImGui::Combo("Lighting Type", &currentLightingType, lightingTypeNames, IM_ARRAYSIZE(lightingTypeNames))) {
-	//	sphere_->SetLightingType(static_cast<LightingType>(currentLightingType));
-	//}
-	//// ==========================================
-
-	//ImGui::End();
 
 #endif
 }
