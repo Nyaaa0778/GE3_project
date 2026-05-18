@@ -281,6 +281,7 @@
     <FxCompile Include="resources\shaders\primitive\Primitive.VS.hlsl">
       <Filter>リソース ファイル\shaders\primitive</Filter>
     </FxCompile>
+    <FxCompile Include="resources\shaders\finalBlit\Grayscale.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
