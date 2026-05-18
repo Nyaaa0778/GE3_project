@@ -282,6 +282,7 @@
       <Filter>リソース ファイル\shaders\primitive</Filter>
     </FxCompile>
     <FxCompile Include="resources\shaders\finalBlit\Grayscale.PS.hlsl" />
+    <FxCompile Include="resources\shaders\finalBlit\Vignetting.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
