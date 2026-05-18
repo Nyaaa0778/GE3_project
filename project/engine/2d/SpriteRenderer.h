@@ -49,6 +49,20 @@ private:
 
 public:
 	//================================================================================
+	// Blend Mode
+	//================================================================================
+
+	enum class BlendMode {
+		kNone,
+		kNormal,
+		kAdd,
+		kSubtract,
+		kMultiply,
+		kScreen,
+		kCountOfBlendMode,
+	};
+
+	//================================================================================
 	// 初期化 / 描画設定
 	//================================================================================
 
@@ -60,7 +74,7 @@ public:
 	/// <summary>
 	/// 共通描画設定
 	/// </summary>
-	void SetupCommonRenderState();
+	void SetupCommonRenderState(BlendMode blendMode = BlendMode::kNormal);
 
 private:
 	//================================================================================
@@ -86,7 +100,7 @@ private:
 	// ルートシグネチャ
 	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
 	// グラフィックスパイプラインステート
-	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+	ComPtr<ID3D12PipelineState> graphicsPipelineStates_[static_cast<size_t>(BlendMode::kCountOfBlendMode)];
 
 private:
 	//================================================================================
@@ -102,4 +116,6 @@ private:
 	/// グラフィックスパイプラインの生成
 	/// </summary>
 	void CreateGraphicsPipeline();
+
+	D3D12_BLEND_DESC MakeBlendDesc(BlendMode mode);
 };

@@ -3,6 +3,8 @@
 #include <d3d12.h>
 #include <string>
 
+#include <Vector3.h>
+
 class Camera;
 
 class Primitive
@@ -24,4 +26,8 @@ public:
 	virtual const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const = 0;
 	virtual const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const = 0;
 	virtual uint32_t GetIndexCount() const = 0;
+
+public:
+	virtual const Vector3& GetPosition() const = 0;
+	virtual void SetPosition(const Vector3& position) = 0;
 };

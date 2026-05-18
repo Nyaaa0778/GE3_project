@@ -67,6 +67,33 @@ namespace MathUtility {
 		return {v.x / length, v.y / length, v.z / length};
 	}
 
+	// 座標変換 (ベクトルと行列の掛け算)
+	Vector3 Transform(const Vector3& v, const Matrix4x4& m) {
+		Vector3 result;
+		result.x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + 1.0f * m.m[3][0];
+		result.y = v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + 1.0f * m.m[3][1];
+		result.z = v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + 1.0f * m.m[3][2];
+		float w = v.x * m.m[0][3] + v.y * m.m[1][3] + v.z * m.m[2][3] + 1.0f * m.m[3][3];
+		if (w != 0.0f) {
+			result.x /= w;
+			result.y /= w;
+			result.z /= w;
+		}
+		return result;
+	}
+
+	// 3D座標から2Dスクリーン座標への投影
+	Vector2 Project(const Vector3& pos3d, const Matrix4x4& viewProjectionMatrix, float viewportWidth, float viewportHeight) {
+		// 1. 3D座標をNDC (正規化デバイス座標系) に変換
+		Vector3 ndcPos = Transform(pos3d, viewProjectionMatrix);
+
+		// 2. NDC (-1.0 ~ 1.0) をスクリーン座標 (0 ~ Width, 0 ~ Height) に変換
+		float screenX = (ndcPos.x + 1.0f) * 0.5f * viewportWidth;
+		float screenY = (1.0f - ndcPos.y) * 0.5f * viewportHeight; // Yは上が正から下が正へ反転
+
+		return {screenX, screenY};
+	}
+
 	//================================================================================
 	// ベクトル演算子オーバーロード
 	//================================================================================

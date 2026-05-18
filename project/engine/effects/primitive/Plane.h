@@ -24,10 +24,6 @@ public:
 	void Update() override;
 	void Draw() override;
 
-	// Transform Getter/Setter
-	const Vector3& GetPosition() const { return position_; }
-	void SetPosition(const Vector3& position) { position_ = position; }
-
 	const Vector3& GetRotation() const { return rotation_; }
 	void SetRotation(const Vector3& rotation) { rotation_ = rotation; }
 
@@ -48,6 +44,9 @@ public:
 
 	// Texture Setter
 	void SetTexture(const std::string& textureFilePath);
+
+	const Vector3& GetPosition() const override { return position_; }        
+	void SetPosition(const Vector3& position) override { position_ = position; } 
 
 	// Buffer Getters
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const override { return vertexBufferView_; }

@@ -11,6 +11,8 @@
 #include <string>
 #include <wrl.h>
 
+#include "SpriteRenderer.h"
+
 class Sprite {
 public:
 	//================================================================================
@@ -55,6 +57,8 @@ public:
 	const Vector2& GetTextureLeftTop() const { return textureLeftTop_; }
 	// テクスチャの切り抜きサイズ
 	const Vector2& GetTextureSize() const { return textureSize_; }
+	// ブレンドモード
+	SpriteRenderer::BlendMode GetBlendMode() const { return blendMode_; }
 
 	//================================================================================
 	// Setter
@@ -82,6 +86,8 @@ public:
 	void SetTextureLeftTop(const Vector2& textureLeftTop);
 	// テクスチャの切り抜きサイズ
 	void SetTextureSize(const Vector2& textureSize);
+	// ブレンドモード
+	void SetBlendMode(SpriteRenderer::BlendMode blendMode);
 
 private:
 	//================================================================================
@@ -180,6 +186,9 @@ private:
 	bool isFlipX_ = false;
 	// 上下反転フラグ
 	bool isFlipY_ = false;
+
+	// ブレンドモード
+	SpriteRenderer::BlendMode blendMode_ = SpriteRenderer::BlendMode::kNormal;
 
 private:
 	//================================================================================

@@ -121,7 +121,6 @@ void GameFramework::Initialize() {
 	camera_->SetRotate({0.3f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 6.0f, -10.0f});
 	camera_->CalculateMatrix();
-	camera_->CreateConstantBuffer();
 
 	// SpriteRenderer の初期化
 	SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());

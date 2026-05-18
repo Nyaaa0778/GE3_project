@@ -102,7 +102,7 @@ void Sprite::Update() {
 /// </summary>
 void Sprite::Draw() {
 
-	SpriteRenderer::GetInstance()->SetupCommonRenderState();
+	SpriteRenderer::GetInstance()->SetupCommonRenderState(blendMode_);
 
 	// vertexBufferViewを設定
 	DirectXCommon::GetInstance()->GetCommandList()->IASetVertexBuffers(
@@ -266,4 +266,8 @@ void Sprite::SetTextureLeftTop(const Vector2& textureLeftTop) {
 // テクスチャの切り抜きサイズ
 void Sprite::SetTextureSize(const Vector2& textureSize) {
 	textureSize_ = textureSize;
+}
+// ブレンドモード
+void Sprite::SetBlendMode(SpriteRenderer::BlendMode blendMode) {
+	blendMode_ = blendMode;
 }

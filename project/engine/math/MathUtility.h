@@ -40,6 +40,12 @@ namespace MathUtility {
 	// 正規化
 	Vector3 Normalize(const Vector3& v);
 
+	// 座標変換 (ベクトルと行列の掛け算)
+	Vector3 Transform(const Vector3& v, const Matrix4x4& m);
+
+	// 3D座標から2Dスクリーン座標への投影
+	Vector2 Project(const Vector3& pos3d, const Matrix4x4& viewProjectionMatrix, float viewportWidth, float viewportHeight);
+
 	//================================================================================
 	// ベクトル演算子オーバーロード
 	//================================================================================

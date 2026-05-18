@@ -22,6 +22,7 @@ Camera::Camera()
 	viewProjectionMatrix_(viewMatrix_*
 		projectionMatrix_) // ビュープロジェクション行列
 {
+	CreateConstantBuffer();
 }
 
 //void Camera::Update() {

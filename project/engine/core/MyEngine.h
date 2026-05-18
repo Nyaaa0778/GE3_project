@@ -5,6 +5,7 @@
 #include "SceneManager.h"
 #include "ImGuiManager.h"
 #include "Camera.h"
+#include "DebugCamera.h"
 
 // 描画
 #include "Object3d.h"

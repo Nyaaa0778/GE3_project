@@ -36,10 +36,10 @@ void LightManager::InitializeDirectionalLight(DirectXCommon* dxCommon) {
 	// マッピングしてC++から書き込めるようにする
 	directionalLightBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
 
-	// デフォルト設定 (白光、斜め下、輝度0.0f)
+	// デフォルト設定 (白光、斜め下、輝度1.0f)
 	directionalLightData_->color = {1.0f, 1.0f, 1.0f, 1.0f};
 	directionalLightData_->direction = {0.0f, -1.0f, 0.5f};
-	directionalLightData_->intensity = 0.0f;
+	directionalLightData_->intensity = 1.0f;
 }
 
 //================================================================================

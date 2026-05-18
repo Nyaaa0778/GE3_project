@@ -64,16 +64,16 @@ float3 CalculateDirectionalLight(float3 normal, float3 toEye, float3 baseColor)
     /* -------------------------------------------
       ① 拡散反射 (Diffuse) の計算
     ------------------------------------------- */
-    if (gMaterial.lightingType == 1 || gMaterial.lightingType == 3 || gMaterial.lightingType == 4)
+    // ハーフランバートを適用するタイプ： 2:HalfLambert, 3:Phong, 4:BlinnPhong
+    if (gMaterial.lightingType == 2 || gMaterial.lightingType == 3 || gMaterial.lightingType == 4)
     {
-        // ランバート (1:Lambert, 3:Phong, 4:BlinnPhong は基本ランバートベース)
-        float cos = saturate(dot(normal, -lightDir));
+        float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
         diffuse = baseColor * gDirectionalLight.color.rgb * cos * gDirectionalLight.intensity;
     }
-    else if (gMaterial.lightingType == 2)
+    // 通常のランバートを適用するタイプ： 1:Lambert
+    else if (gMaterial.lightingType == 1)
     {
-        // ハーフランバート (2:HalfLambert)
-        float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
+        float cos = saturate(dot(normal, -lightDir));
         diffuse = baseColor * gDirectionalLight.color.rgb * cos * gDirectionalLight.intensity;
     }
 
