@@ -2,17 +2,52 @@
 
 #include <MyEngine.h>
 
+#include "Cylinder.h"
+
+using namespace std;
+
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
 
 void GamePlayScene::Initialize() {
 
 	// object3dの初期化
-	obj_ = std::make_unique<Object3d>();
+	obj_ = make_unique<Object3d>();
 	obj_->Initialize("plane");
+
+	primitive_ = make_unique<Cylinder>();
+	primitive_->Initialize("gradationLine.png");
+
+	//primitive_->SetCamera(camera_);
+
+	// 4. 各種パラメータの設定
+	// 前回の修正により、Primitive型のポインタから直接これらのSetterが呼べます！
+	primitive_->SetPosition({0.0f, 0.5f, 5.0f});
+	primitive_->SetScale({1.0f, 1.0f, 1.0f}); // 縦に長い円柱など
+	primitive_->SetRotation({0.0f, 0.0f, 0.0f});
+
+	// 色やブレンドモード、テクスチャの変更も可能
+	primitive_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+	primitive_->SetBlendMode(PrimitiveRenderer::BlendMode::kAdd);
 }
 
 void GamePlayScene::Update() {
+
+	static float effectTime = 0.0f;
+	effectTime += 0.001f; // アニメーションのスピード（数値を変えると速さが変わる）
+
+	// 1. 横方向にUVスクロール (X座標を時間で動かす)
+	primitive_->SetUVTranslation({effectTime, 0.0f});
+
+	// 2. 色をアニメーションさせる (サイン波を使ってフワフワ色を変える)
+	// 例: 青を強め(1.0)にしつつ、赤と緑を 0.0 ～ 1.0 の間で揺らす
+	float r = std::sin(effectTime * 2.0f) * 0.5f + 0.5f;
+	float g = std::cos(effectTime * 3.0f) * 0.5f + 0.5f;
+	float b = 1.0f;
+	primitive_->SetColor({r, g, b, 1.0f});
+
+	primitive_->Update();
+
 #ifdef USE_IMGUI
 
 	ImGui::Begin("Window");
@@ -109,6 +144,10 @@ void GamePlayScene::Update() {
 	obj_->Update();
 }
 
-void GamePlayScene::Draw() { obj_->Draw(); }
+void GamePlayScene::Draw() {
+	obj_->Draw();
+
+	primitive_->Draw();
+}
 
 void GamePlayScene::Finalize() {}

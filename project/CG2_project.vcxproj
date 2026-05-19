@@ -161,8 +161,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Easing.cpp" />
+    <ClCompile Include="engine\core\utility\Easing.cpp" />
     <ClCompile Include="engine\effects\primitive\Box.cpp" />
+    <ClCompile Include="engine\effects\primitive\Cylinder.cpp" />
     <ClCompile Include="engine\debug\DebugCamera.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
     <ClCompile Include="engine\effects\particle\ParticleManager.cpp" />
@@ -313,8 +314,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Easing.h" />
+    <ClInclude Include="engine\core\utility\Easing.h" />
     <ClInclude Include="engine\effects\primitive\Box.h" />
+    <ClInclude Include="engine\effects\primitive\Cylinder.h" />
     <ClInclude Include="engine\debug\DebugCamera.h" />
     <ClInclude Include="engine\3d\Camera.h" />
     <ClInclude Include="engine\core\graphics\Transform.h" />

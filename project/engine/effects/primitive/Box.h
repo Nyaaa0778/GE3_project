@@ -49,6 +49,10 @@ public:
 	// Texture Setter
 	void SetTexture(const std::string& textureFilePath);
 
+	// Overrideとして関数を追加
+	const Vector2& GetUVTranslation() const override { return uvTranslation_; }
+	void SetUVTranslation(const Vector2& translation) override { uvTranslation_ = translation; }
+
 	// Buffer Getters
 	const D3D12_VERTEX_BUFFER_VIEW& GetVertexBufferView() const override { return vertexBufferView_; }
 	const D3D12_INDEX_BUFFER_VIEW& GetIndexBufferView() const override { return indexBufferView_; }
@@ -83,6 +87,8 @@ private:
 	Vector3 position_ = {0.0f, 0.0f, 0.0f};
 	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
 	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+
+	Vector2 uvTranslation_ = {0.0f, 0.0f};
 
 	// 外部参照
 	Camera* camera_ = nullptr;

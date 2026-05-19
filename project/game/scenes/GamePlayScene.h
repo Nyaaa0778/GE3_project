@@ -6,6 +6,7 @@
 
 class Object3d;
 class Camera;
+class Primitive;
 
 class GamePlayScene : public IScene {
 public:
@@ -23,4 +24,6 @@ public:
 private:
 	// モデル
 	std::unique_ptr<Object3d> obj_;
+
+	std::unique_ptr<Primitive> primitive_;
 };

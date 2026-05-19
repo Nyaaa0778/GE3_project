@@ -14,31 +14,31 @@
 
 class Camera;
 
-class Plane : public Primitive
+class Cylinder : public Primitive
 {
 public:
-	Plane() = default;
-	~Plane() override = default;
+	Cylinder() = default;
+	~Cylinder() override = default;
 
 	void Initialize(const std::string& textureFilePath = "uvChecker.png") override;
 	void Update() override;
 	void Draw() override;
 
-	// Transform Getter/Setter
-	const Vector3& GetPosition() const { return position_; }
-	void SetPosition(const Vector3& position) { position_ = position; }
+	// Transform Getter/Setter (override を追加)
+	const Vector3& GetPosition() const override { return position_; }
+	void SetPosition(const Vector3& position) override { position_ = position; }
 
-	const Vector3& GetRotation() const { return rotation_; }
-	void SetRotation(const Vector3& rotation) { rotation_ = rotation; }
+	const Vector3& GetRotation() const override { return rotation_; }
+	void SetRotation(const Vector3& rotation) override { rotation_ = rotation; }
 
-	const Vector3& GetScale() const { return scale_; }
-	void SetScale(const Vector3& scale) { scale_ = scale; }
+	const Vector3& GetScale() const override { return scale_; }
+	void SetScale(const Vector3& scale) override { scale_ = scale; }
 
-	// Color Setter
-	void SetColor(const Vector4& color);
+	// Color Setter (override を追加)
+	void SetColor(const Vector4& color) override;
 
-	// BlendMode Setter
-	void SetBlendMode(PrimitiveRenderer::BlendMode blendMode) { blendMode_ = blendMode; }
+	// BlendMode Setter (override を追加)
+	void SetBlendMode(PrimitiveRenderer::BlendMode blendMode) override { blendMode_ = blendMode; }
 
 	// Camera Setter
 	void SetCamera(Camera* camera) override { camera_ = camera; }
@@ -46,8 +46,8 @@ public:
 	// ImGui
 	void DrawImGui(const char* windowName) override;
 
-	// Texture Setter
-	void SetTexture(const std::string& textureFilePath);
+	// Texture Setter (override を追加)
+	void SetTexture(const std::string& textureFilePath) override;
 
 	// Overrideとして関数を追加
 	const Vector2& GetUVTranslation() const override { return uvTranslation_; }
@@ -59,38 +59,47 @@ public:
 	uint32_t GetIndexCount() const override { return indexCount_; }
 
 private:
+	// Transform
+	Transform transform_{{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	Vector3 position_ = {0.0f, 0.0f, 0.0f};
+	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
+	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+
+	Vector2 uvTranslation_ = {0.0f, 0.0f};
+
+private:
 	// namespace
 	template <class InterfaceType>
 	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
 	// 内部構造体 (PrimitiveRendererのシェーダ仕様に合わせる)
-	struct VertexData {
+	struct VertexData
+	{
 		Vector4 position;
 		Vector2 texcoord;
 		Vector3 normal; // シェーダでは使用しないが頂点バッファの整合性のため維持
 	};
 
-	struct Material {
+	struct Material
+	{
 		Vector4 color;
 		Matrix4x4 uvTransform;
+		float alphaReference; 
+		float padding[3];
 	};
 
-	struct TransformationMatrix {
+	struct TransformationMatrix
+	{
 		Matrix4x4 WVP;
 	};
-
-	// Transform
-	Transform transform_{ {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} };
-	Vector3 position_ = { 0.0f, 0.0f, 0.0f };
-	Vector3 rotation_ = { 0.0f, 0.0f, 0.0f };
-	Vector3 scale_ = { 1.0f, 1.0f, 1.0f };
-
-	Vector2 uvTranslation_ = {0.0f, 0.0f};
 
 	// 外部参照
 	Camera* camera_ = nullptr;
 	std::string textureFilePath_ = "uvChecker.png";
 	PrimitiveRenderer::BlendMode blendMode_ = PrimitiveRenderer::BlendMode::kNormal;
+
+	// ジオメトリ設定
+	const uint32_t numSlices_ = 16; // デフォルトのスライス数
 
 	// GPUリソース (共有メッシュを参照するためのViewのみ保持)
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};
