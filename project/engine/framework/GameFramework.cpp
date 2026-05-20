@@ -35,21 +35,21 @@ static LONG WINAPI ExportDump(EXCEPTION_POINTERS* exception) {
 	wchar_t filePath[MAX_PATH] = {0};
 	CreateDirectory(L"./Dumps", nullptr);
 	StringCchPrintfW(filePath, MAX_PATH, L"./Dumps/%04d-%02d%02d-%02d%02d.dmp",
-		time.wYear, time.wMonth, time.wDay, time.wHour,
-		time.wMinute);
+					 time.wYear, time.wMonth, time.wDay, time.wHour,
+					 time.wMinute);
 	HANDLE dumpFileHandle =
 		CreateFile(filePath, GENERIC_READ | GENERIC_WRITE,
-			FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
+				   FILE_SHARE_WRITE | FILE_SHARE_READ, 0, CREATE_ALWAYS, 0, 0);
 	DWORD processId = GetCurrentProcessId();
 	DWORD threadId = GetCurrentThreadId();
 	// 設定情報を入力
-	MINIDUMP_EXCEPTION_INFORMATION minidumpInformation {0};
+	MINIDUMP_EXCEPTION_INFORMATION minidumpInformation{0};
 	minidumpInformation.ThreadId = threadId;
 	minidumpInformation.ExceptionPointers = exception;
 	minidumpInformation.ClientPointers = TRUE;
 	// Dumpを出力
 	MiniDumpWriteDump(GetCurrentProcess(), processId, dumpFileHandle,
-		MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
+					  MiniDumpNormal, &minidumpInformation, nullptr, nullptr);
 
 	return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -121,7 +121,6 @@ void GameFramework::Initialize() {
 	camera_->SetRotate({0.3f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 6.0f, -10.0f});
 	camera_->CalculateMatrix();
-	camera_->CreateConstantBuffer();
 
 	// SpriteRenderer の初期化
 	SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
@@ -241,7 +240,7 @@ void GameFramework::InitializeLogSystem() {
 	std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>
 		nowSeconds = std::chrono::time_point_cast<std::chrono::seconds>(now);
 	// 日本時間(PCの設定時間)に変換
-	std::chrono::zoned_time localTime {std::chrono::current_zone(), nowSeconds};
+	std::chrono::zoned_time localTime{std::chrono::current_zone(), nowSeconds};
 	// formatを使って年月日_時分秒の文字列に変換
 	std::string dateString = std::format("{:%Y%m%d_%H%M%S}", localTime);
 	// 時刻を使ってファイル名を決定

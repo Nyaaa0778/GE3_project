@@ -31,8 +31,6 @@ public:
 		Vector3 worldPosition;
 	};
 
-	// 定数バッファ作成関数
-	void CreateConstantBuffer();
 
 	// GPUアドレス取得用 Getter
 	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferVideoAddress() const {
@@ -40,6 +38,9 @@ public:
 	}
 
 private:
+	// 定数バッファ作成関数
+	void CreateConstantBuffer();
+
 	//================================================================================
 	// Transform と行列 / 投影パラメータ
 	//================================================================================

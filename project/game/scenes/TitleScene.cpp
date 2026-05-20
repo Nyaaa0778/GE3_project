@@ -15,7 +15,6 @@ void TitleScene::Initialize() {
 	camera_ = std::make_unique<Camera>();
 	camera_->SetRotate({0.5f, 0.0f, 0.0f});
 	camera_->SetTranslate({0.0f, 8.0f, -15.0f});
-	camera_->CreateConstantBuffer();
 
 	// ② デバッグカメラの初期化（★追加）
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -24,7 +23,6 @@ void TitleScene::Initialize() {
 	debugCamera_->SetRotate(camera_->GetRotate());
 	debugCamera_->SetTranslate(camera_->GetTranslate());
 	debugCamera_->CalculateMatrix();
-	debugCamera_->CreateConstantBuffer();
 
 	skybox_ = std::make_unique<Skybox>();
 	//std::array<std::string, 6> skyboxPaths = {
