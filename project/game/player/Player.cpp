@@ -2,10 +2,13 @@
 
 #include <MyEngine.h>
 #include <MathUtility.h>
+#include <TimeManager.h>
 
 using namespace MathUtility;
 
-#include "Reticle.h"
+#include "Reticle.h" // 照準
+#include "PlayerBullet.h" // 弾
+#include "PlayerBulletPool.h"
 
 #include <cassert> // nullチェック用
 #include <cmath> // sqrt用
@@ -16,7 +19,7 @@ using namespace std;
 Player::Player() = default;
 Player::~Player() = default;
 
-void Player::Initialize(Camera* camera, const Vector3& pos, Object3d* model) {
+void Player::Initialize(Camera* camera, const Vector3& pos, Object3d* model, const std::string& bulletModelName) {
     // nullチェック
     assert(camera);
     // カメラの保持
@@ -30,7 +33,13 @@ void Player::Initialize(Camera* camera, const Vector3& pos, Object3d* model) {
     model_->SetCamera(camera);
 
     // 初期位置を設定
-    pos_ = pos;   
+    pos_ = pos;
+
+    // -----------------------
+    // 弾（複数弾）
+    // -----------------------
+    bulletPool_ = std::make_unique<PlayerBulletPool>();
+    bulletPool_->Initialize(camera, bulletModelName, 100); 
 
     // -----------------------
     // 照準
@@ -49,6 +58,12 @@ void Player::Update() {
     // 移動処理
     UpdateMove();
 
+    // -----------------------
+    // 弾（複数弾）の更新
+    // ----------------------
+
+    UpdateBullets();
+
     // モデルの更新
     model_->Update();
 
@@ -57,9 +72,17 @@ void Player::Update() {
 
 void Player::Draw() {
     // -----------------------
-    // 照準
+    // 弾（複数弾）の描画
     // -----------------------
+
+    for (const auto& bullet : bullets_) {
+        bullet->Draw();
+    }
     
+    // -----------------------
+    // 照準の描画
+    // -----------------------
+
     reticle_->Draw();
 
     // モデルの描画
@@ -92,24 +115,29 @@ void Player::UpdateMove() {
     pos_.x += move.x * kBaseSpeed;
     pos_.y += move.y * kBaseSpeed;
 
-    // 移動制限
-    const float kMoveLimitX = 7.0f;
-    const float kMoveLimitY = 3.5f;
-
     // 範囲を超えないように制限
-    pos_.x = std::clamp(pos_.x, -kMoveLimitX, kMoveLimitX);
-    pos_.y = std::clamp(pos_.y, -kMoveLimitY, kMoveLimitY);
+    pos_.x = std::clamp(pos_.x, -kMoveLimit.x, kMoveLimit.x);
+    pos_.y = std::clamp(pos_.y, -kMoveLimit.y, kMoveLimit.y);
 
     // -----------------------
-    // 照準の追従処理を追加
-    // -----------------------
+    // 照準の更新
+    // ----------------------
 
-    // 1. 自機が移動制限枠の「どの割合（-1.0 ～ 1.0）」にいるかを計算する
-    float ratioX = pos_.x / kMoveLimitX;
-    float ratioY = pos_.y / kMoveLimitY;
+    UpdateReticle();
+
+    // モデルに座標を反映
+    model_->SetPosition(pos_);
+}
+
+/// <summary>
+/// 照準の更新
+/// </summary>
+void Player::UpdateReticle() {
+    // 1. 自機が移動制限枠のどの割合（-1.0 ～ 1.0）にいるかを計算
+    float ratioX = pos_.x / kMoveLimit.x;
+    float ratioY = pos_.y / kMoveLimit.y;
 
     // 2. レティクルの最大可動域（画面の端っこの座標）を設定
-    // ※画面のサイズに合わせて、自機の制限枠より大きい数値を設定します
     const float kReticleLimitX = 14.0f;
     const float kReticleLimitY = 7.0f;
 
@@ -119,9 +147,7 @@ void Player::UpdateMove() {
     targetReticlePos.y = ratioY * kReticleLimitY;
     targetReticlePos.z = pos_.z + kDepthPos;
 
-    // 4. 自機の動きに「ほんの少しだけ」遅れてついてくるイージング（ここはお好みで）
-    // 1.0f にすると自機と完全に同期してピタッと動きます。
-    // 0.2f～0.3f くらいにすると、操作に少しだけ「重厚感・手応え」が出ます。
+    // 4. 自機の動きにほんの少しだけ遅れてついてくるイージング
     float easing = 0.3f;
     reticlePos_.x += (targetReticlePos.x - reticlePos_.x) * easing;
     reticlePos_.y += (targetReticlePos.y - reticlePos_.y) * easing;
@@ -130,11 +156,67 @@ void Player::UpdateMove() {
     // 計算した座標をReticleに渡す
     reticle_->SetPosition(reticlePos_);
     reticle_->Update();
-
-    // モデルに座標を反映
-    model_->SetPosition(pos_);
 }
 
+/// <summary>
+/// 弾（複数弾）の更新
+/// </summary>
+void Player::UpdateBullets() {
+    Input* input = Input::GetInstance();
+
+    if (bulletCooldownTimer_ > 0.0f) {
+        bulletCooldownTimer_ -= TimeManager::GetInstance()->GetDeltaTime();
+    }
+
+    // スペースキーで発射（0.0f 以下になったら撃てる）
+    if (input->PushKey(DIK_SPACE)) {
+        if(bulletCooldownTimer_ <= 0.0f)
+        {
+
+            // 1. 照準への方向ベクトルを求める
+            Vector3 direction = reticlePos_ - pos_;
+
+            // 2. ベクトルを正規化（長さを1にする）
+            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
+            if (length > 0.0f) {
+                direction.x /= length;
+                direction.y /= length;
+                direction.z /= length;
+            }
+
+            // 3. 正規化したベクトルに速度を掛ける
+            const float kBulletSpeed = 0.5f; // 弾の速さ
+            Vector3 velocity = {
+                direction.x * kBulletSpeed,
+                direction.y * kBulletSpeed,
+                direction.z * kBulletSpeed
+            };
+
+            // 4. 弾を生成して初期化
+            unique_ptr<PlayerBullet> newBullet = make_unique<PlayerBullet>();
+            newBullet->Initialize(camera_, pos_, velocity, bulletPool_.get());
+
+            // 5. リストに登録
+            bullets_.push_back(std::move(newBullet));
+
+            bulletCooldownTimer_ = kBulletCooldown;
+        }
+    }
+
+    // 全ての弾を更新
+    for (const auto& bullet : bullets_) {
+        bullet->Update();
+    }
+
+    // デスフラグが立っている弾をリストから一括削除
+    bullets_.remove_if([](const unique_ptr<PlayerBullet>& bullet) {
+        return bullet->IsDead();
+                       });
+}
+
+/// <summary>
+/// ImGuiの描画
+/// </summary>
 void Player::UpdateImGui() {
 #ifdef USE_IMGUI
     // ★ウィンドウ名を共通の "Debug Window" に変更

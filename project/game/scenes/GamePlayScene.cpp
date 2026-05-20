@@ -29,9 +29,14 @@ void GamePlayScene::Initialize() {
 	// モデル
 	playerModel_ = std::make_unique<Object3d>();
 	playerModel_->Initialize("player");
+
+	// 弾（複数弾）のモデル
+	playerBulletModel_ = std::make_unique<Object3d>();
+	playerBulletModel_->Initialize("bullet");
+
 	// 実体生成
 	player_ = std::make_unique<Player>();
-	player_->Initialize(camera_.get(), kInitialPlayerPos, playerModel_.get());
+	player_->Initialize(camera_.get(), kInitialPlayerPos, playerModel_.get(), "bullet");
 }
 
 void GamePlayScene::Update() {
