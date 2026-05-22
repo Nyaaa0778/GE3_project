@@ -1,8 +1,10 @@
 #include "GamePlayScene.h"
 
 #include <MyEngine.h>
+#include <Random.h>
 
 #include "Player.h"
+#include "RusherEnemy.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -37,6 +39,41 @@ void GamePlayScene::Initialize() {
 	// 実体生成
 	player_ = std::make_unique<Player>();
 	player_->Initialize(camera_.get(), kInitialPlayerPos, playerModel_.get(), "bullet");
+
+	// -----------------------
+	// 敵の初期化：最大数だけ最初からスポーン
+	// -----------------------
+	enemies_.clear();
+	for (int i = 0; i < kMaxEnemyCount; ++i) {
+		SpawnEnemy();
+	}
+}
+
+void GamePlayScene::SpawnEnemy() {
+	EnemyStatus status = {
+		10,    // maxHp
+		10,    // currentHp
+		1,     // attackPower
+		0.1f   // speed
+	};
+
+	// ランダムなX座標でスポーン（Y・Zは固定）
+	Vector3 spawnPos = {
+		Random::RangeFloat(-kSpawnRangeX, kSpawnRangeX),
+		kSpawnRangeY,
+		kSpawnZ
+	};
+
+	auto enemy = std::make_unique<RusherEnemy>(status);
+
+	enemy->Initialize(camera_.get(), spawnPos, kEnemyModelName);
+
+	// ★生成直後に行列と定数バッファを更新して、描画時に原点に表示されるのを防ぐ
+	if (player_) {
+		enemy->Update(player_.get());
+	}
+
+	enemies_.push_back(std::move(enemy));
 }
 
 void GamePlayScene::Update() {
@@ -49,10 +86,8 @@ void GamePlayScene::Update() {
 	// -----------------------
 
 	if (useDebugCamera_) {
-		// debugCameraController_ に camera_ を「操作してくれ」と頼む
 		debugCamera_->Update(camera_.get());
 	} else {
-		// 通常時のカメラ挙動（固定やパス移動など）
 		camera_->CalculateMatrix();
 	}
 
@@ -61,6 +96,34 @@ void GamePlayScene::Update() {
 	// -----------------------
 
 	player_->Update();
+
+	// -----------------------
+	// 敵の更新
+	// -----------------------
+
+	// 全敵を更新
+	for (auto& enemy : enemies_) {
+		if (enemy) {
+			enemy->Update(player_.get());
+		}
+	}
+
+	// 死亡した敵を除去 → 不足分をスポーン
+	// ★ erase-remove イディオム：死亡済みを一括削除
+	enemies_.erase(
+		std::remove_if(enemies_.begin(), enemies_.end(),
+					   [](const std::unique_ptr<RusherEnemy>& e) {
+						   return e == nullptr || !e->IsAlive();
+					   }),
+		enemies_.end()
+	);
+
+	// ★ 削除後に補充する（Update の末尾でスポーンするのが重要）
+	//    → SpawnEnemy() → Initialize() で pos_ と SetPosition() が確定してから
+	//      次フレームの Draw が呼ばれるため、チカつきが発生しない
+	while (static_cast<int>(enemies_.size()) < kMaxEnemyCount) {
+		SpawnEnemy();
+	}
 }
 
 void GamePlayScene::Draw() {
@@ -69,6 +132,15 @@ void GamePlayScene::Draw() {
 	// -----------------------
 
 	player_->Draw();
+
+	// -----------------------
+	// 敵の描画
+	// -----------------------
+	for (auto& enemy : enemies_) {
+		if (enemy) {
+			enemy->Draw();
+		}
+	}
 }
 
 void GamePlayScene::Finalize() {}

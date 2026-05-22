@@ -19,6 +19,9 @@ public:
 public:
 	void Initialize(Camera* camera, const Vector3& pos, Object3d* model, const std::string& bulletModelName);
 
+	// 位置の取得
+	const Vector3& GetPos() const { return pos_; }
+
 	void Update();
 
 	void Draw();

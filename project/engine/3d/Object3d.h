@@ -1,12 +1,14 @@
 #pragma once
 
 #include "Object3dRenderer.h"
+#include "WorldTransform.h"
 
 #include <Matrix4x4.h>
 #include <Transform.h>
 #include <Vector2.h>
 #include <Vector3.h>
 #include <Vector4.h>
+
 
 #include <d3d12.h>
 #include <string>
@@ -45,11 +47,11 @@ public:
 	//================================================================================
 
 	// 位置
-	const Vector3& GetPosition() const { return position_; }
+	const Vector3& GetPosition() const { return worldTransform_.translation; }
 	// 回転
-	const Vector3& GetRotate() const { return rotation_; }
+	const Vector3& GetRotate() const { return worldTransform_.rotation; }
 	// 拡縮
-	const Vector3& GetScale() const { return scale_; }
+	const Vector3& GetScale() const { return worldTransform_.scale; }
 	// 色
 	const Vector4& GetColor() const;
 	// BlendMode
@@ -57,25 +59,20 @@ public:
 	// ライティングの種類
 	void SetLightingType(LightingType type);
 
-	//// ライトの色
-	//const Vector4& GetLightColor() const { return directionalLightData_->color; }
-	//// ライトの向き
-	//const Vector3& GetLightDirection() const {
-	//	return directionalLightData_->direction;
-	//}
-	//// ライトの輝度
-	//float GetLightIntensity() const { return directionalLightData_->intensity; }
+	// WorldTransformを取得
+	WorldTransform& GetWorldTransform() { return worldTransform_; }
+	const WorldTransform& GetWorldTransform() const { return worldTransform_; }
 
 	//================================================================================
 	// Setter
 	//================================================================================
 
 	// 位置
-	void SetPosition(const Vector3& position) { position_ = position; }
+	void SetPosition(const Vector3& position) { worldTransform_.translation = position; }
 	// 回転
-	void SetRotation(Vector3 rotation) { rotation_ = rotation; }
+	void SetRotation(Vector3 rotation) { worldTransform_.rotation = rotation; }
 	// 拡縮
-	void SetScale(const Vector3& scale) { scale_ = scale; }
+	void SetScale(const Vector3& scale) { worldTransform_.scale = scale; }
 	// 色
 	void SetColor(const Vector4& color);
 	// BlendMode
@@ -151,48 +148,21 @@ private:
 	Camera* camera_ = nullptr;
 
 	//================================================================================
-	// GPUリソース（定数バッファ）
+	// WorldTransform
 	//================================================================================
 
-	// バッファリソース
-	ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	TransformationMatrix* transformationMatrixData_ = nullptr;
-
-	//// バッファリソース
-	//ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr;
-	//// バッファリソースないのデータを指すポインタ
-	//DirectionalLight* directionalLightData_ = nullptr;
-
-	//================================================================================
-	// Transform
-	//================================================================================
-
-	// 3DオブジェクトのTransform
-	Transform transform_ {};
-	// 位置
-	Vector3 position_ = {0.0f, 0.0f, 0.0f};
-	// 回転
-	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
-	// 拡縮
-	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+	// 3DオブジェクトのWorldTransform
+	WorldTransform worldTransform_;
 
 	// BlendMode
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
+
 
 	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_ {};
 
 private:
 	//================================================================================
-	// データ作成処理
+	// 内部構造体削除
 	//================================================================================
-
-	/// <summary>
-	/// 座標変換行列データの作成
-	/// </summary>
-	void CreateTransformationMatrixData();
-	/*/// <summary>
-	/// 平行光源データの作成
-	/// </summary>
-	void CreateDirectionalLightData();*/
 };
+

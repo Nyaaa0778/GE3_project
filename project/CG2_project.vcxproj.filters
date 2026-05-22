@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ソース ファイル">
@@ -159,6 +159,9 @@
     <ClCompile Include="engine\3d\Object3d.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
+    <ClCompile Include="engine\3d\WorldTransform.cpp">
+      <Filter>ソース ファイル\engine\3d</Filter>
+    </ClCompile>
     <ClCompile Include="engine\3d\Object3dRenderer.cpp">
       <Filter>ソース ファイル\engine\3d</Filter>
     </ClCompile>
@@ -259,6 +262,12 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="game\player\PlayerBulletPool.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="game\enemy\EnemyBase.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="game\enemy\RusherEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -379,6 +388,9 @@
     <ClInclude Include="engine\3d\Object3d.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
+    <ClInclude Include="engine\3d\WorldTransform.h">
+      <Filter>ヘッダー ファイル\engine\3d</Filter>
+    </ClInclude>
     <ClInclude Include="engine\3d\Object3dRenderer.h">
       <Filter>ヘッダー ファイル\engine\3d</Filter>
     </ClInclude>
@@ -470,6 +482,12 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\core\utility\Easing.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\enemy\EnemyBase.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\enemy\RusherEnemy.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
