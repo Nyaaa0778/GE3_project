@@ -18,20 +18,28 @@ using namespace MathUtility;
 /// </summary>
 /// <param name="modelName">モデル名</param>
 	/// /// <param name="extension">拡張子 (デフォルトは "obj")</param>
-void Object3d::Initialize(const std::string& modelName, const std::string& extension) {
+void Object3d::Initialize(const std::string& filePath, WorldTransform* worldTransform) {
 
 	object3dRenderer_ = Object3dRenderer::GetInstance();
+
+	// filePath からモデル名（ベース名）と拡張子をパース（.gltf や .obj などの拡張子を除去）
+	std::string modelName = filePath;
+	std::string extension = "obj"; // デフォルト拡張子
+
+	size_t dotPos = filePath.find_last_of('.');
+	if (dotPos != std::string::npos) {
+		modelName = filePath.substr(0, dotPos);
+		extension = filePath.substr(dotPos + 1);
+	}
 
 	// モデルをセット
 	SetModel(modelName, extension);
 
-	// 座標変換行列データの作成
-	CreateTransformationMatrixData();
-	//// 平行光源データの作成
-	//CreateDirectionalLightData();
-
-	// Transform変数を作成
-	transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	// WorldTransformの紐付けと初期化
+	worldTransformPtr_ = worldTransform;
+	if (!worldTransformPtr_) {
+		worldTransform_.Initialize();
+	}
 
 	// デフォルトカメラを設定
 	camera_ = Object3dRenderer::GetInstance()->GetDefaultCamera();
@@ -41,14 +49,16 @@ void Object3d::Initialize(const std::string& modelName, const std::string& exten
 /// </summary>
 void Object3d::Update() {
 
-	transform_.scale = {scale_.x, scale_.y, scale_.z};
-	transform_.rotation = {rotation_.x, rotation_.y, rotation_.z};
-	transform_.translation = {position_.x, position_.y, position_.z};
+	// 使用する WorldTransform を決定（外部参照があればそれを使う）
+	WorldTransform* activeTransform = worldTransformPtr_ ? worldTransformPtr_ : &worldTransform_;
 
-	// transformからworldMatrixを作成
-	Matrix4x4 worldMatrix = MakeAffineMatrix(
-		transform_.scale, transform_.rotation, transform_.translation);
+	// 外部参照ポインタがない場合のみ、自動で行列を更新する
+	// 外部参照がある場合は、ユーザーが好きなタイミングで UpdateMatrix() を呼ぶ前提
+	if (!worldTransformPtr_) {
+		activeTransform->UpdateMatrix();
+	}
 
+	Matrix4x4 worldMatrix = activeTransform->matWorld;
 	Matrix4x4 worldViewProjectionMatrix;
 
 	if (camera_) {
@@ -58,10 +68,12 @@ void Object3d::Update() {
 		worldViewProjectionMatrix = worldMatrix;
 	}
 
-	transformationMatrixData_->WVP = model_->GetModelData().rootNode.localMatrix * worldViewProjectionMatrix;
-	transformationMatrixData_->World = model_->GetModelData().rootNode.localMatrix * worldMatrix;
-
-	transformationMatrixData_->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldMatrix));
+	// モデルのローカル行列がある場合を考慮して、最終的なWVPとWorld行列を書き込む
+	if (activeTransform->constMap && model_) {
+		activeTransform->constMap->WVP = model_->GetModelData().rootNode.localMatrix * worldViewProjectionMatrix;
+		activeTransform->constMap->World = model_->GetModelData().rootNode.localMatrix * worldMatrix;
+		activeTransform->constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(activeTransform->constMap->World));
+	}
 }
 /// <summary>
 /// 描画
@@ -70,11 +82,14 @@ void Object3d::Draw() {
 
 	object3dRenderer_->SetupCommonRenderState();
 
-	// 座標変換行列のCBufferの場所を設定
+	// 使用する WorldTransform を決定
+	WorldTransform* activeTransform = worldTransformPtr_ ? worldTransformPtr_ : &worldTransform_;
+
+	// 座標変換行列のCBufferの場所を設定 (activeTransform を使用)
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+			1, activeTransform->GetGPUVirtualAddress());
 
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
@@ -104,26 +119,6 @@ void Object3d::Draw() {
 //================================================================================
 // データ作成処理
 //================================================================================
-
-/// <summary>
-/// 座標変換行列データの作成
-/// </summary>
-void Object3d::CreateTransformationMatrixData() {
-	// 座標変換行列リソースを作成
-	transformationMatrixBuffer_ =
-		object3dRenderer_->GetDxCommon()->CreateBufferResource(
-			sizeof(TransformationMatrix));
-
-	// transformationMatrixResourceに座標変換行列データを書き込む
-	transformationMatrixBuffer_->Map(
-		0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-
-	// 単位行列を書き込んでおく
-	transformationMatrixData_->WVP = MakeIdentityMatrix();
-	transformationMatrixData_->World = MakeIdentityMatrix();
-
-	transformationMatrixData_->WorldInverseTranspose = MakeIdentityMatrix();
-}
 ///// <summary>
 ///// 平行光源データの作成
 ///// </summary>

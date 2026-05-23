@@ -42,7 +42,7 @@ void TitleScene::Initialize() {
 
 	// object3dの初期化
 	sphere_ = std::make_unique<Object3d>();
-	sphere_->Initialize("sphere");
+	sphere_->Initialize("cube.obj");
 	sphere_->SetCamera(camera_.get());
 	sphere_->SetEnvironmentTextureHandle(skybox_->GetTextureSrvHandleGPU());
 

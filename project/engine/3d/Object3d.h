@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Object3dRenderer.h"
+#include "WorldTransform.h"
 
 #include <Matrix4x4.h>
 #include <Transform.h>
@@ -28,8 +29,7 @@ public:
 	/// 初期化
 	/// </summary>
 	/// <param name="filePath">モデルファイルのパス</param>
-	/// /// <param name="extension">拡張子 (デフォルトは "obj")</param>
-	void Initialize(const std::string& filePath, const std::string& extension = "obj");
+	void Initialize(const std::string& filePath, WorldTransform* worldTransform = nullptr);
 	/// <summary>
 	/// 更新
 	/// </summary>
@@ -45,11 +45,17 @@ public:
 	//================================================================================
 
 	// 位置
-	const Vector3& GetPosition() const { return position_; }
+	const Vector3& GetPosition() const { return worldTransform_.translation; }
 	// 回転
-	const Vector3& GetRotate() const { return rotation_; }
+	const Vector3& GetRotate() const { return worldTransform_.rotation; }
 	// 拡縮
-	const Vector3& GetScale() const { return scale_; }
+	const Vector3& GetScale() const { return worldTransform_.scale; }
+	// 親子関係
+	void SetParent(const WorldTransform* parent) { worldTransform_.parent = parent; }
+	const WorldTransform* GetParent() const { return worldTransform_.parent; }
+	// WorldTransform
+	const WorldTransform& GetWorldTransform() const { return worldTransformPtr_ ? *worldTransformPtr_ : worldTransform_; }
+	WorldTransform& GetWorldTransform() { return worldTransformPtr_ ? *worldTransformPtr_ : worldTransform_; }
 	// 色
 	const Vector4& GetColor() const;
 	// BlendMode
@@ -71,11 +77,11 @@ public:
 	//================================================================================
 
 	// 位置
-	void SetPosition(const Vector3& position) { position_ = position; }
+	void SetPosition(const Vector3& position) { worldTransform_.translation = position; }
 	// 回転
-	void SetRotation(Vector3 rotation) { rotation_ = rotation; }
+	void SetRotation(Vector3 rotation) { worldTransform_.rotation = rotation; }
 	// 拡縮
-	void SetScale(const Vector3& scale) { scale_ = scale; }
+	void SetScale(const Vector3& scale) { worldTransform_.scale = scale; }
 	// 色
 	void SetColor(const Vector4& color);
 	// BlendMode
@@ -108,19 +114,7 @@ public:
 	}
 	void SetEnvironmentCoefficient(float coeff);
 
-private:
-	//================================================================================
-	// 内部構造体
-	//================================================================================
-
-	// 座標変換行列データ
-	struct TransformationMatrix {
-		Matrix4x4 WVP;
-		Matrix4x4 World;
-		Matrix4x4 WorldInverseTranspose;
-	};
-
-	//// 平行光源
+	// 平行光源
 	//struct DirectionalLight {
 	//	Vector4 color;     // ライトの色
 	//	Vector3 direction; // ライトの向き
@@ -151,31 +145,13 @@ private:
 	Camera* camera_ = nullptr;
 
 	//================================================================================
-	// GPUリソース（定数バッファ）
+	// WorldTransform
 	//================================================================================
 
-	// バッファリソース
-	ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	TransformationMatrix* transformationMatrixData_ = nullptr;
+	WorldTransform worldTransform_;
 
-	//// バッファリソース
-	//ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr;
-	//// バッファリソースないのデータを指すポインタ
-	//DirectionalLight* directionalLightData_ = nullptr;
-
-	//================================================================================
-	// Transform
-	//================================================================================
-
-	// 3DオブジェクトのTransform
-	Transform transform_ {};
-	// 位置
-	Vector3 position_ = {0.0f, 0.0f, 0.0f};
-	// 回転
-	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
-	// 拡縮
-	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+	// 外部参照用のWorldTransformへのポインタ
+	WorldTransform* worldTransformPtr_ = nullptr;
 
 	// BlendMode
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
@@ -187,10 +163,6 @@ private:
 	// データ作成処理
 	//================================================================================
 
-	/// <summary>
-	/// 座標変換行列データの作成
-	/// </summary>
-	void CreateTransformationMatrixData();
 	/*/// <summary>
 	/// 平行光源データの作成
 	/// </summary>
