@@ -13,6 +13,8 @@ class Camera;
 class DebugCamera;
 class Player;
 class RusherEnemy;
+class RailCameraController;
+class Skybox;
 
 class GamePlayScene : public IScene {
 public:
@@ -32,6 +34,7 @@ private:
 	// カメラ
 	// -----------------------
 	std::unique_ptr<Camera> camera_;
+	std::unique_ptr<RailCameraController> railCameraController_;
 
 	// 初期位置
 	static inline const Vector3 kInitialCameraPos = {0.0f, 0.0f, -20.0f};
@@ -74,6 +77,12 @@ private:
 	/// 敵を1体スポーンする（ランダム位置）
 	/// </summary>
 	void SpawnEnemy();
+
+	// -----------------------
+	// 天球
+	// -----------------------
+
+	std::unique_ptr<Skybox> skybox_;
 
 private:
 	/// <summary>

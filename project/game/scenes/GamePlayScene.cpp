@@ -5,6 +5,8 @@
 
 #include "Player.h"
 #include "RusherEnemy.h"
+#include "RailCameraController.h"
+#include "Skybox.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -24,6 +26,10 @@ void GamePlayScene::Initialize() {
 	debugCamera_->SetTranslate(camera_->GetTranslate());
 	debugCamera_->CalculateMatrix();
 
+	// レールカメラの初期化
+	railCameraController_ = std::make_unique<RailCameraController>();
+	railCameraController_->Initialize(camera_.get(), kInitialCameraPos);
+
 	// -----------------------
 	// 自機の初期化
 	// -----------------------
@@ -36,9 +42,12 @@ void GamePlayScene::Initialize() {
 	playerBulletModel_ = std::make_unique<Object3d>();
 	playerBulletModel_->Initialize("bullet");
 
-	// 実体生成
+	// 親子関係の設定：プレイヤーのモデルの親にレールのWorldTransformをセット
+	playerModel_->GetWorldTransform().parent = &railCameraController_->GetWorldTransform();
+
+	// 実体生成（プレイヤー自身の初期位置はレールに対するローカル座標なので、原点付近にする）
 	player_ = std::make_unique<Player>();
-	player_->Initialize(camera_.get(), kInitialPlayerPos, playerModel_.get(), "bullet");
+	player_->Initialize(camera_.get(), {0.0f, 0.0f, 0.0f}, playerModel_.get(), "bullet");
 
 	// -----------------------
 	// 敵の初期化：最大数だけ最初からスポーン
@@ -47,6 +56,13 @@ void GamePlayScene::Initialize() {
 	for (int i = 0; i < kMaxEnemyCount; ++i) {
 		SpawnEnemy();
 	}
+
+	// -----------------------
+	// 天球の初期化
+	// -----------------------
+
+	skybox_ = std::make_unique<Skybox>();
+	skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds", camera_.get());
 }
 
 void GamePlayScene::SpawnEnemy() {
@@ -82,6 +98,11 @@ void GamePlayScene::Update() {
 	UpdateImGui();
 
 	// -----------------------
+	// レールカメラの更新（自動スクロール＆カメラの座標設定）
+	// -----------------------
+	railCameraController_->Update();
+
+	// -----------------------
 	// カメラの更新
 	// -----------------------
 
@@ -95,7 +116,7 @@ void GamePlayScene::Update() {
 	// 自機の更新
 	// -----------------------
 
-	player_->Update();
+	player_->Update(railCameraController_->GetPosition());
 
 	// -----------------------
 	// 敵の更新
@@ -141,6 +162,12 @@ void GamePlayScene::Draw() {
 			enemy->Draw();
 		}
 	}
+
+	// -----------------------
+	// 天球の描画
+	// -----------------------
+
+	skybox_->Draw();
 }
 
 void GamePlayScene::Finalize() {}

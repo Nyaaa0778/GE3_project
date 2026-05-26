@@ -83,7 +83,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\enemy;$(ProjectDir)game\player;$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\camera;$(ProjectDir)game\enemy;$(ProjectDir)game\player;$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -111,7 +111,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\enemy;$(ProjectDir)game\player;$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\camera;$(ProjectDir)game\enemy;$(ProjectDir)game\player;$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -142,7 +142,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\enemy;$(ProjectDir)game\player;$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\camera;$(ProjectDir)game\enemy;$(ProjectDir)game\player;$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -239,6 +239,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\player\Reticle.cpp" />
     <ClCompile Include="game\player\PlayerBullet.cpp" />
     <ClCompile Include="game\player\PlayerBulletPool.cpp" />
+    <ClCompile Include="game\camera\RailCameraController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -382,6 +383,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\player\Reticle.h" />
     <ClInclude Include="game\player\PlayerBullet.h" />
     <ClInclude Include="game\player\PlayerBulletPool.h" />
+    <ClInclude Include="game\camera\RailCameraController.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

@@ -51,18 +51,18 @@ void Player::Initialize(Camera* camera, const Vector3& pos, Object3d* model, con
     reticle_->Initialize(camera, reticlePos_);
 }
 
-void Player::Update() {
+void Player::Update(const Vector3& railTranslation) {
     // ImGuiの描画
     UpdateImGui();
 
     // 移動処理
-    UpdateMove();
+    UpdateMove(railTranslation);
 
     // -----------------------
     // 弾（複数弾）の更新
     // ----------------------
 
-    UpdateBullets();
+    UpdateBullets(railTranslation);
 
     // モデルの更新
     model_->Update();
@@ -89,7 +89,7 @@ void Player::Draw() {
     model_->Draw();
 }
 
-void Player::UpdateMove() {
+void Player::UpdateMove(const Vector3& railTranslation) {
     // 移動方向ベクトル
     Vector3 move = {0.0f, 0.0f, 0.0f};
 
@@ -123,7 +123,7 @@ void Player::UpdateMove() {
     // 照準の更新
     // ----------------------
 
-    UpdateReticle();
+    UpdateReticle(railTranslation);
 
     // モデルに座標を反映
     model_->SetPosition(pos_);
@@ -132,7 +132,7 @@ void Player::UpdateMove() {
 /// <summary>
 /// 照準の更新
 /// </summary>
-void Player::UpdateReticle() {
+void Player::UpdateReticle(const Vector3& railTranslation) {
     // 1. 自機が移動制限枠のどの割合（-1.0 ～ 1.0）にいるかを計算
     float ratioX = pos_.x / kMoveLimit.x;
     float ratioY = pos_.y / kMoveLimit.y;
@@ -153,15 +153,18 @@ void Player::UpdateReticle() {
     reticlePos_.y += (targetReticlePos.y - reticlePos_.y) * easing;
     reticlePos_.z = targetReticlePos.z;
 
+    // レールの現在位置を足してワールド座標へ変換
+    Vector3 worldReticlePos = reticlePos_ + railTranslation;
+
     // 計算した座標をReticleに渡す
-    reticle_->SetPosition(reticlePos_);
+    reticle_->SetPosition(worldReticlePos);
     reticle_->Update();
 }
 
 /// <summary>
 /// 弾（複数弾）の更新
 /// </summary>
-void Player::UpdateBullets() {
+void Player::UpdateBullets(const Vector3& railTranslation) {
     Input* input = Input::GetInstance();
 
     if (bulletCooldownTimer_ > 0.0f) {
@@ -172,9 +175,12 @@ void Player::UpdateBullets() {
     if (input->PushKey(DIK_SPACE)) {
         if(bulletCooldownTimer_ <= 0.0f)
         {
+            // プレイヤーと照準のワールド座標を求める
+            Vector3 worldPlayerPos = pos_ + railTranslation;
+            Vector3 worldReticlePos = reticlePos_ + railTranslation;
 
             // 1. 照準への方向ベクトルを求める
-            Vector3 direction = reticlePos_ - pos_;
+            Vector3 direction = worldReticlePos - worldPlayerPos;
 
             // 2. ベクトルを正規化（長さを1にする）
             float length = std::sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z);
@@ -192,9 +198,9 @@ void Player::UpdateBullets() {
                 direction.z * kBulletSpeed
             };
 
-            // 4. 弾を生成して初期化
+            // 4. 弾を生成して初期化 (ワールド座標で発射)
             unique_ptr<PlayerBullet> newBullet = make_unique<PlayerBullet>();
-            newBullet->Initialize(camera_, pos_, velocity, bulletPool_.get());
+            newBullet->Initialize(camera_, worldPlayerPos, velocity, bulletPool_.get());
 
             // 5. リストに登録
             bullets_.push_back(std::move(newBullet));

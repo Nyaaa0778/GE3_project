@@ -22,7 +22,7 @@ public:
 	// 位置の取得
 	const Vector3& GetPos() const { return pos_; }
 
-	void Update();
+	void Update(const Vector3& railTranslation);
 
 	void Draw();
 
@@ -76,14 +76,14 @@ private:
 	/// <summary>
 	/// 移動処理
 	/// </summary>
-	void UpdateMove();
+	void UpdateMove(const Vector3& railTranslation);
 
-	void UpdateReticle();
+	void UpdateReticle(const Vector3& railTranslation);
 
 	/// <summary>
 	/// 弾の移動処理
 	/// </summary>
-	void UpdateBullets();
+	void UpdateBullets(const Vector3& railTranslation);
 
 	/// <summary>
 	/// ImGuiの描画

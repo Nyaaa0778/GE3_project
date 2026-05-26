@@ -264,6 +264,9 @@
     <ClCompile Include="game\player\PlayerBulletPool.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="game\camera\RailCameraController.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="game\enemy\EnemyBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -479,6 +482,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\player\PlayerBulletPool.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\camera\RailCameraController.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\core\utility\Easing.h">
