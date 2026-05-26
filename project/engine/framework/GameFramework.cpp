@@ -281,6 +281,16 @@ void GameFramework::EndFrame() {
 	// 1. 描画先を Swapchain（画面）に切り替える
 	DirectXCommon::GetInstance()->PreDrawImGui();
 
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = DirectXCommon::GetInstance()->GetRenderTextureResource();
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+
+	DirectXCommon::GetInstance()->GetCommandList()->ResourceBarrier(1, &barrier);
+
 	// 2. RenderTextureの画像を Swapchain にコピーして描画する
 	uint32_t rtexSrvIndex = DirectXCommon::GetInstance()->GetRenderTextureSrvIndex();
 	D3D12_GPU_DESCRIPTOR_HANDLE rtexSrvHandle = ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(rtexSrvIndex);

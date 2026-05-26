@@ -172,6 +172,15 @@ void DirectXCommon::InitializeRenderTexture() {
 /// 描画前処理
 /// </summary>
 void DirectXCommon::BeginDraw() {
+	D3D12_RESOURCE_BARRIER barrier{};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = renderTextureResource_.Get();
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	commandList_->ResourceBarrier(1, &barrier);
+
 	// 描画先のRTV(RenderTexture)とDSVを指定する
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = descriptorHeapDSV_->GetCPUDescriptorHandleForHeapStart();
 

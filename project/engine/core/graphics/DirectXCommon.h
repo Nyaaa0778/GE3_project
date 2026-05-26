@@ -132,6 +132,7 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGPUDescriptorHandle(uint32_t index);
 
 	uint32_t GetRenderTextureSrvIndex() const { return srvIndexRenderTexture_; }
+	ID3D12Resource* GetRenderTextureResource() const { return renderTextureResource_.Get(); }
 
 private:
 	//================================================================================
