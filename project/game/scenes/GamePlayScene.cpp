@@ -6,206 +6,182 @@
 #include "Player.h"
 #include "RusherEnemy.h"
 #include "RailCameraController.h"
+#include "RailPathEditor.h"
 #include "Skybox.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
 
+// -------------------------------------------------------
+//  初期化
+// -------------------------------------------------------
+
 void GamePlayScene::Initialize() {
-	// -----------------------
-	// カメラの初期化
-	// -----------------------
+    InitCamera();
+    InitPlayer();
+    InitEnemies();
 
-	camera_ = std::make_unique<Camera>();
-	camera_->SetTranslate(kInitialCameraPos);
+    skybox_ = std::make_unique<Skybox>();
+    skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds", camera_.get());
+}
 
-	// デバッグカメラ
-	debugCamera_ = std::make_unique<DebugCamera>();
-	debugCamera_->Initialize();
-	// 通常カメラの初期位置に合わせる
-	debugCamera_->SetTranslate(camera_->GetTranslate());
-	debugCamera_->CalculateMatrix();
+void GamePlayScene::InitCamera() {
+    camera_ = std::make_unique<Camera>();
+    camera_->SetTranslate(kInitialCameraPos);
 
-	// レールカメラの初期化
-	railCameraController_ = std::make_unique<RailCameraController>();
-	railCameraController_->Initialize(camera_.get(), kInitialCameraPos);
+    debugCamera_ = std::make_unique<DebugCamera>();
+    debugCamera_->Initialize();
+    debugCamera_->SetTranslate(kInitialCameraPos);
+    debugCamera_->CalculateMatrix();
 
-	// -----------------------
-	// 自機の初期化
-	// -----------------------
+    railCameraController_ = std::make_unique<RailCameraController>();
+    railCameraController_->Initialize(camera_.get(), kInitialCameraPos);
 
-	// モデル
-	playerModel_ = std::make_unique<Object3d>();
-	playerModel_->Initialize("player");
+    railPathEditor_ = std::make_unique<RailPathEditor>();
+    railPathEditor_->Initialize(camera_.get());
+    railPathEditor_->GetRailPath()->LoadFromJson("resources/paths/railPath.json");
+}
 
-	// 弾（複数弾）のモデル
-	playerBulletModel_ = std::make_unique<Object3d>();
-	playerBulletModel_->Initialize("bullet");
+void GamePlayScene::InitPlayer() {
+    playerModel_ = std::make_unique<Object3d>();
+    playerModel_->Initialize("player");
 
-	// 親子関係の設定：プレイヤーのモデルの親にレールのWorldTransformをセット
-	playerModel_->GetWorldTransform().parent = &railCameraController_->GetWorldTransform();
+    playerBulletModel_ = std::make_unique<Object3d>();
+    playerBulletModel_->Initialize("bullet");
 
-	// 実体生成（プレイヤー自身の初期位置はレールに対するローカル座標なので、原点付近にする）
-	player_ = std::make_unique<Player>();
-	player_->Initialize(camera_.get(), {0.0f, 0.0f, 0.0f}, playerModel_.get(), "bullet");
+    // プレイヤーモデルの親にレール Transform をセット
+    playerModel_->GetWorldTransform().parent = &railCameraController_->GetWorldTransform();
 
-	// -----------------------
-	// 敵の初期化：最大数だけ最初からスポーン
-	// -----------------------
-	enemies_.clear();
-	for (int i = 0; i < kMaxEnemyCount; ++i) {
-		SpawnEnemy();
-	}
+    player_ = std::make_unique<Player>();
+    player_->Initialize(camera_.get(), {0.0f, 0.0f, 0.0f}, playerModel_.get(), "bullet");
+}
 
-	// -----------------------
-	// 天球の初期化
-	// -----------------------
+void GamePlayScene::InitEnemies() {
+    enemies_.reserve(kMaxEnemyCount);
+    for (int i = 0; i < kMaxEnemyCount; ++i) {
+        SpawnEnemy();
+    }
+}
 
-	skybox_ = std::make_unique<Skybox>();
-	skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds", camera_.get());
+// -------------------------------------------------------
+//  更新
+// -------------------------------------------------------
+
+void GamePlayScene::Update() {
+    if (railPathEditor_) railPathEditor_->Update();
+
+    DrawImGuiCamera();
+    UpdateCamera();
+
+    player_->Update(railCameraController_->GetWorldTransform());
+    UpdateEnemies();
+}
+
+void GamePlayScene::UpdateCamera() {
+    if (useDebugCamera_) {
+        debugCamera_->Update(camera_.get());
+        return;
+    }
+
+    camera_->CalculateMatrix();
+
+    // エディタの設定をレールカメラに反映
+    if (railPathEditor_ && railCameraController_) {
+        railCameraController_->SetRailPath(railPathEditor_->GetRailPath());
+        railCameraController_->SetScrollActive(railPathEditor_->IsScrollActive());
+        railCameraController_->SetScrollSpeed(railPathEditor_->GetCameraSpeed());
+    }
+    railCameraController_->Update();
+}
+
+void GamePlayScene::UpdateEnemies() {
+    for (auto& e : enemies_) {
+        if (e) e->Update(player_.get());
+    }
+
+    // 死亡した敵を除去
+    enemies_.erase(
+        std::remove_if(enemies_.begin(), enemies_.end(),
+                       [](const std::unique_ptr<RusherEnemy>& e) {
+                           return !e || !e->IsAlive();
+                       }),
+        enemies_.end());
+
+    // 不足分を補充
+    while (static_cast<int>(enemies_.size()) < kMaxEnemyCount) {
+        SpawnEnemy();
+    }
 }
 
 void GamePlayScene::SpawnEnemy() {
-	EnemyStatus status = {
-		10,    // maxHp
-		10,    // currentHp
-		1,     // attackPower
-		0.1f   // speed
-	};
+    const EnemyStatus status = {10, 10, 1, 0.1f};
+    const Vector3 spawnPos = {
+        Random::RangeFloat(-kSpawnRangeX, kSpawnRangeX),
+        kSpawnRangeY,
+        kSpawnZ
+    };
 
-	// ランダムなX座標でスポーン（Y・Zは固定）
-	Vector3 spawnPos = {
-		Random::RangeFloat(-kSpawnRangeX, kSpawnRangeX),
-		kSpawnRangeY,
-		kSpawnZ
-	};
+    auto enemy = std::make_unique<RusherEnemy>(status);
+    enemy->Initialize(camera_.get(), spawnPos, kEnemyModelName);
 
-	auto enemy = std::make_unique<RusherEnemy>(status);
+    if (player_) enemy->Update(player_.get());
 
-	enemy->Initialize(camera_.get(), spawnPos, kEnemyModelName);
-
-	// ★生成直後に行列と定数バッファを更新して、描画時に原点に表示されるのを防ぐ
-	if (player_) {
-		enemy->Update(player_.get());
-	}
-
-	enemies_.push_back(std::move(enemy));
+    enemies_.push_back(std::move(enemy));
 }
 
-void GamePlayScene::Update() {
-
-	// ImGuiの描画
-	UpdateImGui();
-
-	// -----------------------
-	// レールカメラの更新（自動スクロール＆カメラの座標設定）
-	// -----------------------
-	railCameraController_->Update();
-
-	// -----------------------
-	// カメラの更新
-	// -----------------------
-
-	if (useDebugCamera_) {
-		debugCamera_->Update(camera_.get());
-	} else {
-		camera_->CalculateMatrix();
-	}
-
-	// -----------------------
-	// 自機の更新
-	// -----------------------
-
-	player_->Update(railCameraController_->GetPosition());
-
-	// -----------------------
-	// 敵の更新
-	// -----------------------
-
-	// 全敵を更新
-	for (auto& enemy : enemies_) {
-		if (enemy) {
-			enemy->Update(player_.get());
-		}
-	}
-
-	// 死亡した敵を除去 → 不足分をスポーン
-	// ★ erase-remove イディオム：死亡済みを一括削除
-	enemies_.erase(
-		std::remove_if(enemies_.begin(), enemies_.end(),
-					   [](const std::unique_ptr<RusherEnemy>& e) {
-						   return e == nullptr || !e->IsAlive();
-					   }),
-		enemies_.end()
-	);
-
-	// ★ 削除後に補充する（Update の末尾でスポーンするのが重要）
-	//    → SpawnEnemy() → Initialize() で pos_ と SetPosition() が確定してから
-	//      次フレームの Draw が呼ばれるため、チカつきが発生しない
-	while (static_cast<int>(enemies_.size()) < kMaxEnemyCount) {
-		SpawnEnemy();
-	}
-}
+// -------------------------------------------------------
+//  描画
+// -------------------------------------------------------
 
 void GamePlayScene::Draw() {
-	// -----------------------
-	// 自機の描画
-	// -----------------------
+    if (railPathEditor_) railPathEditor_->Draw();
 
-	player_->Draw();
+    player_->Draw();
 
-	// -----------------------
-	// 敵の描画
-	// -----------------------
-	for (auto& enemy : enemies_) {
-		if (enemy) {
-			enemy->Draw();
-		}
-	}
+    for (auto& e : enemies_) {
+        if (e) e->Draw();
+    }
 
-	// -----------------------
-	// 天球の描画
-	// -----------------------
-
-	skybox_->Draw();
+    // skybox_->Draw();
 }
 
 void GamePlayScene::Finalize() {}
 
-void GamePlayScene::UpdateImGui() {
-	ImGui::Begin("Debug Window");
+// -------------------------------------------------------
+//  ImGui
+// -------------------------------------------------------
 
-	if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-		// カメラ切り替え
-		ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
+void GamePlayScene::DrawImGuiCamera() {
+    ImGui::SetNextWindowSize(ImVec2(300, 220), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Debug Window");
 
-		ImGui::Separator();
+    if (!ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::End();
+        return;
+    }
 
-		// 1. 操作対象のカメラを決定 (常に操作されているメインカメラを対象にする)
-		auto targetCamera = camera_.get();
-		ImGui::Text("Controller: %s", useDebugCamera_ ? "Debug Camera" : "Main Camera");
+    ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
+    ImGui::TextDisabled("Mode: %s", useDebugCamera_ ? "Debug" : "Rail");
+    ImGui::Separator();
 
-		// 2. ★重要★ 表示する直前に「今のカメラの座標」を必ず取得する
-		Vector3 camPos = targetCamera->GetTranslate();
+    Camera* cam = camera_.get();
 
-		// 3. ImGuiに最新の値を渡す
-		// DragFloat3 は「値が操作された時」に true を返します
-		if (ImGui::DragFloat3("Position", &camPos.x, 0.1f)) {
-			// 操作された時だけカメラに値を戻す
-			targetCamera->SetTranslate(camPos);
-		}
+    Vector3 pos = cam->GetTranslate();
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::DragFloat3("Position##cam", &pos.x, 0.1f)) {
+        cam->SetTranslate(pos);
+    }
 
-		// 回転も同様に「直前に取得」
-		Vector3 camRot = targetCamera->GetRotate();
-		if (ImGui::DragFloat3("Rotation", &camRot.x, 0.01f)) {
-			targetCamera->SetRotate(camRot);
-		}
+    Vector3 rot = cam->GetRotate();
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::DragFloat3("Rotation##cam", &rot.x, 0.01f)) {
+        cam->SetRotate(rot);
+    }
 
-		if (ImGui::Button("Reset Transform")) {
-			targetCamera->SetTranslate({0.0f, 0.0f, -10.0f});
-			targetCamera->SetRotate({0.0f, 0.0f, 0.0f});
-		}
-	}
+    if (ImGui::Button("Reset", ImVec2(-1, 0))) {
+        cam->SetTranslate({0.0f, 0.0f, -10.0f});
+        cam->SetRotate({0.0f, 0.0f, 0.0f});
+    }
 
-	ImGui::End();
+    ImGui::End();
 }

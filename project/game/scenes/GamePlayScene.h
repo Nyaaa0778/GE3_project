@@ -1,9 +1,7 @@
 #pragma once
 
 #include "IScene.h"
-
 #include <Vector3.h>
-
 #include <memory>
 #include <vector>
 #include <string>
@@ -14,79 +12,67 @@ class DebugCamera;
 class Player;
 class RusherEnemy;
 class RailCameraController;
+class RailPathEditor;
 class Skybox;
 
 class GamePlayScene : public IScene {
 public:
-	GamePlayScene();
-	~GamePlayScene();
+    GamePlayScene();
+    ~GamePlayScene();
 
-	void Initialize() override;
-
-	void Update() override;
-
-	void Draw() override;
-
-	void Finalize() override;
+    void Initialize() override;
+    void Update()     override;
+    void Draw()       override;
+    void Finalize()   override;
 
 private:
-	// -----------------------
-	// カメラ
-	// -----------------------
-	std::unique_ptr<Camera> camera_;
-	std::unique_ptr<RailCameraController> railCameraController_;
+    // --- 初期化ヘルパー ---
+    void InitCamera();
+    void InitPlayer();
+    void InitEnemies();
 
-	// 初期位置
-	static inline const Vector3 kInitialCameraPos = {0.0f, 0.0f, -20.0f};
+    // --- 更新ヘルパー ---
+    void UpdateCamera();
+    void UpdateEnemies();
 
-	// デバッグカメラ
-	std::unique_ptr<DebugCamera> debugCamera_;
-	bool useDebugCamera_ = true;
+    // --- 敵管理 ---
+    void SpawnEnemy();
 
-	// -----------------------
-	// 自機
-	// -----------------------
-	std::unique_ptr<Player> player_;
+    // --- ImGui ---
+    void DrawImGuiCamera();
 
-	// モデル
-	std::unique_ptr<Object3d> playerModel_;
-	// 自機の弾のモデル
-	std::unique_ptr<Object3d> playerBulletModel_;
+    // -------------------------------------------------------
+    //  カメラ
+    // -------------------------------------------------------
+    std::unique_ptr<Camera>               camera_;
+    std::unique_ptr<DebugCamera>          debugCamera_;
+    std::unique_ptr<RailCameraController> railCameraController_;
+    std::unique_ptr<RailPathEditor>       railPathEditor_;
 
-	// 初期位置
-	static inline const Vector3 kInitialPlayerPos = {0.0f, 0.0f, 0.0f};
+    bool useDebugCamera_ = true;
 
-	// -----------------------
-	// 敵
-	// -----------------------
+    static constexpr Vector3 kInitialCameraPos = {0.0f, 0.0f, -20.0f};
 
-	// 同時に存在させる敵の最大数
-	static inline const int kMaxEnemyCount = 3;
+    // -------------------------------------------------------
+    //  自機
+    // -------------------------------------------------------
+    std::unique_ptr<Player>    player_;
+    std::unique_ptr<Object3d>  playerModel_;
+    std::unique_ptr<Object3d>  playerBulletModel_;
 
-	// 敵のモデル名（統一）
-	static inline const std::string kEnemyModelName = "sphere";
+    // -------------------------------------------------------
+    //  敵
+    // -------------------------------------------------------
+    std::vector<std::unique_ptr<RusherEnemy>> enemies_;
 
-	// スポーン範囲
-	static inline const float kSpawnRangeX = 10.0f;
-	static inline const float kSpawnRangeY = 0.0f;  // Y は地面に合わせて固定
-	static inline const float kSpawnZ = 15.0f; // Z は固定（プレイヤーの前方）
+    static constexpr int         kMaxEnemyCount = 3;
+    static constexpr float       kSpawnRangeX = 10.0f;
+    static constexpr float       kSpawnRangeY = 0.0f;
+    static constexpr float       kSpawnZ = 15.0f;
+    static constexpr const char* kEnemyModelName = "sphere";
 
-	std::vector<std::unique_ptr<RusherEnemy>> enemies_;
-
-	/// <summary>
-	/// 敵を1体スポーンする（ランダム位置）
-	/// </summary>
-	void SpawnEnemy();
-
-	// -----------------------
-	// 天球
-	// -----------------------
-
-	std::unique_ptr<Skybox> skybox_;
-
-private:
-	/// <summary>
-	/// ImGuiの描画
-	/// </summary>
-	void UpdateImGui();
+    // -------------------------------------------------------
+    //  天球
+    // -------------------------------------------------------
+    std::unique_ptr<Skybox> skybox_;
 };

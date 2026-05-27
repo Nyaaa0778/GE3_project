@@ -3,6 +3,7 @@
 #include <MyEngine.h>
 #include <MathUtility.h>
 #include <TimeManager.h>
+#include "WorldTransform.h"
 
 using namespace MathUtility;
 
@@ -51,18 +52,18 @@ void Player::Initialize(Camera* camera, const Vector3& pos, Object3d* model, con
     reticle_->Initialize(camera, reticlePos_);
 }
 
-void Player::Update(const Vector3& railTranslation) {
+void Player::Update(const WorldTransform& railTransform) {
     // ImGuiの描画
     UpdateImGui();
 
     // 移動処理
-    UpdateMove(railTranslation);
+    UpdateMove(railTransform);
 
     // -----------------------
     // 弾（複数弾）の更新
     // ----------------------
 
-    UpdateBullets(railTranslation);
+    UpdateBullets(railTransform);
 
     // モデルの更新
     model_->Update();
@@ -89,7 +90,7 @@ void Player::Draw() {
     model_->Draw();
 }
 
-void Player::UpdateMove(const Vector3& railTranslation) {
+void Player::UpdateMove(const WorldTransform& railTransform) {
     // 移動方向ベクトル
     Vector3 move = {0.0f, 0.0f, 0.0f};
 
@@ -123,7 +124,7 @@ void Player::UpdateMove(const Vector3& railTranslation) {
     // 照準の更新
     // ----------------------
 
-    UpdateReticle(railTranslation);
+    UpdateReticle(railTransform);
 
     // モデルに座標を反映
     model_->SetPosition(pos_);
@@ -132,7 +133,7 @@ void Player::UpdateMove(const Vector3& railTranslation) {
 /// <summary>
 /// 照準の更新
 /// </summary>
-void Player::UpdateReticle(const Vector3& railTranslation) {
+void Player::UpdateReticle(const WorldTransform& railTransform) {
     // 1. 自機が移動制限枠のどの割合（-1.0 ～ 1.0）にいるかを計算
     float ratioX = pos_.x / kMoveLimit.x;
     float ratioY = pos_.y / kMoveLimit.y;
@@ -153,8 +154,13 @@ void Player::UpdateReticle(const Vector3& railTranslation) {
     reticlePos_.y += (targetReticlePos.y - reticlePos_.y) * easing;
     reticlePos_.z = targetReticlePos.z;
 
-    // レールの現在位置を足してワールド座標へ変換
-    Vector3 worldReticlePos = reticlePos_ + railTranslation;
+    // レールの回転と平行移動を含むワールド行列を使ってワールド座標へ変換
+    const Matrix4x4& m = railTransform.matWorld;
+    Vector3 worldReticlePos = {
+        reticlePos_.x * m.m[0][0] + reticlePos_.y * m.m[1][0] + reticlePos_.z * m.m[2][0] + m.m[3][0],
+        reticlePos_.x * m.m[0][1] + reticlePos_.y * m.m[1][1] + reticlePos_.z * m.m[2][1] + m.m[3][1],
+        reticlePos_.x * m.m[0][2] + reticlePos_.y * m.m[1][2] + reticlePos_.z * m.m[2][2] + m.m[3][2]
+    };
 
     // 計算した座標をReticleに渡す
     reticle_->SetPosition(worldReticlePos);
@@ -164,7 +170,7 @@ void Player::UpdateReticle(const Vector3& railTranslation) {
 /// <summary>
 /// 弾（複数弾）の更新
 /// </summary>
-void Player::UpdateBullets(const Vector3& railTranslation) {
+void Player::UpdateBullets(const WorldTransform& railTransform) {
     Input* input = Input::GetInstance();
 
     if (bulletCooldownTimer_ > 0.0f) {
@@ -175,9 +181,19 @@ void Player::UpdateBullets(const Vector3& railTranslation) {
     if (input->PushKey(DIK_SPACE)) {
         if(bulletCooldownTimer_ <= 0.0f)
         {
-            // プレイヤーと照準のワールド座標を求める
-            Vector3 worldPlayerPos = pos_ + railTranslation;
-            Vector3 worldReticlePos = reticlePos_ + railTranslation;
+            // プレイヤーと照準のワールド座標を求める (レールのワールド行列を使用)
+            const Matrix4x4& m = railTransform.matWorld;
+            Vector3 worldPlayerPos = {
+                pos_.x * m.m[0][0] + pos_.y * m.m[1][0] + pos_.z * m.m[2][0] + m.m[3][0],
+                pos_.x * m.m[0][1] + pos_.y * m.m[1][1] + pos_.z * m.m[2][1] + m.m[3][1],
+                pos_.x * m.m[0][2] + pos_.y * m.m[1][2] + pos_.z * m.m[2][2] + m.m[3][2]
+            };
+            
+            Vector3 worldReticlePos = {
+                reticlePos_.x * m.m[0][0] + reticlePos_.y * m.m[1][0] + reticlePos_.z * m.m[2][0] + m.m[3][0],
+                reticlePos_.x * m.m[0][1] + reticlePos_.y * m.m[1][1] + reticlePos_.z * m.m[2][1] + m.m[3][1],
+                reticlePos_.x * m.m[0][2] + reticlePos_.y * m.m[1][2] + reticlePos_.z * m.m[2][2] + m.m[3][2]
+            };
 
             // 1. 照準への方向ベクトルを求める
             Vector3 direction = worldReticlePos - worldPlayerPos;

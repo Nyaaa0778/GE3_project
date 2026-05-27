@@ -11,6 +11,7 @@ class Object3d;
 class Reticle;
 class PlayerBullet;
 class PlayerBulletPool;
+struct WorldTransform;
 
 class Player {
 public:
@@ -22,7 +23,7 @@ public:
 	// 位置の取得
 	const Vector3& GetPos() const { return pos_; }
 
-	void Update(const Vector3& railTranslation);
+	void Update(const WorldTransform& railTransform);
 
 	void Draw();
 
@@ -76,14 +77,14 @@ private:
 	/// <summary>
 	/// 移動処理
 	/// </summary>
-	void UpdateMove(const Vector3& railTranslation);
+	void UpdateMove(const WorldTransform& railTransform);
 
-	void UpdateReticle(const Vector3& railTranslation);
+	void UpdateReticle(const WorldTransform& railTransform);
 
 	/// <summary>
 	/// 弾の移動処理
 	/// </summary>
-	void UpdateBullets(const Vector3& railTranslation);
+	void UpdateBullets(const WorldTransform& railTransform);
 
 	/// <summary>
 	/// ImGuiの描画

@@ -29,6 +29,9 @@ void Reticle::Initialize(Camera* camera, const Vector3& pos) {
 }
 
 void Reticle::Update() {
+	if (camera_) {
+		plane_->SetRotation(camera_->GetRotate());
+	}
 	// 板ポリの更新
 	plane_->Update();
 }
