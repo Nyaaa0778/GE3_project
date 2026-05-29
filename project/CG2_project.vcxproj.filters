@@ -284,6 +284,7 @@
     <FxCompile Include="resources\shaders\finalBlit\Grayscale.PS.hlsl" />
     <FxCompile Include="resources\shaders\finalBlit\Vignetting.PS.hlsl" />
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl" />
+    <FxCompile Include="resources\shaders\finalBlit\GaussianFilter.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
