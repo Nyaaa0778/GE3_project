@@ -46,6 +46,14 @@ void Plane::Update()
 	}
 
 	transformationMatrixData_->WVP = worldViewProjectionMatrix;
+
+	if (materialData_) {
+		materialData_->uvTransform = MakeAffineMatrix(
+			{1.0f, 1.0f, 1.0f}, // Scale
+			{0.0f, 0.0f, 0.0f}, // Rotation
+			{uvTranslation_.x, uvTranslation_.y, 0.0f} // Translation
+		);
+	}
 }
 
 void Plane::Draw()

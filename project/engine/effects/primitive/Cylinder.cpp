@@ -153,14 +153,14 @@ void Cylinder::CreateMesh() {
 		// position, texcoord, normal (画像通りの順序で代入)
 
 		// 1つ目の三角形
-		vertexData[vIdx++] = {{-sin * kTopRadius, kHeight, cos * kTopRadius, 1.0f}, {u, 0.0f}, {-sin, 0.0f, cos}};
-		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
-		vertexData[vIdx++] = {{-sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
+		vertexData[vIdx++] = {{-sin * kTopRadius, kHeight, cos * kTopRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
+		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f}, {uNext, 1.0f}, {-sinNext, 0.0f, cosNext}};
+		vertexData[vIdx++] = {{-sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f}, {u, 0.0f}, {-sin, 0.0f, cos}};
 
 		// 2つ目の三角形
-		vertexData[vIdx++] = {{-sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
-		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
-		vertexData[vIdx++] = {{-sinNext * kBottomRadius, 0.0f, cosNext * kBottomRadius, 1.0f}, {uNext, 1.0f}, {-sinNext, 0.0f, cosNext}};
+		vertexData[vIdx++] = {{-sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f}, {u, 0.0f}, {-sin, 0.0f, cos}};
+		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f}, {uNext, 1.0f}, {-sinNext, 0.0f, cosNext}};
+		vertexData[vIdx++] = {{-sinNext * kBottomRadius, 0.0f, cosNext * kBottomRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
 	}
 
 	// ==========================================
