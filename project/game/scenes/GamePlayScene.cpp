@@ -2,14 +2,63 @@
 
 #include <MyEngine.h>
 
+#include "LevelLoader.h"
+#include "MathUtility.h"
+#include "LightManager.h"
+
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
 
 void GamePlayScene::Initialize() {
+	// カメラのインスタンス生成
+	camera_ = std::make_unique<Camera>();
+
+	// レベルデータのロード
+	LevelLoader loader;
+	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
+
+	// ロードしたカメラパラメータ（位置・回転）があれば設定、なければデフォルト値
+	if (!levelData->cameras.empty()) {
+		camera_->SetTranslate(levelData->cameras[0].translation);
+		camera_->SetRotate(levelData->cameras[0].rotation);
+	} else {
+		camera_->SetRotate({0.3f, 0.0f, 0.0f});
+		camera_->SetTranslate({0.0f, 6.0f, -20.0f});
+	}
+	camera_->CalculateMatrix();
+	camera_->CreateConstantBuffer();
+
+	// ロードしたライトパラメータ（位置・回転）があれば設定
+	if (!levelData->lights.empty()) {
+		const auto& lightData = levelData->lights[0];
+
+		// 点光源（Local Light）の設定
+		LightManager::GetInstance()->SetLocalLightPosition(lightData.translation);
+		LightManager::GetInstance()->SetLocalLightIntensity(1.0f);
+		LightManager::GetInstance()->SetLocalLightDistance(50.0f); // 届く範囲を拡張
+
+		// 平行光源（Directional Light）は使用しないため無効化（強度 0.0f）
+		LightManager::GetInstance()->SetDirectionalLightIntensity(0.0f);
+	}
 
 	// object3dの初期化
 	obj_ = std::make_unique<Object3d>();
 	obj_->Initialize("plane");
+	obj_->SetCamera(camera_.get());
+
+	// 読み込んだレベルデータのオブジェクトを生成・初期化
+	for (const auto& objectData : levelData->objects) {
+		if (objectData.filename.empty()) {
+			continue;
+		}
+		auto newObj = std::make_unique<Object3d>();
+		newObj->Initialize(objectData.filename);
+		newObj->SetPosition(objectData.translation);
+		newObj->SetRotation(objectData.rotation);
+		newObj->SetScale(objectData.scaling);
+		newObj->SetCamera(camera_.get());
+		objects_.push_back(std::move(newObj));
+	}
 }
 
 void GamePlayScene::Update() {
@@ -80,35 +129,49 @@ void GamePlayScene::Update() {
 		}
 	}
 
-	//// ─────────────────────
-	//// カメラ
-	//// ─────────────────────
+	// ─────────────────────
+	// カメラ
+	// ─────────────────────
 
-	// ImGui::SeparatorText("Camera");
+	ImGui::SeparatorText("Camera");
 
-	//// 位置
-	//{
-	//  Vector3 pos = camera_->GetTranslate();
-	//  if (ImGui::DragFloat3("Camera Position", &pos.x, 0.1f)) {
-	//    camera_->SetTranslate(pos);
-	//  }
-	//}
+	// 位置
+	{
+		Vector3 pos = camera_->GetTranslate();
+		if (ImGui::DragFloat3("Camera Position", &pos.x, 0.1f)) {
+			camera_->SetTranslate(pos);
+		}
+	}
 
-	//// 回転（ラジアン or 度はお好みで）
-	//{
-	//  Vector3 rot = camera_->GetRotate();
-	//  if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
-	//    camera_->SetRotate(rot);
-	//  }
-	//}
+	// 回転（ラジアン or 度はお好みで）
+	{
+		Vector3 rot = camera_->GetRotate();
+		if (ImGui::DragFloat3("Camera Rotation", &rot.x, 0.01f)) {
+			camera_->SetRotate(rot);
+		}
+	}
 
 	ImGui::End();
 
 #endif
 
+	if (camera_) {
+		camera_->CalculateMatrix();
+	}
+
 	obj_->Update();
+
+	for (auto& obj : objects_) {
+		obj->Update();
+	}
 }
 
-void GamePlayScene::Draw() { obj_->Draw(); }
+void GamePlayScene::Draw() { 
+	obj_->Draw();
+
+	for (auto& obj : objects_) {
+		obj->Draw();
+	}
+}
 
 void GamePlayScene::Finalize() {}

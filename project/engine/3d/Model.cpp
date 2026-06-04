@@ -119,7 +119,10 @@ void Model::LoadModelFile(const std::string& directoryPath,
 	Assimp::Importer importer;
 	std::string filePath = directoryPath + "/" + filename;
 	const aiScene* scene = importer.ReadFile(filePath.c_str(), aiProcess_FlipWindingOrder | aiProcess_FlipUVs);
-	assert(scene->HasMeshes()); // メッシュがないものは非対応
+	if (!scene || !scene->HasMeshes()) {
+		OutputDebugStringA(("FAILED: " + filename + "\n").c_str());
+		assert(false);
+	}
 
 	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
 		aiMesh* mesh = scene->mMeshes[meshIndex];

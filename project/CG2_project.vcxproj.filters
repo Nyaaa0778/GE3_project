@@ -249,6 +249,9 @@
     <ClCompile Include="Easing.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="engine\level\LevelLoader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -448,6 +451,15 @@
     <ClInclude Include="Easing.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="engine\level\LevelLoader.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\level\LevelData.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="externals\nlohmann\json.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">
@@ -470,5 +482,6 @@
     <None Include="resources\shaders\skybox\Skybox.hlsli">
       <Filter>リソース ファイル\shaders\skybox</Filter>
     </None>
+    <None Include="resources\levels\TL1Sample.json" />
   </ItemGroup>
 </Project>
