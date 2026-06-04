@@ -27,6 +27,8 @@ public:
 
 	void Draw();
 
+	void DrawImGuiInline();
+
 private:
 	// カメラ
 	Camera* camera_ = nullptr;
@@ -86,9 +88,6 @@ private:
 	/// </summary>
 	void UpdateBullets(const WorldTransform& railTransform);
 
-	/// <summary>
-	/// ImGuiの描画
-	/// </summary>
-	void UpdateImGui();
+
 };
 

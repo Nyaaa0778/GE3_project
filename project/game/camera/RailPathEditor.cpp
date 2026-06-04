@@ -58,8 +58,6 @@ void RailPathEditor::Initialize(Camera* camera) {
 // -------------------------------------------------------
 
 void RailPathEditor::Update() {
-    DrawImGui();
-
     if (showGizmo_ && camera_) {
         UpdateDrag();
         UpdateGizmos();
@@ -77,29 +75,45 @@ void RailPathEditor::Draw() {
 //  ImGui
 // -------------------------------------------------------
 
-void RailPathEditor::DrawImGui() {
-    ImGui::SetNextWindowSize(ImVec2(340, 540), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Rail Path Editor");
+void RailPathEditor::DrawImGuiInline() {
+    if (ImGui::CollapsingHeader("🛤️ Path Controls", ImGuiTreeNodeFlags_DefaultOpen)) {
+        DrawImGuiPathControls();
+    }
 
-    DrawImGuiPathControls();
-    ImGui::Separator();
-    DrawImGuiPointList();
-    DrawImGuiPointEditor();
-    ImGui::Separator();
+    ImGui::Spacing();
 
-    DrawImGuiMinimap();
-    ImGui::Separator();
+    // 縦スクロールを削減するため、制御点リストとポイント編集画面を左右2列（Columns）に配置します
+    if (ImGui::CollapsingHeader("📍 Control Points Editor", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Columns(2, "ControlPointsLayout", false); // 境界線なし
+        
+        // 左列: ポイントリスト
+        DrawImGuiPointList();
+        
+        ImGui::NextColumn();
+        
+        // 右列: ポイント座標編集
+        DrawImGuiPointEditor();
+        
+        ImGui::Columns(1); // カラム終了
+    }
 
-    DrawImGuiFileIO();
+    ImGui::Spacing();
+
+    if (ImGui::CollapsingHeader("🗺️ Minimap (Top-Down)", ImGuiTreeNodeFlags_DefaultOpen)) {
+        DrawImGuiMinimap();
+    }
+
+    ImGui::Spacing();
+
+    if (ImGui::CollapsingHeader("💾 Save / Load File", ImGuiTreeNodeFlags_DefaultOpen)) {
+        DrawImGuiFileIO();
+    }
+
     DrawImGuiPopups();
-
-    ImGui::End();
 }
 
 // [1] パス全体の設定
 void RailPathEditor::DrawImGuiPathControls() {
-    ImGui::TextColored(ImVec4(0.4f, 0.9f, 1.0f, 1.0f), "[ Path Controls ]");
-
     ImGui::Checkbox("Show Gizmo", &showGizmo_);
     ImGui::SameLine(160);
     ImGui::Checkbox("Auto Scroll", &isScrollActive_);
@@ -112,9 +126,7 @@ void RailPathEditor::DrawImGuiPathControls() {
 
 // [2] 制御点リスト
 void RailPathEditor::DrawImGuiPointList() {
-    ImGui::TextColored(ImVec4(0.4f, 0.9f, 1.0f, 1.0f), "[ Point List ]");
-
-    if (ImGui::Button("+ Add")) {
+    if (ImGui::Button("+ Add Point", ImVec2(100, 24))) {
         Vector3 pos = railPath_.GetPointCount() > 0
             ? railPath_.GetPoints().back() + Vector3{0.0f, 0.0f, 10.0f}
         : Vector3{0.0f, 0.0f, 0.0f};
@@ -122,7 +134,7 @@ void RailPathEditor::DrawImGuiPointList() {
         selectedPointIndex_ = static_cast<int>(railPath_.GetPointCount()) - 1;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Clear All")) {
+    if (ImGui::Button("Clear All", ImVec2(100, 24))) {
         railPath_.Clear();
         selectedPointIndex_ = -1;
     }
@@ -132,12 +144,12 @@ void RailPathEditor::DrawImGuiPointList() {
     for (size_t i = 0; i < pts.size(); ++i) {
         const bool selected = (selectedPointIndex_ == static_cast<int>(i));
         char label[64];
-        snprintf(label, sizeof(label), "%2zu  (%.1f, %.1f, %.1f)", i, pts[i].x, pts[i].y, pts[i].z);
+        snprintf(label, sizeof(label), "Point %2zu : (%.1f, %.1f, %.1f)", i, pts[i].x, pts[i].y, pts[i].z);
 
         // 選択行をハイライト
         if (selected) {
-            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.2f, 0.6f, 0.9f, 0.6f));
-            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.2f, 0.6f, 0.9f, 0.8f));
+            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.0f, 0.7f, 1.0f, 0.4f));
+            ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.0f, 0.7f, 1.0f, 0.6f));
         }
         if (ImGui::Selectable(label, selected)) {
             selectedPointIndex_ = static_cast<int>(i);
@@ -153,20 +165,22 @@ void RailPathEditor::DrawImGuiPointEditor() {
     if (selectedPointIndex_ < 0 || selectedPointIndex_ >= count) return;
 
     ImGui::Spacing();
-    ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.2f, 1.0f), "[ Edit Point %d ]", selectedPointIndex_);
+    ImGui::TextColored(ImVec4(1.0f, 0.85f, 0.2f, 1.0f), "Selected Point: #%d", selectedPointIndex_);
 
     Vector3 pos = railPath_.GetPoints()[selectedPointIndex_];
+    ImGui::Text("Coordinate (X, Y, Z)");
     ImGui::SetNextItemWidth(-1);
-    if (ImGui::DragFloat3("##pos", &pos.x, 0.1f)) {
+    if (ImGui::DragFloat3("##pos", &pos.x, 0.1f, 0.0f, 0.0f, "X: %.1f  Y: %.1f  Z: %.1f")) {
         railPath_.SetPoint(selectedPointIndex_, pos);
     }
 
-    if (ImGui::Button("Insert After")) {
+    ImGui::Spacing();
+    if (ImGui::Button("Insert After", ImVec2(100, 24))) {
         railPath_.InsertPoint(selectedPointIndex_ + 1, pos + Vector3{0.0f, 0.0f, 5.0f});
         selectedPointIndex_++;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Delete")) {
+    if (ImGui::Button("Delete", ImVec2(100, 24))) {
         railPath_.DeletePoint(selectedPointIndex_);
         selectedPointIndex_ = std::min(selectedPointIndex_, static_cast<int>(railPath_.GetPointCount()) - 1);
     }
@@ -174,8 +188,6 @@ void RailPathEditor::DrawImGuiPointEditor() {
 
 // [4] ファイル I/O
 void RailPathEditor::DrawImGuiFileIO() {
-    ImGui::TextColored(ImVec4(0.4f, 0.9f, 1.0f, 1.0f), "[ File I/O ]");
-
     char buf[256];
     strncpy_s(buf, saveFileName_.c_str(), sizeof(buf));
     ImGui::SetNextItemWidth(-1);
@@ -186,13 +198,13 @@ void RailPathEditor::DrawImGuiFileIO() {
 
     const std::string fullPath = "resources/paths/" + saveFileName_;
 
-    if (ImGui::Button("Save", ImVec2(120, 0))) {
+    if (ImGui::Button("Save File", ImVec2(100, 24))) {
         pendingPopup_ = railPath_.SaveToJson(fullPath) ? PopupType::SaveOK : PopupType::SaveFail;
         if (pendingPopup_ == PopupType::SaveOK)   ImGui::OpenPopup("##SaveOK");
         if (pendingPopup_ == PopupType::SaveFail)  ImGui::OpenPopup("##SaveFail");
     }
     ImGui::SameLine();
-    if (ImGui::Button("Load", ImVec2(120, 0))) {
+    if (ImGui::Button("Load File", ImVec2(100, 24))) {
         if (railPath_.LoadFromJson(fullPath)) {
             selectedPointIndex_ = -1;
             ImGui::OpenPopup("##LoadOK");
@@ -228,11 +240,9 @@ void RailPathEditor::DrawImGuiPopups() {
 }
 
 void RailPathEditor::DrawImGuiMinimap() {
-    ImGui::TextColored(ImVec4(0.4f, 0.9f, 1.0f, 1.0f), "[ Minimap (Top-Down) ]");
-
     // ズーム調整
-    ImGui::DragFloat("Minimap Zoom", &minimapZoom_, 0.1f, 0.1f, 50.0f);
-    ImGui::TextDisabled("Drag on canvas to pan");
+    ImGui::DragFloat("Zoom", &minimapZoom_, 0.1f, 0.1f, 50.0f);
+    ImGui::TextDisabled("Drag canvas below to pan (Top-Down)");
 
     // 描画領域(キャンバス)の確保 (幅はウィンドウ一杯、高さは200px)
     ImVec2 canvasSize(ImGui::GetContentRegionAvail().x, 200.0f);

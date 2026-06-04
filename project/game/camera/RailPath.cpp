@@ -1,8 +1,6 @@
 #include "RailPath.h"
-#include <fstream>
-#include <filesystem>
-#include "json.hpp"
 #include "MathUtility.h"
+#include "JsonLoader.h"
 
 using namespace MathUtility;
 
@@ -83,45 +81,17 @@ Vector3 RailPath::Evaluate(float t) const {
 
 bool RailPath::SaveToJson(const std::string& filePath) const {
     nlohmann::json root;
-    auto& arr = root["points"] = nlohmann::json::array();
-
-    for (const auto& pt : points_) {
-        arr.push_back({{"x", pt.x}, {"y", pt.y}, {"z", pt.z}});
-    }
-
-    const std::filesystem::path path(filePath);
-    if (path.has_parent_path()) {
-        std::filesystem::create_directories(path.parent_path());
-    }
-
-    std::ofstream file(filePath);
-    if (!file.is_open()) return false;
-
-    file << root.dump(4);
-    return true;
+    root["points"] = JsonLoader::ToJsonArray(points_);
+    return JsonLoader::Save(filePath, root);
 }
 
 bool RailPath::LoadFromJson(const std::string& filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) return false;
+    auto rootOpt = JsonLoader::Load(filePath);
+    if (!rootOpt.has_value()) return false;
 
-    nlohmann::json root;
-    try {
-        file >> root;
-    }
-    catch (...) {
-        return false;
-    }
-
+    const auto& root = rootOpt.value();
     if (!root.contains("points") || !root["points"].is_array()) return false;
 
-    points_.clear();
-    points_.reserve(root["points"].size());
-
-    for (const auto& j : root["points"]) {
-        if (j.contains("x") && j.contains("y") && j.contains("z")) {
-            points_.push_back({j["x"].get<float>(), j["y"].get<float>(), j["z"].get<float>()});
-        }
-    }
+    points_ = JsonLoader::FromJsonArray<Vector3>(root["points"]);
     return true;
 }

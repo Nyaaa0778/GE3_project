@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl" />
@@ -71,6 +71,7 @@
     <ClCompile Include="game\camera\RailCameraController.cpp" />
     <ClCompile Include="game\camera\RailPath.cpp" />
     <ClCompile Include="game\camera\RailPathEditor.cpp" />
+    <ClCompile Include="engine\json\JsonLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game\enemy\EnemyBase.h" />
@@ -138,6 +139,7 @@
     <ClInclude Include="game\camera\RailCameraController.h" />
     <ClInclude Include="game\camera\RailPath.h" />
     <ClInclude Include="game\camera\RailPathEditor.h" />
+    <ClInclude Include="engine\json\JsonLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\object3d\Object3d.hlsli" />

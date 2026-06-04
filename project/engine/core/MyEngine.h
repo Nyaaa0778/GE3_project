@@ -15,3 +15,6 @@
 
 // オーディオ
 #include "AudioManager.h"
+
+// ユーティリティ
+#include "JsonLoader.h"

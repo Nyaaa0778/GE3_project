@@ -39,7 +39,7 @@ private:
     void SpawnEnemy();
 
     // --- ImGui ---
-    void DrawImGuiCamera();
+    void DrawImGui();
 
     // -------------------------------------------------------
     //  カメラ

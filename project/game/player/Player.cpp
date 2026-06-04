@@ -53,9 +53,6 @@ void Player::Initialize(Camera* camera, const Vector3& pos, Object3d* model, con
 }
 
 void Player::Update(const WorldTransform& railTransform) {
-    // ImGuiの描画
-    UpdateImGui();
-
     // 移動処理
     UpdateMove(railTransform);
 
@@ -239,34 +236,39 @@ void Player::UpdateBullets(const WorldTransform& railTransform) {
 /// <summary>
 /// ImGuiの描画
 /// </summary>
-void Player::UpdateImGui() {
+void Player::DrawImGuiInline() {
 #ifdef USE_IMGUI
-    // ★ウィンドウ名を共通の "Debug Window" に変更
-    // ImGui::Begin は同じ名前で呼び出すと、自動的に同じウィンドウ内に中身が追加されます
-    ImGui::Begin("Debug Window");
-
-    // --- セクション: Player Settings ---
-    // CollapsingHeader を使うことで、クリックで開閉できるようになります
-    if (ImGui::CollapsingHeader("Player Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-
-        // 位置(Position)の操作
-        if (ImGui::DragFloat3("Player Position", &pos_.x, 0.1f)) {
-            model_->SetPosition(pos_);
-        }
-
-        // 回転(Rotation)の操作
-        Vector3 rotate = model_->GetRotate();
-        if (ImGui::DragFloat3("Player Rotation", &rotate.x, 0.01f)) {
-            model_->SetRotation(rotate);
-        }
-
-        // 環境反射係数の操作
-        float envCoeff = model_->GetEnvironmentCoefficient();
-        if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
-            model_->SetEnvironmentCoefficient(envCoeff);
-        }
+    // タブ内に直接描画するため、Begin/End や CollapsingHeader を省き、
+    // すぐにコントロールを配置することで、スクロールを削減しスッキリした見た目にします。
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.0f, 0.7f, 1.0f, 1.0f), "👤 Player Transform");
+    ImGui::Separator();
+    
+    // 位置(Position)の操作
+    ImGui::Text("Position");
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::DragFloat3("##PlayerPosition", &pos_.x, 0.1f, 0.0f, 0.0f, "X: %.1f  Y: %.1f  Z: %.1f")) {
+        model_->SetPosition(pos_);
     }
 
-    ImGui::End();
+    // 回転(Rotation)の操作
+    ImGui::Text("Rotation");
+    Vector3 rotate = model_->GetRotate();
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::DragFloat3("##PlayerRotation", &rotate.x, 0.01f, -6.28f, 6.28f, "P: %.2f  Y: %.2f  R: %.2f")) {
+        model_->SetRotation(rotate);
+    }
+
+    ImGui::Spacing();
+    ImGui::TextColored(ImVec4(0.0f, 0.7f, 1.0f, 1.0f), "🧪 Material Properties");
+    ImGui::Separator();
+
+    // 環境反射係数の操作
+    float envCoeff = model_->GetEnvironmentCoefficient();
+    ImGui::Text("Reflection Power");
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::SliderFloat("##ReflectionPower", &envCoeff, 0.0f, 1.0f, "Power: %.2f")) {
+        model_->SetEnvironmentCoefficient(envCoeff);
+    }
 #endif
 }

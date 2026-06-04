@@ -75,6 +75,21 @@ public:
 	/// </summary>
 	void Draw();
 
+	/// <summary>
+	/// 描画の表示・非表示を切り替える
+	/// </summary>
+	void ToggleVisibility() { isVisible_ = !isVisible_; }
+
+	/// <summary>
+	/// 表示状態を取得する
+	/// </summary>
+	bool IsVisible() const { return isVisible_; }
+
+	/// <summary>
+	/// 表示状態を設定する
+	/// </summary>
+	void SetVisible(bool visible) { isVisible_ = visible; }
+
 private:
 	//================================================================================
 	// 外部参照
@@ -84,4 +99,7 @@ private:
 	DirectXCommon* dxCommon_ = nullptr;
 	// SrvManagerのポインタ
 	ShaderResourceViewManager* srvManager_ = nullptr;
+
+	// 表示・非表示フラグ
+	bool isVisible_ = true;
 };

@@ -70,7 +70,7 @@ void GamePlayScene::InitEnemies() {
 void GamePlayScene::Update() {
     if (railPathEditor_) railPathEditor_->Update();
 
-    DrawImGuiCamera();
+    DrawImGui();
     UpdateCamera();
 
     player_->Update(railCameraController_->GetWorldTransform());
@@ -151,37 +151,82 @@ void GamePlayScene::Finalize() {}
 //  ImGui
 // -------------------------------------------------------
 
-void GamePlayScene::DrawImGuiCamera() {
-    ImGui::SetNextWindowSize(ImVec2(300, 220), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Debug Window");
+void GamePlayScene::DrawImGui() {
+#ifdef USE_IMGUI
+    // 3つのウィンドウを統合したワイドなコントロールセンター
+    // 左右に並んだレイアウトが綺麗に収まるように横幅を広く取ります
+    ImGui::SetNextWindowSize(ImVec2(560, 550), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Control Center", nullptr, ImGuiWindowFlags_None); // スクロールバーは必要に応じて自動で表示されるようNoneにする
 
-    if (!ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::End();
-        return;
-    }
+    if (ImGui::BeginTabBar("ControlTabBar")) {
+        
+        // -------------------------------------------------------
+        // [1] Camera & Stats タブ
+        // -------------------------------------------------------
+        if (ImGui::BeginTabItem("🎥 Camera & Stats")) {
+            if (ImGui::CollapsingHeader("🎥 Viewport Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
+                ImGui::SameLine();
+                ImGui::TextDisabled("| Mode: %s", useDebugCamera_ ? "Debug" : "Rail");
+                ImGui::Separator();
 
-    ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
-    ImGui::TextDisabled("Mode: %s", useDebugCamera_ ? "Debug" : "Rail");
-    ImGui::Separator();
+                Camera* cam = camera_.get();
 
-    Camera* cam = camera_.get();
+                Vector3 pos = cam->GetTranslate();
+                ImGui::Text("Translate");
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::DragFloat3("##PositionCam", &pos.x, 0.1f, 0.0f, 0.0f, "X: %.1f  Y: %.1f  Z: %.1f")) {
+                    cam->SetTranslate(pos);
+                }
 
-    Vector3 pos = cam->GetTranslate();
-    ImGui::SetNextItemWidth(-1);
-    if (ImGui::DragFloat3("Position##cam", &pos.x, 0.1f)) {
-        cam->SetTranslate(pos);
-    }
+                Vector3 rot = cam->GetRotate();
+                ImGui::Text("Rotation");
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::DragFloat3("##RotationCam", &rot.x, 0.01f, 0.0f, 0.0f, "P: %.2f  Y: %.2f  R: %.2f")) {
+                    cam->SetRotate(rot);
+                }
 
-    Vector3 rot = cam->GetRotate();
-    ImGui::SetNextItemWidth(-1);
-    if (ImGui::DragFloat3("Rotation##cam", &rot.x, 0.01f)) {
-        cam->SetRotate(rot);
-    }
+                ImGui::Spacing();
+                if (ImGui::Button("Reset Camera", ImVec2(-1, 30))) {
+                    cam->SetTranslate({0.0f, 0.0f, -10.0f});
+                    cam->SetRotate({0.0f, 0.0f, 0.0f});
+                }
+            }
 
-    if (ImGui::Button("Reset", ImVec2(-1, 0))) {
-        cam->SetTranslate({0.0f, 0.0f, -10.0f});
-        cam->SetRotate({0.0f, 0.0f, 0.0f});
+            ImGui::Spacing();
+
+            if (ImGui::CollapsingHeader("📊 Engine Stats", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Text("Performance: %.1f FPS", ImGui::GetIO().Framerate);
+                ImGui::TextDisabled("Frame Time:  %.3f ms", 1000.0f / ImGui::GetIO().Framerate);
+                ImGui::Separator();
+                ImGui::TextDisabled("Press [TAB] to Hide/Show UI");
+            }
+            ImGui::EndTabItem();
+        }
+
+        // -------------------------------------------------------
+        // [2] Player Settings タブ
+        // -------------------------------------------------------
+        if (ImGui::BeginTabItem("👤 Player Settings")) {
+            if (player_) {
+                player_->DrawImGuiInline();
+            }
+            ImGui::EndTabItem();
+        }
+
+        // -------------------------------------------------------
+        // [3] Rail Editor タブ
+        // -------------------------------------------------------
+        if (ImGui::BeginTabItem("🛤️ Rail Editor")) {
+            if (railPathEditor_) {
+                railPathEditor_->DrawImGuiInline();
+            }
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
     }
 
     ImGui::End();
+#endif
 }

@@ -51,32 +51,35 @@ void TimeManager::Update() {
 	deltaTime_ = static_cast<float>(realElapsed.count()) / 1000000.0f;
 	lastUpdateTime_ = now;
 
-	// 1/60秒ピッタリの時間
-	const std::chrono::microseconds kMinTime(uint64_t(1000000.0f / 60.0f));
-	// 1/60秒よりわずかに短い時間
-	const std::chrono::microseconds kMinCheckTime(uint64_t(1000000.0f / 65.0f));
+	// 1/60秒ピッタリの時間 (16.667ms)
+	const std::chrono::microseconds kTargetTime(1000000 / 60);
 
-	// 現在時刻を取得する
-	//std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-	// 前回記録からの経過時間を取得する
-	std::chrono::microseconds elapsed =
-		std::chrono::duration_cast<std::chrono::microseconds>(now -
-			frameStartTime_);
-	// 1/60秒（よりわずかに短い時間）経っていない場合
-	if (elapsed < kMinCheckTime) {
-		// 1/60秒経過するまで微小なスリープを繰り返す
-		while (std::chrono::steady_clock::now() - frameStartTime_ < kMinTime) {
-			// 1マイクロ秒スリープ
-			std::this_thread::sleep_for(std::chrono::microseconds(1));
+	// 残り時間をスリープとビジーウェイトで待つ
+	while (true) {
+		std::chrono::steady_clock::time_point tempNow = std::chrono::steady_clock::now();
+		std::chrono::microseconds elapsed = std::chrono::duration_cast<std::chrono::microseconds>(tempNow - frameStartTime_);
+		std::chrono::microseconds remaining = kTargetTime - elapsed;
+
+		if (remaining.count() <= 0) {
+			break;
+		}
+
+		// 残り時間が1.5ms以上あれば、1msスリープしてCPUを休ませる
+		if (remaining.count() > 1500) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		} else {
+			// 残りわずかな時間はビジーウェイト（スピンロック）で正確に待つ
+#if defined(_MSC_VER)
+			_mm_pause(); // CPUに少しだけ休止のヒントを与え、発熱や電力を抑える
+#endif
 		}
 	}
 
-	std::chrono::steady_clock::time_point endOfFrame =
-		std::chrono::steady_clock::now();
-	// 今回のフレームで実際にかかった時間を秒(float)で算出
+	std::chrono::steady_clock::time_point endOfFrame = std::chrono::steady_clock::now();
 	std::chrono::duration<float> delta = endOfFrame - frameStartTime_;
 	deltaTime_ = delta.count();
 
 	// 現在の時間を記録する
 	frameStartTime_ = endOfFrame;
 }
+

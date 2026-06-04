@@ -16,6 +16,7 @@ public:
     void Initialize(Camera* camera);
     void Update();
     void Draw();
+    void DrawImGuiInline();
 
     // --- ゲッター ---
     RailPath* GetRailPath() { return &railPath_; }
@@ -25,8 +26,6 @@ public:
     void SetRailCameraController(RailCameraController* controller) { railController_ = controller; }
 
 private:
-    // ImGui ウィンドウ全体
-    void DrawImGui();
 
     // ImGui セクション分割
     void DrawImGuiPathControls();

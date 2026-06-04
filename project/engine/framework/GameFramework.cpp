@@ -174,6 +174,12 @@ void GameFramework::Update() {
 		endRequest_ = true;
 	}
 
+#ifdef USE_IMGUI
+	if (Input::GetInstance()->TriggerKey(DIK_TAB)) {
+		ImGuiManager::GetInstance()->ToggleVisibility();
+	}
+#endif
+
 	// 入力の更新
 	Input::GetInstance()->Update();
 }
