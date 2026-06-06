@@ -43,7 +43,7 @@ void GamePlayScene::Initialize() {
 
 	// object3dの初期化
 	obj_ = std::make_unique<Object3d>();
-	obj_->Initialize("plane");
+	obj_->Initialize("sphere");
 	obj_->SetCamera(camera_.get());
 
 	// 読み込んだレベルデータのオブジェクトを生成・初期化
@@ -58,6 +58,38 @@ void GamePlayScene::Initialize() {
 		newObj->SetScale(objectData.scaling);
 		newObj->SetCamera(camera_.get());
 		objects_.push_back(std::move(newObj));
+	}
+
+	for (const auto& spawner : levelData->spawners) {
+		// ① プレイヤーの場合
+		// エディタ側で "Player" や "PlayerSpawn" という名前をつけていると想定
+		if (spawner.entityType.find("Player") != std::string::npos) {
+			obj_->SetPosition(spawner.translation);
+			obj_->SetRotation(spawner.rotation);
+		}
+		// ② 敵の場合
+		else if (spawner.entityType.find("Enemy") != std::string::npos) {
+			// 今回は一旦 Object3d として生成
+			auto enemy = std::make_unique<Object3d>();
+			enemy->Initialize("sphere"); // ※敵のモデル名に変更してください
+			enemy->SetPosition(spawner.translation);
+			enemy->SetRotation(spawner.rotation);
+			enemy->SetCamera(camera_.get());
+
+			// 一旦、背景と同じ objects_ に追加して描画されるようにする
+			// （本格的に処理を分けるなら GamePlayScene.h に enemies_ 等の配列を作るのがおすすめ）
+			objects_.push_back(std::move(enemy));
+		}
+		// ③ アイテムの場合
+		else if (spawner.entityType.find("Item") != std::string::npos) {
+			auto item = std::make_unique<Object3d>();
+			item->Initialize("cube"); // ※アイテムのモデル名に変更してください
+			item->SetPosition(spawner.translation);
+			item->SetRotation(spawner.rotation);
+			item->SetCamera(camera_.get());
+
+			objects_.push_back(std::move(item));
+		}
 	}
 }
 
@@ -166,7 +198,7 @@ void GamePlayScene::Update() {
 	}
 }
 
-void GamePlayScene::Draw() { 
+void GamePlayScene::Draw() {
 	obj_->Draw();
 
 	for (auto& obj : objects_) {

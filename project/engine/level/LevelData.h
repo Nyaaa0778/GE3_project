@@ -23,7 +23,14 @@ struct LevelData {
 		Vector3 rotation;
 	};
 
+	struct SpawnerData {
+		std::string entityType; 
+		Vector3 translation;
+		Vector3 rotation;
+	};
+
 	std::vector<ObjectData> objects;
+	std::vector<SpawnerData> spawners;
 	std::vector<CameraData> cameras;
 	std::vector<LightData> lights;
 };

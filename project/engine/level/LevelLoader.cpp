@@ -45,12 +45,20 @@ std::unique_ptr<LevelData> LevelLoader::Load(const std::string& filename) {
 
 void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData) {
 
+    if (object.contains("disabled")) {
+        bool disabled = object["disabled"].get<bool>();
+        if (disabled) {
+            // 配置しない（再帰関数から抜けることで、このオブジェクトと子オブジェクトの生成をスキップ）
+            return;
+        }
+    }
+
     // 種類のチェック
     std::string type = object["type"].get<std::string>();
 
-    // メッシュ
     if (type.compare("MESH") == 0) {
-        // 要素追加
+        // メッシュ
+            // 要素追加
         levelData->objects.emplace_back(LevelData::ObjectData{});
         // 追加した要素の参照を得る
         LevelData::ObjectData& objectData = levelData->objects.back();
@@ -82,9 +90,34 @@ void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData
         };
         // 拡縮
         objectData.scaling = {(float) transform["scaling"][0], (float) transform["scaling"][1], (float) transform["scaling"][2]};
-    }
-    // カメラ
-    else if (type.compare("CAMERA") == 0) {
+    } else if (type.compare("PlayerSpawn") == 0) {
+        // オブジェクトの初期位置
+        levelData->spawners.emplace_back(LevelData::SpawnerData{});
+        LevelData::SpawnerData& spawnerData = levelData->spawners.back();
+
+        // エディタ側で仕込んだ文字列（種類）を読み込む
+        if (object.contains("entity_type")) {
+            spawnerData.entityType = object["entity_type"].get<std::string>();
+        } else if (object.contains("name")) {
+            // カスタムプロパティが無ければオブジェクト名で代用するなどの工夫もアリ
+            spawnerData.entityType = object["name"].get<std::string>();
+        }
+
+        const nlohmann::json& transform = object["transform"];
+        // 平行移動の数値を書き込む
+        spawnerData.translation = {
+            (float) transform["translation"][0],
+            (float) transform["translation"][1],
+            (float) transform["translation"][2]
+        };
+        // 回転の数値をラジアンで書き込む
+        spawnerData.rotation = {
+            (float) transform["rotation"][0],
+            (float) transform["rotation"][1],
+            (float) transform["rotation"][2]
+        };
+    } else if (type.compare("CAMERA") == 0) {
+        // カメラ
         levelData->cameras.emplace_back(LevelData::CameraData{});
         LevelData::CameraData& cameraData = levelData->cameras.back();
 
@@ -100,9 +133,8 @@ void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData
             ry,
             rz
         };
-    }
-    // ライト
-    else if (type.compare("LIGHT") == 0) {
+    } else if (type.compare("LIGHT") == 0) {
+        // ライト
         levelData->lights.emplace_back(LevelData::LightData{});
         LevelData::LightData& lightData = levelData->lights.back();
 
