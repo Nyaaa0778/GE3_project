@@ -41,10 +41,15 @@ void ModelManager::LoadModel(const std::string& modelName, const std::string& ex
 		return;
 	}
 
-	std::string directoryPath = "resources/models/" + modelName;
+	std::string actualModelName = modelName;
+	if (modelName == "sphere_player" || modelName == "sphere_enemy" || modelName == "sphere_thread") {
+		actualModelName = "sphere";
+	}
+
+	std::string directoryPath = "resources/models/" + actualModelName;
 
 	// 拡張子を指定
-	std::string fileName = modelName + "." + extension;
+	std::string fileName = actualModelName + "." + extension;
 
 	// モデルの生成とファイル読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();

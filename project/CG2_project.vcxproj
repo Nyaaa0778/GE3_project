@@ -206,6 +206,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\core\GameManager.cpp" />
     <ClCompile Include="engine\framework\GameFramework.cpp" />
     <ClCompile Include="game\scenes\GamePlayScene.cpp" />
+    <ClCompile Include="game\scenes\ReplayManager.cpp" />
+    <ClCompile Include="game\scenes\SocketServer.cpp" />
     <ClCompile Include="engine\framework\scene\IScene.cpp" />
     <ClCompile Include="engine\framework\scene\ISceneFactory.cpp" />
     <ClCompile Include="engine\3d\LightManager.cpp" />
@@ -360,6 +362,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\core\GameManager.h" />
     <ClInclude Include="engine\framework\GameFramework.h" />
     <ClInclude Include="game\scenes\GamePlayScene.h" />
+    <ClInclude Include="game\scenes\ReplayManager.h" />
+    <ClInclude Include="game\scenes\SocketServer.h" />
+    <ClInclude Include="game\scenes\DebugState.h" />
     <ClInclude Include="game\scenes\TitleScene.h" />
     <ClInclude Include="engine\framework\scene\IScene.h" />
     <ClInclude Include="engine\framework\scene\SceneManager.h" />

@@ -1,13 +1,18 @@
 #include "GamePlayScene.h"
 
 #include <MyEngine.h>
-
 #include "LevelLoader.h"
 #include "MathUtility.h"
 #include "LightManager.h"
+#include "Input.h"
+#include <thread>
+#include <chrono>
 
 GamePlayScene::GamePlayScene() = default;
-GamePlayScene::~GamePlayScene() = default;
+
+GamePlayScene::~GamePlayScene() {
+	Finalize();
+}
 
 void GamePlayScene::Initialize() {
 	// カメラのインスタンス生成
@@ -31,22 +36,22 @@ void GamePlayScene::Initialize() {
 	// ロードしたライトパラメータ（位置・回転）があれば設定
 	if (!levelData->lights.empty()) {
 		const auto& lightData = levelData->lights[0];
-
-		// 点光源（Local Light）の設定
 		LightManager::GetInstance()->SetLocalLightPosition(lightData.translation);
 		LightManager::GetInstance()->SetLocalLightIntensity(1.0f);
-		LightManager::GetInstance()->SetLocalLightDistance(50.0f); // 届く範囲を拡張
-
-		// 平行光源（Directional Light）は使用しないため無効化（強度 0.0f）
+		LightManager::GetInstance()->SetLocalLightDistance(50.0f);
 		LightManager::GetInstance()->SetDirectionalLightIntensity(0.0f);
 	}
 
-	// object3dの初期化
+	// object3dの初期化 (Player)
 	obj_ = std::make_unique<Object3d>();
-	obj_->Initialize("sphere");
+	obj_->Initialize("sphere_player");
 	obj_->SetCamera(camera_.get());
+	obj_->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 
-	// 読み込んだレベルデータのオブジェクトを生成・初期化
+	// スナップショットの作成用バッファ
+	SnapshotData snapshot;
+
+	// 読み込んだレベルデータのオブジェクトを生成・初期化 (静的背景オブジェクト)
 	for (const auto& objectData : levelData->objects) {
 		if (objectData.filename.empty()) {
 			continue;
@@ -58,152 +63,507 @@ void GamePlayScene::Initialize() {
 		newObj->SetScale(objectData.scaling);
 		newObj->SetCamera(camera_.get());
 		objects_.push_back(std::move(newObj));
+
+		// スナップショットに追加
+		SnapshotObject sobj;
+		sobj.name = objectData.filename;
+		sobj.filename = objectData.filename;
+		sobj.translation = objectData.translation;
+		sobj.rotation = objectData.rotation;
+		sobj.scaling = objectData.scaling;
+		snapshot.staticObjects.push_back(sobj);
 	}
 
 	for (const auto& spawner : levelData->spawners) {
 		// ① プレイヤーの場合
-		// エディタ側で "Player" や "PlayerSpawn" という名前をつけていると想定
 		if (spawner.entityType.find("Player") != std::string::npos) {
 			obj_->SetPosition(spawner.translation);
 			obj_->SetRotation(spawner.rotation);
 		}
 		// ② 敵の場合
 		else if (spawner.entityType.find("Enemy") != std::string::npos) {
-			// 今回は一旦 Object3d として生成
 			auto enemy = std::make_unique<Object3d>();
-			enemy->Initialize("sphere"); // ※敵のモデル名に変更してください
+			enemy->Initialize("sphere_enemy");
 			enemy->SetPosition(spawner.translation);
 			enemy->SetRotation(spawner.rotation);
 			enemy->SetCamera(camera_.get());
-
-			// 一旦、背景と同じ objects_ に追加して描画されるようにする
-			// （本格的に処理を分けるなら GamePlayScene.h に enemies_ 等の配列を作るのがおすすめ）
-			objects_.push_back(std::move(enemy));
+			enemy->SetColor({1.0f, 0.2f, 0.2f, 1.0f}); // 赤い敵
+			enemies_.push_back(std::move(enemy));
+			enemyInitialPositions_.push_back(spawner.translation);
 		}
 		// ③ アイテムの場合
 		else if (spawner.entityType.find("Item") != std::string::npos) {
 			auto item = std::make_unique<Object3d>();
-			item->Initialize("cube"); // ※アイテムのモデル名に変更してください
+			item->Initialize("cube");
 			item->SetPosition(spawner.translation);
 			item->SetRotation(spawner.rotation);
 			item->SetCamera(camera_.get());
-
+			item->SetColor({0.2f, 0.8f, 0.2f, 1.0f});
 			objects_.push_back(std::move(item));
 		}
 	}
+
+	// もしレベルデータに敵がいなかった場合のフォールバック（デバッグ用に必ず1体配置する）
+	if (enemies_.empty()) {
+		auto enemy = std::make_unique<Object3d>();
+		enemy->Initialize("sphere_enemy");
+		enemy->SetPosition({0.0f, 0.0f, 6.0f});
+		enemy->SetRotation({0.0f, 0.0f, 0.0f});
+		enemy->SetCamera(camera_.get());
+		enemy->SetColor({1.0f, 0.2f, 0.2f, 1.0f}); // 赤い敵
+		enemies_.push_back(std::move(enemy));
+		enemyInitialPositions_.push_back({0.0f, 0.0f, 6.0f});
+	}
+
+	// リプレイマネージャにスナップショットを設定
+	replayManager_.SetSnapshot(snapshot);
+
+	// EXE側のアロケータ関数ポインタを取得
+	ImGuiMemAllocFunc allocFunc = nullptr;
+	ImGuiMemFreeFunc freeFunc = nullptr;
+	void* userData = nullptr;
+	ImGui::GetAllocatorFunctions(&allocFunc, &freeFunc, &userData);
+
+	// DLLに渡す DebugState 構造体マッピングを設定
+	debugState_.playerPos = playerPos_;
+	debugState_.playerRot = playerRot_;
+	debugState_.playerColor = playerColor_;
+
+	debugState_.threadNodeCount = &threadNodeCount_;
+	debugState_.threadNodes = threadNodes_;
+
+	debugState_.enemyCount = &enemyCount_;
+	debugState_.enemyPositions = enemyPositions_;
+	debugState_.enemyRotations = enemyRotations_;
+	debugState_.enemyHPs = enemyHPs_;
+
+	debugState_.isPlayback = &isPlayback_;
+	debugState_.playbackFrame = &playbackFrame_;
+	debugState_.totalFrames = &totalFrames_;
+
+	debugState_.isSocketSyncEnabled = &isSocketSyncEnabled_;
+	debugState_.isSocketConnected = &isSocketConnected_;
+	debugState_.socketPort = &socketPort_;
+
+	debugState_.isBugTriggered = &isBugTriggered_;
+	debugState_.bugMessage = bugMessage_;
+	debugState_.triggerBugNow = &triggerBugNow_;
+	debugState_.saveReplayNow = &saveReplayNow_;
+	debugState_.loadReplayNow = &loadReplayNow_;
+
+	debugState_.allocFunc = (void*)allocFunc;
+	debugState_.freeFunc = (void*)freeFunc;
+	debugState_.allocUserData = userData;
+
+	// Winsockサーバー起動 (ポート12345)
+	socketServer_.Start(12345);
+
+	// デバッグ用DLLを読み込む
+	LoadDebugUI();
 }
 
 void GamePlayScene::Update() {
+	// DLLの変更監視とホットリロード
+	UpdateDLL();
+
+	// ソケットからタイムライン同期命令を受信したかチェック
+	int socketFrame = 0;
+	if (isSocketSyncEnabled_ && socketServer_.GetTargetFrame(socketFrame)) {
+		isPlayback_ = true;
+		playbackFrame_ = socketFrame;
+		if (playbackFrame_ >= replayManager_.GetTotalFrames()) {
+			playbackFrame_ = replayManager_.GetTotalFrames() - 1;
+		}
+		if (playbackFrame_ < 0) {
+			playbackFrame_ = 0;
+		}
+	}
+
+	// ソケットからテイクオーバー命令を受信したかチェック
+	if (socketServer_.CheckTakeover()) {
+		isPlayback_ = false;
+	}
+
+	// DLL UIからのトリガーチェック
+	if (triggerBugNow_) {
+		isBugTriggered_ = true;
+		strcpy_s(bugMessage_, "Manual Bug Triggered from ImGui!");
+		triggerBugNow_ = false;
+	}
+	if (saveReplayNow_) {
+		replayManager_.SaveLog("logs/play_log.json");
+		saveReplayNow_ = false;
+	}
+	if (loadReplayNow_) {
+		if (replayManager_.LoadLog("logs/play_log.json")) {
+			isPlayback_ = true;
+			playbackFrame_ = 0;
+		}
+		loadReplayNow_ = false;
+	}
+
+	// 状態の同期と記録
+	if (isPlayback_) {
+		// 巻き戻し/再生中: 記録されたフレームの座標を適用
+		RollbackToFrameState(playbackFrame_);
+	} else {
+		// プレイヤーのキーボード操作 (WASDまたは矢印キー)
+		Vector3 pPos = obj_->GetPosition();
+		float speed = 0.1f;
+		bool moved = false;
+		if (Input::GetInstance()->PushKey(DIK_W) || Input::GetInstance()->PushKey(DIK_UP)) { pPos.z += speed; moved = true; }
+		if (Input::GetInstance()->PushKey(DIK_S) || Input::GetInstance()->PushKey(DIK_DOWN)) { pPos.z -= speed; moved = true; }
+		if (Input::GetInstance()->PushKey(DIK_A) || Input::GetInstance()->PushKey(DIK_LEFT)) { pPos.x -= speed; moved = true; }
+		if (Input::GetInstance()->PushKey(DIK_D) || Input::GetInstance()->PushKey(DIK_RIGHT)) { pPos.x += speed; moved = true; }
+		obj_->SetPosition(pPos);
+
+		// 糸の生成 (一定距離動くごとにノードを追加)
+		if (moved) {
+			Vector3 lastNode = activeThreadNodes_.empty() ? Vector3(0.0f, -999.0f, 0.0f) : activeThreadNodes_.back();
+			float dx = pPos.x - lastNode.x;
+			float dy = pPos.y - lastNode.y;
+			float dz = pPos.z - lastNode.z;
+			float distSq = dx*dx + dy*dy + dz*dz;
+			if (activeThreadNodes_.empty() || distSq > 0.5f * 0.5f) {
+				activeThreadNodes_.push_back(pPos);
+				if (activeThreadNodes_.size() > 100) {
+					activeThreadNodes_.erase(activeThreadNodes_.begin()); // 最大100ノードに制限
+				}
+			}
+		}
+
+		// 敵の自律移動 (円状に巡回 - 初期位置基準)
+		enemyTimer_ += 0.016f;
+		for (size_t i = 0; i < enemies_.size(); ++i) {
+			if (i < enemyInitialPositions_.size()) {
+				Vector3 basePos = enemyInitialPositions_[i];
+				Vector3 ePos;
+				ePos.x = basePos.x + sinf(enemyTimer_ + i * 2.0f) * 2.5f;
+				ePos.y = basePos.y;
+				ePos.z = basePos.z + cosf(enemyTimer_ + i * 2.0f) * 2.5f;
+				enemies_[i]->SetPosition(ePos);
+			}
+
+			Vector3 eRot = enemies_[i]->GetRotate();
+			eRot.y = -(enemyTimer_ + i * 2.0f);
+			enemies_[i]->SetRotation(eRot);
+		}
+
+		// バグトリガー衝突判定 (プレイヤーが敵に接近するとバグイベント発生)
+		Vector3 playerPos = obj_->GetPosition();
+		for (size_t i = 0; i < enemies_.size(); ++i) {
+			Vector3 enemyPos = enemies_[i]->GetPosition();
+			float dx = playerPos.x - enemyPos.x;
+			float dy = playerPos.y - enemyPos.y;
+			float dz = playerPos.z - enemyPos.z;
+			float distSq = dx*dx + dy*dy + dz*dz;
+			if (distSq < 1.0f * 1.0f && !isBugTriggered_) {
+				isBugTriggered_ = true;
+				strcpy_s(bugMessage_, "Bug: Player collided with Enemy!");
+			}
+		}
+
+		// 毎フレームの状態を記録
+		RecordFrameState();
+	}
+
+	// メンバ変数の値を DLL共有変数 (flat arrays) にキャプチャする
+	CaptureStateToVars();
+
 #ifdef USE_IMGUI
-
-	ImGui::Begin("Window");
-
-	//// ─────────────────────
-	//// ライト
-	//// ─────────────────────
-
-	// ImGui::SeparatorText("Directional Light");
-
-	// Vector4 color = object3d->GetLightColor();
-	// if (ImGui::ColorEdit3("Light Color", &color.x)) {
-	//   object3d->SetLightColor({color.x, color.y, color.z, 1.0f});
-	// }
-
-	// Vector3 dir = object3d->GetLightDirection();
-	// if (ImGui::SliderFloat3("Direction", &dir.x, -1.0f, 1.0f)) {
-	//   object3d->SetLightDirection(dir); // ← そのまま渡す
-	// }
-
-	// float intensity = object3d->GetLightIntensity();
-	// if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 5.0f)) {
-	//   object3d->SetLightIntensity(intensity);
-	// }
-
-	// ─────────────────────
-	// Obj
-	// ─────────────────────
-
-	ImGui::SeparatorText("Object");
-
-	{
-		Vector3 pos = obj_->GetPosition();
-		if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
-			obj_->SetPosition(pos);
-		}
+	// DLLからホットリロード対応UI関数を呼び出す
+	if (drawDebugUI_) {
+		drawDebugUI_(ImGui::GetCurrentContext(), &debugState_);
 	}
 
-	{
-		Vector3 scale = obj_->GetScale();
-		if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, -10.0f, 10.0f)) {
-			obj_->SetScale(scale);
-		}
-	}
-
-	{
-		Vector3 rot = obj_->GetRotate(); // ← 正しい！
-		if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f, -6.28f, 6.28f)) {
-			obj_->SetRotation(rot);
-		}
-	}
-
-	{
-		Vector4 color = obj_->GetColor();
-		float col[4] = {color.x, color.y, color.z, color.w};
-
-		// ImGui カラーピッカー
-		if (ImGui::ColorEdit4("Color", col)) {
-
-			// float[4] → Vector4 に戻す
-			Vector4 newColor(col[0], col[1], col[2], col[3]);
-
-			// Object3d 経由で Model に反映
-			obj_->SetColor(newColor);
-		}
-	}
-
-	// ─────────────────────
-	// カメラ
-	// ─────────────────────
-
-	ImGui::SeparatorText("Camera");
-
-	// 位置
-	{
-		Vector3 pos = camera_->GetTranslate();
-		if (ImGui::DragFloat3("Camera Position", &pos.x, 0.1f)) {
-			camera_->SetTranslate(pos);
-		}
-	}
-
-	// 回転（ラジアン or 度はお好みで）
-	{
-		Vector3 rot = camera_->GetRotate();
-		if (ImGui::DragFloat3("Camera Rotation", &rot.x, 0.01f)) {
-			camera_->SetRotate(rot);
-		}
-	}
-
-	ImGui::End();
-
+	// データフローシミュレータウィンドウを描画
+	DrawDataFlowSimulator();
 #endif
 
+	// 共有変数で変更された値をエンジン側に適用する
+	ApplyStateFromVars();
+
+	// カメラの行列計算
 	if (camera_) {
 		camera_->CalculateMatrix();
 	}
 
+	// オブジェクトの更新
 	obj_->Update();
 
 	for (auto& obj : objects_) {
 		obj->Update();
 	}
-}
 
-void GamePlayScene::Draw() {
-	obj_->Draw();
+	for (auto& enemy : enemies_) {
+		enemy->Update();
+	}
 
-	for (auto& obj : objects_) {
-		obj->Draw();
+	// 糸（スレッド）表示用球体の更新
+	while (threadSpherePool_.size() < activeThreadNodes_.size()) {
+		auto sphere = std::make_unique<Object3d>();
+		sphere->Initialize("sphere_thread");
+		sphere->SetScale({0.15f, 0.15f, 0.15f});
+		sphere->SetCamera(camera_.get());
+		sphere->SetColor({1.0f, 0.5f, 0.0f, 1.0f}); // オレンジ色の糸
+		threadSpherePool_.push_back(std::move(sphere));
+	}
+	for (size_t i = 0; i < activeThreadNodes_.size(); ++i) {
+		threadSpherePool_[i]->SetPosition(activeThreadNodes_[i]);
+		threadSpherePool_[i]->Update();
 	}
 }
 
-void GamePlayScene::Finalize() {}
+void GamePlayScene::Draw() {
+	// プレイヤー描画
+	obj_->Draw();
+
+	// 静的背景オブジェクト描画
+	for (auto& obj : objects_) {
+		obj->Draw();
+	}
+
+	// 敵オブジェクト描画
+	for (auto& enemy : enemies_) {
+		enemy->Draw();
+	}
+
+	// 糸（スレッド）描画
+	for (size_t i = 0; i < activeThreadNodes_.size(); ++i) {
+		threadSpherePool_[i]->Draw();
+	}
+}
+
+void GamePlayScene::Finalize() {
+	// ソケットサーバー停止
+	socketServer_.Stop();
+	// DLLアンロード
+	UnloadDebugUI();
+}
+
+void GamePlayScene::LoadDebugUI() {
+	if (std::filesystem::exists("DebugUI_temp.dll")) {
+		std::filesystem::remove("DebugUI_temp.dll");
+	}
+
+	if (std::filesystem::exists("DebugUI.dll")) {
+		try {
+			std::filesystem::copy("DebugUI.dll", "DebugUI_temp.dll");
+			debugDll_ = LoadLibraryA("DebugUI_temp.dll");
+			if (debugDll_) {
+				drawDebugUI_ = (DrawDebugUIFunc)GetProcAddress(debugDll_, "DrawDebugUI");
+				dllLastWriteTime_ = std::filesystem::last_write_time("DebugUI.dll");
+			}
+		} catch (...) {
+			// DLLがコンパイル中でロックされている場合は次回試行する
+		}
+	}
+}
+
+void GamePlayScene::UnloadDebugUI() {
+	if (debugDll_) {
+		FreeLibrary(debugDll_);
+		debugDll_ = nullptr;
+		drawDebugUI_ = nullptr;
+	}
+}
+
+void GamePlayScene::UpdateDLL() {
+	if (std::filesystem::exists("DebugUI.dll")) {
+		auto writeTime = std::filesystem::last_write_time("DebugUI.dll");
+		if (writeTime != dllLastWriteTime_) {
+			UnloadDebugUI();
+			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // ビルド書き込み完了を少し待つ
+			LoadDebugUI();
+		}
+	}
+}
+
+void GamePlayScene::CaptureStateToVars() {
+	// Player
+	Vector3 pPos = obj_->GetPosition();
+	playerPos_[0] = pPos.x;
+	playerPos_[1] = pPos.y;
+	playerPos_[2] = pPos.z;
+
+	Vector3 pRot = obj_->GetRotate();
+	playerRot_[0] = pRot.x;
+	playerRot_[1] = pRot.y;
+	playerRot_[2] = pRot.z;
+
+	Vector4 pCol = obj_->GetColor();
+	playerColor_[0] = pCol.x;
+	playerColor_[1] = pCol.y;
+	playerColor_[2] = pCol.z;
+	playerColor_[3] = pCol.w;
+
+	// Thread nodes
+	threadNodeCount_ = static_cast<int>(activeThreadNodes_.size());
+	for (int i = 0; i < threadNodeCount_ && i < 100; ++i) {
+		threadNodes_[i * 3 + 0] = activeThreadNodes_[i].x;
+		threadNodes_[i * 3 + 1] = activeThreadNodes_[i].y;
+		threadNodes_[i * 3 + 2] = activeThreadNodes_[i].z;
+	}
+
+	// Enemies
+	enemyCount_ = static_cast<int>(enemies_.size());
+	for (int i = 0; i < enemyCount_ && i < 5; ++i) {
+		Vector3 ePos = enemies_[i]->GetPosition();
+		enemyPositions_[i * 3 + 0] = ePos.x;
+		enemyPositions_[i * 3 + 1] = ePos.y;
+		enemyPositions_[i * 3 + 2] = ePos.z;
+
+		Vector3 eRot = enemies_[i]->GetRotate();
+		enemyRotations_[i * 3 + 0] = eRot.x;
+		enemyRotations_[i * 3 + 1] = eRot.y;
+		enemyRotations_[i * 3 + 2] = eRot.z;
+	}
+
+	isSocketConnected_ = socketServer_.IsConnected();
+	socketPort_ = socketServer_.GetPort();
+	totalFrames_ = replayManager_.GetTotalFrames();
+}
+
+void GamePlayScene::ApplyStateFromVars() {
+	obj_->SetPosition({playerPos_[0], playerPos_[1], playerPos_[2]});
+	obj_->SetRotation({playerRot_[0], playerRot_[1], playerRot_[2]});
+	obj_->SetColor({playerColor_[0], playerColor_[1], playerColor_[2], playerColor_[3]});
+
+	activeThreadNodes_.clear();
+	for (int i = 0; i < threadNodeCount_ && i < 100; ++i) {
+		activeThreadNodes_.push_back({threadNodes_[i * 3 + 0], threadNodes_[i * 3 + 1], threadNodes_[i * 3 + 2]});
+	}
+
+	for (int i = 0; i < enemyCount_ && i < 5; ++i) {
+		enemies_[i]->SetPosition({enemyPositions_[i * 3 + 0], enemyPositions_[i * 3 + 1], enemyPositions_[i * 3 + 2]});
+		enemies_[i]->SetRotation({enemyRotations_[i * 3 + 0], enemyRotations_[i * 3 + 1], enemyRotations_[i * 3 + 2]});
+	}
+}
+
+void GamePlayScene::RecordFrameState() {
+	FrameState f;
+	f.frameIndex = replayManager_.GetTotalFrames();
+	f.playerTranslation = obj_->GetPosition();
+	f.playerRotation = obj_->GetRotate();
+	f.playerColor = obj_->GetColor();
+	f.threadNodes = activeThreadNodes_;
+
+	for (size_t i = 0; i < enemies_.size(); ++i) {
+		EnemyFrameState e;
+		e.index = static_cast<int>(i);
+		e.translation = enemies_[i]->GetPosition();
+		e.rotation = enemies_[i]->GetRotate();
+		e.hp = enemyHPs_[i];
+		e.animState = isBugTriggered_ ? "bugged" : "walk";
+		f.enemies.push_back(e);
+	}
+
+	f.bugTrigger = isBugTriggered_;
+	f.bugMsg = bugMessage_;
+
+	replayManager_.RecordFrame(f);
+}
+
+void GamePlayScene::RollbackToFrameState(int frame) {
+	FrameState f;
+	if (replayManager_.GetFrameState(frame, f)) {
+		obj_->SetPosition(f.playerTranslation);
+		obj_->SetRotation(f.playerRotation);
+		obj_->SetColor(f.playerColor);
+
+		activeThreadNodes_ = f.threadNodes;
+
+		for (const auto& e : f.enemies) {
+			if (e.index >= 0 && e.index < static_cast<int>(enemies_.size())) {
+				enemies_[e.index]->SetPosition(e.translation);
+				enemies_[e.index]->SetRotation(e.rotation);
+				enemyHPs_[e.index] = e.hp;
+			}
+		}
+
+		isBugTriggered_ = f.bugTrigger;
+		strcpy_s(bugMessage_, f.bugMsg.c_str());
+	}
+}
+
+void GamePlayScene::DrawDataFlowSimulator() {
+	ImGui::Begin("Blender Data Flow Simulator");
+	ImGui::Text("Interactive Flow of Replay & Takeover Sync");
+	ImGui::Separator();
+
+	// Node 1: Game Engine Logger
+	ImGui::BeginChild("EngineNode", ImVec2(220, 160), true);
+	ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "[1] Game Engine (C++)");
+	ImGui::Text("State: %s", isPlayback_ ? "ROLLBACK PLAYBACK" : "LIVE RECORDING");
+	ImGui::Text("Total Frames: %d", totalFrames_);
+	ImGui::Text("Current Frame: %d", isPlayback_ ? playbackFrame_ : totalFrames_);
+	
+	if (ImGui::Button("Explain Logger")) {
+		ImGui::OpenPopup("ExplainLoggerPopup");
+	}
+	ImGui::EndChild();
+
+	ImGui::SameLine();
+	ImGui::Text(" ----> ");
+	ImGui::SameLine();
+
+	// Node 2: JSON Log File
+	ImGui::BeginChild("JsonNode", ImVec2(220, 160), true);
+	ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.2f, 1.0f), "[2] replay_log.json");
+	ImGui::Text("Snapshot Objects: %d", (int)replayManager_.GetSnapshot().staticObjects.size());
+	ImGui::Text("Enemies Tracked: %d", enemyCount_);
+	ImGui::Text("Max Thread Nodes: 100");
+	if (ImGui::Button("Explain Log JSON")) {
+		ImGui::OpenPopup("ExplainJSONPopup");
+	}
+	ImGui::EndChild();
+
+	ImGui::SameLine();
+	ImGui::Text(" ----> ");
+	ImGui::SameLine();
+
+	// Node 3: Blender Python Importer
+	ImGui::BeginChild("BlenderNode", ImVec2(220, 160), true);
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.1f, 1.0f), "[3] Blender 3D (Python)");
+	ImGui::Text("Sync TCP Socket: %s", isSocketConnected_ ? "CONNECTED" : "DISCONNECTED");
+	ImGui::Text("Curve Object: PlayerThread");
+	if (ImGui::Button("Explain Addon")) {
+		ImGui::OpenPopup("ExplainBlenderPopup");
+	}
+	ImGui::EndChild();
+
+	ImGui::Separator();
+	
+	// Bidirectional Socket connection visual flow
+	if (isSocketConnected_) {
+		ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "LIVE SYNC ACTIVE: Blender Timeline <==== (TCP) ====> Game Replay Engine");
+	} else {
+		ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Sync Status: Waiting for Blender socket connection on port 12345...");
+	}
+
+	// Explanation Popups
+	if (ImGui::BeginPopup("ExplainLoggerPopup")) {
+		ImGui::Text("Phase 1 (C++ side):");
+		ImGui::BulletText("At stage start, captures coordinates of fixed objects (snapshot).");
+		ImGui::BulletText("Every frame, records player transform, thread coordinates, enemy details, and flags.");
+		ImGui::BulletText("Stores list in memory and writes to logs/play_log.json on save.");
+		ImGui::EndPopup();
+	}
+	if (ImGui::BeginPopup("ExplainJSONPopup")) {
+		ImGui::Text("Replay Data Format:");
+		ImGui::BulletText("`snapshot`: Fixed meshes (eg. eggs, traps, terrain) coordinate structures.");
+		ImGui::BulletText("`frames`: Array of frame-by-frame updates (player, thread curve nodes, enemy HP/animations).");
+		ImGui::BulletText("`events`: Event triggers (eg. bugs, collisions) flagged to jump to instantly.");
+		ImGui::EndPopup();
+	}
+	if (ImGui::BeginPopup("ExplainBlenderPopup")) {
+		ImGui::Text("Phase 2 & 3 (Blender side):");
+		ImGui::BulletText("Reconstructs the stage using bpy primitives based on the snapshot.");
+		ImGui::BulletText("Inserts location/rotation keyframes on timeline for animation.");
+		ImGui::BulletText("Updates curve control points on frame change pre-handler.");
+		ImGui::BulletText("Sends socket message `FRAME <index>` to sync back to the C++ engine.");
+		ImGui::EndPopup();
+	}
+
+	ImGui::End();
+}
