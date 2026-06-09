@@ -63,6 +63,27 @@
                     1.0
                 ]
             }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "EnemySpawn",
+            "transform": {
+                "translation": [
+                    5.0799946784973145,
+                    0.0,
+                    7.99898624420166
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
         }
     ]
 }
