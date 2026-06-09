@@ -8,6 +8,7 @@
 class Camera;
 class Object3d;
 class Player;
+struct WorldTransform;
 
 struct EnemyStatus {
 	int maxHp; // 最大HP
@@ -38,7 +39,7 @@ public:
 	virtual ~EnemyBase();
 
 	// 初期化
-	virtual void Initialize(Camera* camera, const Vector3& pos, const std::string& modelName);
+	virtual void Initialize(Camera* camera, const Vector3& pos, const std::string& modelName, const WorldTransform* parentTransform = nullptr);
 
 	// 更新
 	virtual void Update(Player* player);
@@ -54,6 +55,9 @@ public:
 
 	// 位置の取得
 	const Vector3& GetPosition() const { return pos_; }
+
+	// ワールド位置の取得
+	Vector3 GetWorldPosition() const;
 
 protected:
 	virtual void Die();

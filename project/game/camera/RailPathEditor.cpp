@@ -240,12 +240,19 @@ void RailPathEditor::DrawImGuiPopups() {
 }
 
 void RailPathEditor::DrawImGuiMinimap() {
-    // ズーム調整
-    ImGui::DragFloat("Zoom", &minimapZoom_, 0.1f, 0.1f, 50.0f);
-    ImGui::TextDisabled("Drag canvas below to pan (Top-Down)");
+    // ズームと高さの調整コントロール
+    ImGui::BeginGroup();
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 8.0f);
+    ImGui::DragFloat("Zoom##Minimap", &minimapZoom_, 0.1f, 0.1f, 50.0f, "Zoom: %.1f");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 8.0f);
+    ImGui::SliderFloat("Map Height##Minimap", &minimapHeight_, 200.0f, 800.0f, "Height: %.0f px");
+    ImGui::EndGroup();
 
-    // 描画領域(キャンバス)の確保 (幅はウィンドウ一杯、高さは200px)
-    ImVec2 canvasSize(ImGui::GetContentRegionAvail().x, 200.0f);
+    ImGui::TextDisabled("Drag canvas below to pan (Top-Down) | Drag points to edit path");
+
+    // 描画領域(キャンバス)の確保
+    ImVec2 canvasSize(ImGui::GetContentRegionAvail().x, minimapHeight_);
     ImVec2 canvasPos = ImGui::GetCursorScreenPos();
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -253,16 +260,7 @@ void RailPathEditor::DrawImGuiMinimap() {
     drawList->AddRectFilled(canvasPos, ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y), IM_COL32(30, 30, 30, 255));
     drawList->AddRect(canvasPos, ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y), IM_COL32(200, 200, 200, 255));
 
-    // ドラッグによるパン操作（マウス操作）
-    ImGui::InvisibleButton("minimap_canvas", canvasSize);
-    if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-        ImVec2 delta = ImGui::GetIO().MouseDelta;
-        minimapOffset_.x += delta.x / minimapZoom_;
-        minimapOffset_.z -= delta.y / minimapZoom_; // Z奥(+)を画面上(-)にするため符号反転
-    }
-
-    // キャンバス外にはみ出して描画されないようにクリップを設定
-    drawList->PushClipRect(canvasPos, ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y), true);
+    const auto& pts = railPath_.GetPoints();
 
     // 【座標変換】3D(X, Z)空間を -> 2Dキャンバス空間に変換するラムダ関数
     auto WorldToCanvas = [&](const Vector3& worldPos) -> ImVec2 {
@@ -270,7 +268,76 @@ void RailPathEditor::DrawImGuiMinimap() {
         float cx = center.x + (worldPos.x + minimapOffset_.x) * minimapZoom_;
         float cy = center.y - (worldPos.z + minimapOffset_.z) * minimapZoom_;
         return ImVec2(cx, cy);
-        };
+    };
+
+    // 【座標変換逆】2Dキャンバス空間を -> 3D(X, Z)空間に変換するラムダ関数
+    auto CanvasToWorld = [&](const ImVec2& canvasCoords) -> Vector3 {
+        ImVec2 center(canvasPos.x + canvasSize.x * 0.5f, canvasPos.y + canvasSize.y * 0.5f);
+        float wx = (canvasCoords.x - center.x) / minimapZoom_ - minimapOffset_.x;
+        float wz = (center.y - canvasCoords.y) / minimapZoom_ - minimapOffset_.z;
+        return Vector3{ wx, 0.0f, wz };
+    };
+
+    // ホバー判定 (キャンバス上のマウス座標から制御点への距離を測定)
+    int hoveredPointIndex = -1;
+    const float hoverRadiusPx = 8.0f;
+    ImVec2 mousePos = ImGui::GetMousePos();
+
+    for (size_t i = 0; i < pts.size(); ++i) {
+        ImVec2 ptCanvasPos = WorldToCanvas(pts[i]);
+        float dx = mousePos.x - ptCanvasPos.x;
+        float dy = mousePos.y - ptCanvasPos.y;
+        float distSq = dx * dx + dy * dy;
+        if (distSq < hoverRadiusPx * hoverRadiusPx) {
+            hoveredPointIndex = static_cast<int>(i);
+            break;
+        }
+    }
+
+    // ドラッグによる制御点移動、またはキャンバスのパン操作
+    ImGui::InvisibleButton("minimap_canvas", canvasSize);
+    bool isCanvasHovered = ImGui::IsItemHovered();
+
+    if (isMinimapDragging_ && draggedMinimapPointIndex_ >= 0 && draggedMinimapPointIndex_ < static_cast<int>(pts.size())) {
+        if (ImGui::IsMouseDown(0)) {
+            Vector3 curPt = pts[draggedMinimapPointIndex_];
+            Vector3 newPt = CanvasToWorld(ImGui::GetMousePos());
+            curPt.x = newPt.x;
+            curPt.z = newPt.z;
+            railPath_.SetPoint(draggedMinimapPointIndex_, curPt);
+        } else {
+            isMinimapDragging_ = false;
+            draggedMinimapPointIndex_ = -1;
+        }
+    } else if (isCanvasHovered) {
+        if (hoveredPointIndex >= 0) {
+            // ホバー時のツールチップ表示
+            ImGui::BeginTooltip();
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Point %d", hoveredPointIndex);
+            ImGui::Separator();
+            const Vector3& p = pts[hoveredPointIndex];
+            ImGui::Text("X: %.2f  Y: %.2f  Z: %.2f", p.x, p.y, p.z);
+            ImGui::TextDisabled("Left-drag to move on X-Z plane");
+            ImGui::EndTooltip();
+
+            if (ImGui::IsMouseClicked(0)) {
+                isMinimapDragging_ = true;
+                draggedMinimapPointIndex_ = hoveredPointIndex;
+                selectedPointIndex_ = hoveredPointIndex;
+            }
+        }
+    }
+
+    if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+        if (!isMinimapDragging_) {
+            ImVec2 delta = ImGui::GetIO().MouseDelta;
+            minimapOffset_.x += delta.x / minimapZoom_;
+            minimapOffset_.z -= delta.y / minimapZoom_; // Z奥(+)を画面上(-)にするため符号反転
+        }
+    }
+
+    // キャンバス外にはみ出して描画されないようにクリップを設定
+    drawList->PushClipRect(canvasPos, ImVec2(canvasPos.x + canvasSize.x, canvasPos.y + canvasSize.y), true);
 
     // 1. パスの軌道（ライン）を描画
     const size_t ptCount = railPath_.GetPointCount();
@@ -285,10 +352,16 @@ void RailPathEditor::DrawImGuiMinimap() {
     }
 
     // 2. 制御点（黄色/赤色の円）を描画
-    const auto& pts = railPath_.GetPoints();
     for (size_t i = 0; i < pts.size(); ++i) {
-        ImU32 color = (static_cast<int>(i) == selectedPointIndex_) ? IM_COL32(255, 50, 50, 255) : IM_COL32(255, 200, 0, 255);
-        drawList->AddCircleFilled(WorldToCanvas(pts[i]), 4.0f, color);
+        bool isSelected = (static_cast<int>(i) == selectedPointIndex_);
+        bool isHovered = (static_cast<int>(i) == hoveredPointIndex);
+        ImU32 color = isSelected ? IM_COL32(255, 50, 50, 255) : IM_COL32(255, 200, 0, 255);
+        ImVec2 ptCanvasPos = WorldToCanvas(pts[i]);
+
+        drawList->AddCircleFilled(ptCanvasPos, isSelected ? 6.0f : 4.0f, color);
+        if (isHovered) {
+            drawList->AddCircle(ptCanvasPos, isSelected ? 9.0f : 7.0f, IM_COL32(255, 255, 255, 255), 0, 1.5f);
+        }
     }
 
     // 3. レールカメラの現在位置（緑色の円）を描画

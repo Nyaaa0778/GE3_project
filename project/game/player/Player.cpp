@@ -272,3 +272,11 @@ void Player::DrawImGuiInline() {
     }
 #endif
 }
+
+Vector3 Player::GetWorldPos() const {
+    if (model_) {
+        const Matrix4x4& m = model_->GetWorldTransform().matWorld;
+        return { m.m[3][0], m.m[3][1], m.m[3][2] };
+    }
+    return pos_;
+}

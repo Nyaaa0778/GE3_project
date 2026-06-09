@@ -50,6 +50,9 @@ private:
     RailCameraController* railController_ = nullptr;
     float minimapZoom_ = 3.0f;
     Vector3 minimapOffset_ = {0.0f, 0.0f, 0.0f};
+    float minimapHeight_ = 350.0f;
+    bool isMinimapDragging_ = false;
+    int draggedMinimapPointIndex_ = -1;
 
     // 可視化用 Box プール
     std::vector<std::unique_ptr<Box>> lineSegments_;

@@ -22,6 +22,8 @@ public:
 
 	// 位置の取得
 	const Vector3& GetPos() const { return pos_; }
+	// ワールド位置の取得
+	Vector3 GetWorldPos() const;
 
 	void Update(const WorldTransform& railTransform);
 

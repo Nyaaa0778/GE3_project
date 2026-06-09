@@ -34,8 +34,8 @@ private:
     WorldTransform worldTransform_;
 
     // カメラのオフセット（レール座標系ローカル）
-    Vector3 cameraOffset_ = {0.0f, 5.0f, -15.0f};
-    Vector3 cameraRotation_ = {0.3f, 0.0f, 0.0f};
+    Vector3 cameraOffset_ = {0.0f, 5.0f, -30.0f};
+    Vector3 cameraRotation_ = {0.15f, 0.0f, 0.0f};
 
     // 直線前進速度
     float speed_ = 0.5f;

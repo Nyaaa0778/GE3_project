@@ -115,14 +115,34 @@ void GamePlayScene::UpdateEnemies() {
 
 void GamePlayScene::SpawnEnemy() {
     const EnemyStatus status = {10, 10, 1, 0.1f};
-    const Vector3 spawnPos = {
-        Random::RangeFloat(-kSpawnRangeX, kSpawnRangeX),
-        kSpawnRangeY,
-        kSpawnZ
-    };
+    Vector3 spawnPos = {0.0f, 0.0f, 0.0f};
+
+    // レールカメラがパスに沿って移動しているか
+    if (railCameraController_ && railPathEditor_ && railPathEditor_->GetRailPath() && railPathEditor_->GetRailPath()->GetPointCount() >= 2) {
+        float currentT = railCameraController_->GetProgress();
+        float spawnT = currentT + 0.40f; // プレイヤーの少し先（約15%分先）にスポーン
+        if (spawnT > 1.0f) spawnT -= 1.0f;
+
+        Vector3 railPos = railPathEditor_->GetRailPath()->Evaluate(spawnT);
+        
+        // レールの周囲に少しランダムオフセットを加える（左右・上下）
+        float offsetX = Random::RangeFloat(-10.0f, 10.0f);
+        float offsetY = Random::RangeFloat(-5.0f, 5.0f);
+        float offsetZ = Random::RangeFloat(-5.0f, 5.0f);
+        spawnPos = { railPos.x + offsetX, railPos.y + offsetY, railPos.z + offsetZ };
+    } else {
+        // 直線移動時のフォールバック
+        Vector3 camPos = railCameraController_ ? railCameraController_->GetPosition() : Vector3{0.0f, 0.0f, 0.0f};
+        spawnPos = {
+            Random::RangeFloat(-kSpawnRangeX, kSpawnRangeX),
+            kSpawnRangeY,
+            camPos.z + kSpawnZ
+        };
+    }
 
     auto enemy = std::make_unique<RusherEnemy>(status);
-    enemy->Initialize(camera_.get(), spawnPos, kEnemyModelName);
+    // カメラに追尾しないため、親トランスフォームは nullptr に設定
+    enemy->Initialize(camera_.get(), spawnPos, kEnemyModelName, nullptr);
 
     if (player_) enemy->Update(player_.get());
 

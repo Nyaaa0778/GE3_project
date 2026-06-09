@@ -8,8 +8,8 @@ using namespace MathUtility;
 
 RusherEnemy::RusherEnemy(const EnemyStatus& initialStatus) : EnemyBase(initialStatus) {}
 
-void RusherEnemy::Initialize(Camera* camera, const Vector3& pos, const std::string& modelName) {
-	EnemyBase::Initialize(camera, pos, modelName);
+void RusherEnemy::Initialize(Camera* camera, const Vector3& pos, const std::string& modelName, const WorldTransform* parentTransform) {
+	EnemyBase::Initialize(camera, pos, modelName, parentTransform);
 	state_ = State::kApproach;
 	stateTimer_ = 0.0f;
 	rushVelocity_ = {0.0f, 0.0f, 0.0f};
@@ -21,7 +21,7 @@ void RusherEnemy::Update(Player* player) {
 	float deltaTime = TimeManager::GetInstance()->GetDeltaTime();
 	stateTimer_ += deltaTime;
 
-	Vector3 playerPos = player ? player->GetPos() : Vector3{0.0f, 0.0f, 0.0f};
+	Vector3 playerPos = player ? player->GetWorldPos() : Vector3{0.0f, 0.0f, 0.0f};
 
 	switch (state_) {
 	case State::kApproach: {
@@ -35,8 +35,8 @@ void RusherEnemy::Update(Player* player) {
 			pos_.z += direction.z * status_.speed * kApproachSpeedMultiplier;
 		}
 
-		// 一定時間経過したら突撃フェーズへ移行
-		if (stateTimer_ >= kApproachDuration) {
+		// 一定時間経過するか、プレイヤーとの距離が一定以下になったら突撃フェーズへ移行
+		if (stateTimer_ >= kApproachDuration || distance <= kRushTriggerDistance) {
 			state_ = State::kRush;
 			stateTimer_ = 0.0f;
 
