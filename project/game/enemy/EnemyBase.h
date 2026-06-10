@@ -59,7 +59,13 @@ public:
 	// ワールド位置の取得
 	Vector3 GetWorldPosition() const;
 
+	// 当たり判定サイズの取得
+	const Vector3& GetCollisionSize() const { return collisionSize_; }
+
 protected:
+	// 当たり判定の大きさ
+	Vector3 collisionSize_ = {1.0f, 1.0f, 1.0f};
+
 	virtual void Die();
 };
 

@@ -26,7 +26,7 @@ private:
 	std::unique_ptr<Plane> plane_;
 
 	// サイズ
-	Vector3 scale_ = {0.5f, 0.5f, 0.5f};
+	Vector3 scale_ = {1.857f, 1.857f, 1.857f};
 	// 位置
 	Vector3 pos_ = {0.0f, 0.0f, 0.0f};
 };

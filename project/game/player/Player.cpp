@@ -88,39 +88,53 @@ void Player::Draw() {
 }
 
 void Player::UpdateMove(const WorldTransform& railTransform) {
-    // 移動方向ベクトル
-    Vector3 move = {0.0f, 0.0f, 0.0f};
-
     // 入力取得
     Input* input = Input::GetInstance();
 
+    // 移動方向ベクトル (レティクルを動かす)
+    Vector3 reticleMove = {0.0f, 0.0f, 0.0f};
+
     // X軸（左右）
-    if (input->PushKey(DIK_D)) { move.x += 1.0f; }
-    if (input->PushKey(DIK_A)) { move.x -= 1.0f; }
+    if (input->PushKey(DIK_D)) { reticleMove.x += 1.0f; }
+    if (input->PushKey(DIK_A)) { reticleMove.x -= 1.0f; }
 
     // Y軸（上下）
-    if (input->PushKey(DIK_W)) { move.y += 1.0f; }
-    if (input->PushKey(DIK_S)) { move.y -= 1.0f; }
+    if (input->PushKey(DIK_W)) { reticleMove.y += 1.0f; }
+    if (input->PushKey(DIK_S)) { reticleMove.y -= 1.0f; }
 
     // 斜め移動の速度を一定にするための正規化
-    float length = std::sqrt(move.x * move.x + move.y * move.y);
+    float length = std::sqrt(reticleMove.x * reticleMove.x + reticleMove.y * reticleMove.y);
     if (length > 0.0f) {
-        move.x /= length;
-        move.y /= length;
+        reticleMove.x /= length;
+        reticleMove.y /= length;
     }
 
-    // 速度を適用して移動
-    pos_.x += move.x * kBaseSpeed;
-    pos_.y += move.y * kBaseSpeed;
+    // レティクルの位置を更新 (レティクルの移動速度定数 kReticleSpeed = 0.93f)
+    const float kReticleSpeed = 0.93f;
+    reticlePos_.x += reticleMove.x * kReticleSpeed;
+    reticlePos_.y += reticleMove.y * kReticleSpeed;
 
-    // 範囲を超えないように制限
-    pos_.x = std::clamp(pos_.x, -kMoveLimit.x, kMoveLimit.x);
-    pos_.y = std::clamp(pos_.y, -kMoveLimit.y, kMoveLimit.y);
+    // レティクルの可動限界範囲設定 (100.0f 奥行き用にスケーリング)
+    const float kReticleLimitX = 52.0f;
+    const float kReticleLimitY = 26.0f;
+    reticlePos_.x = std::clamp(reticlePos_.x, -kReticleLimitX, kReticleLimitX);
+    reticlePos_.y = std::clamp(reticlePos_.y, -kReticleLimitY, kReticleLimitY);
+    reticlePos_.z = pos_.z + kDepthPos;
 
-    // -----------------------
+    // レティクルの位置に基づいて自機の目標位置を計算
+    float ratioX = reticlePos_.x / kReticleLimitX;
+    float ratioY = reticlePos_.y / kReticleLimitY;
+
+    Vector3 targetPlayerPos;
+    targetPlayerPos.x = ratioX * kMoveLimit.x;
+    targetPlayerPos.y = ratioY * kMoveLimit.y;
+
+    // 自機がレティクルを追従するイージング (イージング値 kPlayerEasing = 0.1f)
+    const float kPlayerEasing = 0.1f;
+    pos_.x += (targetPlayerPos.x - pos_.x) * kPlayerEasing;
+    pos_.y += (targetPlayerPos.y - pos_.y) * kPlayerEasing;
+
     // 照準の更新
-    // ----------------------
-
     UpdateReticle(railTransform);
 
     // モデルに座標を反映
@@ -131,26 +145,6 @@ void Player::UpdateMove(const WorldTransform& railTransform) {
 /// 照準の更新
 /// </summary>
 void Player::UpdateReticle(const WorldTransform& railTransform) {
-    // 1. 自機が移動制限枠のどの割合（-1.0 ～ 1.0）にいるかを計算
-    float ratioX = pos_.x / kMoveLimit.x;
-    float ratioY = pos_.y / kMoveLimit.y;
-
-    // 2. レティクルの最大可動域（画面の端っこの座標）を設定
-    const float kReticleLimitX = 14.0f;
-    const float kReticleLimitY = 7.0f;
-
-    // 3. 割合をレティクルの可動域に掛け合わせて、行きたい目標位置を出す
-    Vector3 targetReticlePos;
-    targetReticlePos.x = ratioX * kReticleLimitX;
-    targetReticlePos.y = ratioY * kReticleLimitY;
-    targetReticlePos.z = pos_.z + kDepthPos;
-
-    // 4. 自機の動きにほんの少しだけ遅れてついてくるイージング
-    float easing = 0.3f;
-    reticlePos_.x += (targetReticlePos.x - reticlePos_.x) * easing;
-    reticlePos_.y += (targetReticlePos.y - reticlePos_.y) * easing;
-    reticlePos_.z = targetReticlePos.z;
-
     // レールの回転と平行移動を含むワールド行列を使ってワールド座標へ変換
     const Matrix4x4& m = railTransform.matWorld;
     Vector3 worldReticlePos = {
@@ -203,12 +197,22 @@ void Player::UpdateBullets(const WorldTransform& railTransform) {
                 direction.z /= length;
             }
 
-            // 3. 正規化したベクトルに速度を掛ける
-            const float kBulletSpeed = 0.5f; // 弾の速さ
+            // 3. 弾自体の推進力（カメラの移動速度より速くする）
+            const float kBulletSpeed = 3.0f;
+            Vector3 railForward = {m.m[2][0], m.m[2][1], m.m[2][2]};
+
+            const float kRailSpeed = 0.5f; // RailCameraControllerの前進スピード
+            Vector3 railVelocity = {
+                railForward.x * kRailSpeed,
+                railForward.y * kRailSpeed,
+                railForward.z * kRailSpeed
+            };
+
+            // 4. 正規化した方向ベクトルに弾の速度を掛け、さらにレールの移動速度を加算する
             Vector3 velocity = {
-                direction.x * kBulletSpeed,
-                direction.y * kBulletSpeed,
-                direction.z * kBulletSpeed
+                (direction.x * kBulletSpeed) + railVelocity.x,
+                (direction.y * kBulletSpeed) + railVelocity.y,
+                (direction.z * kBulletSpeed) + railVelocity.z
             };
 
             // 4. 弾を生成して初期化 (ワールド座標で発射)

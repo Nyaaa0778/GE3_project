@@ -43,6 +43,6 @@ private:
     // パス走行パラメータ
     RailPath* railPath_ = nullptr;
     float     t_ = 0.0f;     // 進捗 (0 〜 1)
-    float     splineSpeed_ = 0.002f;   // 1 フレームあたりの進捗量
+    float     splineSpeed_ = 0.0012f;   // 1 フレームあたりの進捗量
     bool      isScrollActive_ = false;
 };

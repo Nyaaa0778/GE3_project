@@ -24,6 +24,10 @@ public:
 	const Vector3& GetPos() const { return pos_; }
 	// ワールド位置の取得
 	Vector3 GetWorldPos() const;
+	// 弾リストの取得
+	const std::list<std::unique_ptr<PlayerBullet>>& GetBullets() const { return bullets_; }
+	// 当たり判定サイズの取得
+	Vector3 GetCollisionSize() const { return collisionSize_; }
 
 	void Update(const WorldTransform& railTransform);
 
@@ -56,7 +60,7 @@ private:
 	std::unique_ptr<Reticle> reticle_;
 
 	// 奥行固定
-	static inline const float kDepthPos = 5.0f;
+	static inline const float kDepthPos = 100.0f;
 
 	// 位置
 	Vector3 reticlePos_ = {0.0f, 0.0f, kDepthPos};

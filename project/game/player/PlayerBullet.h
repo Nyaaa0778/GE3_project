@@ -8,11 +8,17 @@ class PlayerBulletPool;
 
 class PlayerBullet {
 public:
+	~PlayerBullet();
 	void Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity, PlayerBulletPool* bulletPool);
 	void Update();
 	void Draw();
 
 	bool IsDead() const { return isDead_; }
+
+	// コリジョン用
+	const Vector3& GetPosition() const { return pos_; }
+	Vector3 GetCollisionSize() const { return kCollisionSize; }
+	void OnCollision() { isDead_ = true; }
 
 private:
 	Camera* camera_ = nullptr;

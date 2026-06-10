@@ -8,6 +8,7 @@
 #include "RailCameraController.h"
 #include "RailPathEditor.h"
 #include "Skybox.h"
+#include "CollisionManager.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -23,6 +24,8 @@ void GamePlayScene::Initialize() {
 
     skybox_ = std::make_unique<Skybox>();
     skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds", camera_.get());
+
+    collisionManager_ = std::make_unique<CollisionManager>();
 }
 
 void GamePlayScene::InitCamera() {
@@ -75,6 +78,10 @@ void GamePlayScene::Update() {
 
     player_->Update(railCameraController_->GetWorldTransform());
     UpdateEnemies();
+
+    if (collisionManager_) {
+        collisionManager_->CheckAllCollisions(player_.get(), enemies_);
+    }
 }
 
 void GamePlayScene::UpdateCamera() {

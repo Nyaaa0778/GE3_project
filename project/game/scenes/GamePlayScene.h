@@ -14,6 +14,7 @@ class RusherEnemy;
 class RailCameraController;
 class RailPathEditor;
 class Skybox;
+class CollisionManager;
 
 class GamePlayScene : public IScene {
 public:
@@ -75,4 +76,9 @@ private:
     //  天球
     // -------------------------------------------------------
     std::unique_ptr<Skybox> skybox_;
+
+    // -------------------------------------------------------
+    //  当たり判定
+    // -------------------------------------------------------
+    std::unique_ptr<CollisionManager> collisionManager_;
 };

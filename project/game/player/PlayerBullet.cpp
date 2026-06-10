@@ -9,6 +9,12 @@ using namespace MathUtility;
 
 #include <cassert>
 
+PlayerBullet::~PlayerBullet() {
+	if (model_ && bulletPool_) {
+		bulletPool_->Return(model_);
+	}
+}
+
 void PlayerBullet::Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity, PlayerBulletPool* bulletPool) {
 	// nullチェック
 	assert(camera);
@@ -56,10 +62,6 @@ void PlayerBullet::UpdateMove() {
 	// 時間経過でデスフラグを立てる
 	if (--deathTimer_ <= 0) {
 		isDead_ = true;
-
-		// 弾が消滅したときにモデルをプールに返す
-		bulletPool_->Return(model_);
-		model_ = nullptr;
 		return;
 	}
 
@@ -67,5 +69,7 @@ void PlayerBullet::UpdateMove() {
 	pos_ += velocity_;
 
 	// 位置をセット
-	model_->SetPosition(pos_);
+	if (model_) {
+		model_->SetPosition(pos_);
+	}
 }

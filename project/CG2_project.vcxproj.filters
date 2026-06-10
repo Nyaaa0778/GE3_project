@@ -72,6 +72,7 @@
     <ClCompile Include="game\camera\RailPath.cpp" />
     <ClCompile Include="game\camera\RailPathEditor.cpp" />
     <ClCompile Include="engine\json\JsonLoader.cpp" />
+    <ClCompile Include="game\collision\CollisionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game\enemy\EnemyBase.h" />
@@ -140,6 +141,7 @@
     <ClInclude Include="game\camera\RailPath.h" />
     <ClInclude Include="game\camera\RailPathEditor.h" />
     <ClInclude Include="engine\json\JsonLoader.h" />
+    <ClInclude Include="game\collision\CollisionManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\object3d\Object3d.hlsli" />
