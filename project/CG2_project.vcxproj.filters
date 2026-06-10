@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="ソース ファイル">
@@ -186,6 +186,9 @@
     <ClCompile Include="engine\debug\ImGuiManager.cpp">
       <Filter>ソース ファイル\engine\debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DebugManager.cpp">
+      <Filter>ソース ファイル\engine\debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\graphics\TextureManager.cpp">
       <Filter>ソース ファイル\engine\graphics</Filter>
     </ClCompile>
@@ -250,6 +253,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\level\LevelLoader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="game\Player.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -397,6 +403,9 @@
     <ClInclude Include="engine\debug\ImGuiManager.h">
       <Filter>ヘッダー ファイル\engine\debug</Filter>
     </ClInclude>
+    <ClInclude Include="engine\debug\DebugManager.h">
+      <Filter>ヘッダー ファイル\engine\debug</Filter>
+    </ClInclude>
     <ClInclude Include="engine\framework\scene\IScene.h">
       <Filter>ヘッダー ファイル\game</Filter>
     </ClInclude>
@@ -458,6 +467,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="externals\nlohmann\json.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\Player.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

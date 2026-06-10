@@ -6,6 +6,8 @@
 #include "MathUtility.h"
 #include "LightManager.h"
 
+#include "Player.h"
+
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
 
@@ -60,12 +62,21 @@ void GamePlayScene::Initialize() {
 		objects_.push_back(std::move(newObj));
 	}
 
+	Vector3 playerSpawnPos = {0.0f, 0.0f, 0.0f};
+	playerModel_ = std::make_unique<Object3d>();
+	playerModel_->Initialize("sphere"); // ※プレイヤーのモデル名に変更
+
 	for (const auto& spawner : levelData->spawners) {
 		// ① プレイヤーの場合
 		// エディタ側で "Player" や "PlayerSpawn" という名前をつけていると想定
 		if (spawner.entityType.find("Player") != std::string::npos) {
-			obj_->SetPosition(spawner.translation);
-			obj_->SetRotation(spawner.rotation);
+			/*obj_->SetPosition(spawner.translation);
+			obj_->SetRotation(spawner.rotation);*/
+
+			playerSpawnPos = spawner.translation;
+
+			// 回転も適用したければモデルに直接セットしておきます
+			playerModel_->SetRotation(spawner.rotation);
 		}
 		// ② 敵の場合
 		else if (spawner.entityType.find("Enemy") != std::string::npos) {
@@ -91,6 +102,14 @@ void GamePlayScene::Initialize() {
 			objects_.push_back(std::move(item));
 		}
 	}
+
+	// --------------------------------------------------
+	// Player本体の生成と初期化
+	// --------------------------------------------------
+	player_ = std::make_unique<Player>();
+	// JSONから取得した座標(playerSpawnPos)と、モデルを渡して初期化
+	player_->Initialize(camera_.get(), playerSpawnPos, playerModel_.get());
+
 }
 
 void GamePlayScene::Update() {
@@ -193,13 +212,21 @@ void GamePlayScene::Update() {
 
 	obj_->Update();
 
+	if (player_) {
+		player_->Update();
+	}
+
 	for (auto& obj : objects_) {
 		obj->Update();
 	}
 }
 
 void GamePlayScene::Draw() {
-	obj_->Draw();
+	//obj_->Draw();
+
+	if (player_) {
+		player_->Draw();
+	}
 
 	for (auto& obj : objects_) {
 		obj->Draw();

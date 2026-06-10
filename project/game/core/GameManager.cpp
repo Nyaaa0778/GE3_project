@@ -3,6 +3,12 @@
 #include "GameSceneFactory.h"
 #include "SceneManager.h"
 
+#ifdef USE_IMGUI
+#include "DebugManager.h"
+#endif
+
+#include <objbase.h>
+
 GameManager::GameManager() = default;
 
 GameManager::~GameManager() = default;
@@ -24,6 +30,13 @@ void GameManager::Update() {
 
 	// 基底クラスの更新
 	GameFramework::Update();
+
+#ifdef USE_IMGUI
+	// DebugManagerが一時停止中はゲームロジックを止める
+	if (DebugManager::GetInstance()->IsPaused()) {
+		return;
+	}
+#endif
 
 	SceneManager::GetInstance()->Update();
 }

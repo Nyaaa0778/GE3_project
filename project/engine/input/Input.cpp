@@ -98,27 +98,36 @@ void Input::Initialize(WinApp* winApp) {
 /// </summary>
 void Input::Update() {
 
+	// 前フレームの状態を保存（Trigger/Release判定用）
+	memcpy(preKeys_, keys_, sizeof(keys_));
+	preMouseState_ = mouseState_;
+	preXinputState_ = xinputState_;
+
+	if (isMockMode_) {
+		// モック入力モード：記録されたデータを適用
+		memcpy(keys_, mockKeys_, sizeof(keys_));
+		mouseState_ = mockMouseState_;
+		xinputState_ = mockXinputState_;
+		isConnected_ = true;
+		return;
+	}
+
 	/*---------- キーボード ----------*/
 
 	// キーボード情報の取得開始
 	keyboard_->Acquire();
 	// 全キー入力状態を取得する
-	memcpy(preKeys_, keys_, sizeof(keys_));
 	keyboard_->GetDeviceState(sizeof(keys_), keys_);
 
 	/*---------- マウス ----------*/
 
 	// マウス情報の取得開始
 	mouse_->Acquire();
-	// 前回の状態を保存
-	preMouseState_ = mouseState_;
 	// 現在の状態を取得
 	mouse_->GetDeviceState(sizeof(DIMOUSESTATE), &mouseState_);
 
 	/*---------- ゲームパッド ----------*/
 
-	// ゲームパッドの状態を保存
-	preXinputState_ = xinputState_;
 	// ゲームパッド情報の取得
 	DWORD dwResult = XInputGetState(0, &xinputState_);
 
@@ -136,6 +145,21 @@ void Input::Update() {
 		}
 	}
 }
+
+//================================================================================
+// モック入力（タイムトラベルデバッガー用）
+//================================================================================
+
+void Input::SetMockMode(bool enabled) {
+	isMockMode_ = enabled;
+}
+
+void Input::SetMockInput(const BYTE* keys, const DIMOUSESTATE& mouse, const XINPUT_STATE& gamepad) {
+	memcpy(mockKeys_, keys, sizeof(mockKeys_));
+	mockMouseState_ = mouse;
+	mockXinputState_ = gamepad;
+}
+
 
 //================================================================================
 // キーの入力判定

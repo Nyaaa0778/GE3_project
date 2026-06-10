@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <objbase.h>
 
 #include "GameFramework.h"
 #include "GameManager.h"

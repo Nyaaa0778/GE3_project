@@ -1,3 +1,7 @@
+#ifdef USE_IMGUI
+#include "DebugManager.h"
+#endif
+
 #include "Object3d.h"
 #include "Camera.h"
 #include "DirectXCommon.h"
@@ -35,6 +39,12 @@ void Object3d::Initialize(const std::string& modelName, const std::string& exten
 
 	// デフォルトカメラを設定
 	camera_ = Object3dRenderer::GetInstance()->GetDefaultCamera();
+
+#ifdef USE_IMGUI
+	// DebugManagerに登録し、ユニークIDを取得
+	modelName_ = modelName;
+	id_ = DebugManager::GetInstance()->RegisterObject(this);
+#endif
 }
 /// <summary>
 /// 更新
@@ -62,6 +72,15 @@ void Object3d::Update() {
 	transformationMatrixData_->World = model_->GetModelData().rootNode.localMatrix * worldMatrix;
 
 	transformationMatrixData_->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldMatrix));
+}
+
+/// <summary>
+/// デストラクタ
+/// </summary>
+Object3d::~Object3d() {
+#ifdef USE_IMGUI
+	DebugManager::GetInstance()->UnregisterObject(this);
+#endif
 }
 /// <summary>
 /// 描画
@@ -169,6 +188,9 @@ void Object3d::SetModel(const std::string& modelName, const std::string& extensi
 
 	// 読み込んだモデルを検索してセット
 	model_ = modelManager->FindModel(modelName);
+
+	// モデル名を保持
+	modelName_ = modelName;
 }
 
 void Object3d::SetEnvironmentCoefficient(float coeff) {

@@ -17,6 +17,10 @@
 #include "SkyboxRenderer.h"
 #include "PrimitiveRenderer.h"
 
+#ifdef USE_IMGUI
+#include "DebugManager.h"
+#endif
+
 #include <dbghelp.h>
 #include <strsafe.h>
 #pragma comment(lib, "Dbghelp.lib")
@@ -160,6 +164,9 @@ void GameFramework::Initialize() {
 	// ImGuiManager の初期化
 	ImGuiManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
+
+	// DebugManagerの初期化（TCPサーバー起動）
+	DebugManager::GetInstance()->Initialize();
 #endif
 }
 
@@ -177,6 +184,11 @@ void GameFramework::Update() {
 
 	// 入力の更新
 	Input::GetInstance()->Update();
+
+#ifdef USE_IMGUI
+	// DebugManagerの更新（フレーム記録・コマンド処理・送信）
+	DebugManager::GetInstance()->Update();
+#endif
 }
 
 /// <summary>
@@ -188,6 +200,9 @@ void GameFramework::Finalize() {
 	}
 
 #ifdef USE_IMGUI
+
+	// DebugManagerの終了処理（ソケット・スレッドクリーンアップ）
+	DebugManager::GetInstance()->Finalize();
 
 	ImGuiManager::GetInstance()->Finalize();
 

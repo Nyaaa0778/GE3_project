@@ -67,6 +67,35 @@ public:
 	/// </summary>
 	void Update();
 
+	//================================================================================
+	// モック入力（タイムトラベルデバッガー用）
+	//================================================================================
+
+	/// <summary>
+	/// モック入力モードの切り替え
+	/// </summary>
+	void SetMockMode(bool enabled);
+
+	/// <summary>
+	/// 外部から入力データを上書き（リプレイ用）
+	/// </summary>
+	void SetMockInput(const BYTE* keys, const DIMOUSESTATE& mouse, const XINPUT_STATE& gamepad);
+
+	/// <summary>
+	/// 現在のキーボード状態を取得（記録用）
+	/// </summary>
+	const BYTE* GetCurrentKeys() const { return keys_; }
+
+	/// <summary>
+	/// 現在のマウス状態を取得（記録用）
+	/// </summary>
+	const DIMOUSESTATE& GetCurrentMouse() const { return mouseState_; }
+
+	/// <summary>
+	/// 現在のゲームパッド状態を取得（記録用）
+	/// </summary>
+	const XINPUT_STATE& GetCurrentGamepad() const { return xinputState_; }
+
 public:
 	//================================================================================
 	// キーの入力判定
@@ -271,4 +300,17 @@ private:
 
 	// 振動時間
 	float shakeTimer_ = 0;
+
+	//================================================================================
+	// モック入力（タイムトラベルデバッガー用）
+	//================================================================================
+
+	// モック入力モードフラグ
+	bool isMockMode_ = false;
+	// モック用キーボード状態
+	BYTE mockKeys_[256] = {};
+	// モック用マウス状態
+	DIMOUSESTATE mockMouseState_ = {};
+	// モック用ゲームパッド状態
+	XINPUT_STATE mockXinputState_ = {};
 };

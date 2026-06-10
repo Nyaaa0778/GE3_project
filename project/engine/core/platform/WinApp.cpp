@@ -1,12 +1,14 @@
 #include "WinApp.h"
 
+#include <objbase.h>
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
+
 #ifdef USE_IMGUI
 
 #include <imgui_impl_win32.h>
 
 #endif
-
-#pragma comment(lib, "winmm.lib")
 
 #ifdef USE_IMGUI
 

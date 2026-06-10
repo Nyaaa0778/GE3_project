@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "Object3dRenderer.h"
 
 #include <Matrix4x4.h>
@@ -20,6 +22,11 @@ class Object3dRenderer;
 
 class Object3d {
 public:
+	/// <summary>
+	/// デストラクタ（DebugManagerから自動登録解除）
+	/// </summary>
+	~Object3d();
+
 	//================================================================================
 	// 初期化 / 更新 / 描画
 	//================================================================================
@@ -50,6 +57,10 @@ public:
 	const Vector3& GetRotate() const { return rotation_; }
 	// 拡縮
 	const Vector3& GetScale() const { return scale_; }
+	// デバッグ用ID
+	const std::string& GetId() const { return id_; }
+	// モデル名
+	const std::string& GetModelName() const { return modelName_; }
 	// 色
 	const Vector4& GetColor() const;
 	// BlendMode
@@ -176,6 +187,11 @@ private:
 	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
 	// 拡縮
 	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+
+	// デバッグ用ユニークID（DebugManagerが割り当て）
+	std::string id_;
+	// モデル名
+	std::string modelName_;
 
 	// BlendMode
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;

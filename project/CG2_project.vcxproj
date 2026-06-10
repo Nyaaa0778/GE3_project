@@ -76,20 +76,20 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_DEBUG;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\level;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\level;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
-      <AdditionalDependencies>imgui.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;imgui.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\generated\Outputs\$(Configuration)\;$(ProjectDir)externals\assimp\lib\Debug</AdditionalLibraryDirectories>
       <AdditionalOptions>/ignore:4865 /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -105,13 +105,13 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\level;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\level;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -134,7 +134,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NDEBUG;_WINDOWS;USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
@@ -142,7 +142,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\level;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)game\core;$(ProjectDir)game\;$(ProjectDir)game\scenes;$(ProjectDir)engine\framework\scene;$(ProjectDir)engine\framework;$(ProjectDir)engine/core;$(ProjectDir)engine\core\utility;$(ProjectDir)engine\core\timing;$(ProjectDir)engine\core\debug;$(ProjectDir)engine\core\platform;$(ProjectDir)engine\core\graphics;$(ProjectDir)engine\effects\primitive;$(ProjectDir)engine\effects\particle;$(ProjectDir)engine\level;$(ProjectDir)engine\debug;$(ProjectDir)engine\graphics;$(ProjectDir)engine\math;$(ProjectDir)engine\audio;$(ProjectDir)engine\3d;$(ProjectDir)engine\2d;$(ProjectDir)engine\game;$(ProjectDir)engine\scene;$(ProjectDir)engine\input;$(ProjectDir)externals\nlohmann;$(ProjectDir)externals\imgui;$(ProjectDir)externals\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -150,7 +150,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <LinkTimeCodeGeneration />
-      <AdditionalDependencies>imgui.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;imgui.lib;assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\generated\Outputs\$(Configuration)\;$(ProjectDir)externals\assimp\lib\Release</AdditionalLibraryDirectories>
       <AdditionalOptions>/ignore:4865 /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -162,6 +162,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Easing.cpp" />
+    <ClCompile Include="engine\debug\DebugManager.cpp" />
     <ClCompile Include="engine\effects\primitive\Box.cpp" />
     <ClCompile Include="engine\debug\DebugCamera.cpp" />
     <ClCompile Include="engine\3d\Camera.cpp" />
@@ -233,6 +234,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effects\primitive\Plane.cpp" />
     <ClCompile Include="engine\effects\primitive\Primitive.cpp" />
     <ClCompile Include="engine\effects\primitive\PrimitiveRenderer.cpp" />
+    <ClCompile Include="game\Player.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -357,6 +359,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\effects\particle\ParticleEmitter.h" />
     <ClInclude Include="engine\framework\scene\GameSceneFactory.h" />
     <ClInclude Include="externals\nlohmann\json.hpp" />
+    <ClInclude Include="engine\debug\DebugManager.h" />
     <ClInclude Include="game\core\GameManager.h" />
     <ClInclude Include="engine\framework\GameFramework.h" />
     <ClInclude Include="game\scenes\GamePlayScene.h" />
@@ -372,6 +375,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\effects\primitive\Primitive.h" />
     <ClInclude Include="engine\effects\primitive\PrimitiveRenderer.h" />
     <ClInclude Include="engine\level\LevelLoader.h" />
+    <ClInclude Include="game\Player.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
