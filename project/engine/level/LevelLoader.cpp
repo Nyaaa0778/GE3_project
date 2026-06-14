@@ -116,6 +116,14 @@ void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData
             (float) transform["rotation"][1],
             (float) transform["rotation"][2]
         };
+        // 拡縮の数値を書き込む
+        if (transform.contains("scaling")) {
+            spawnerData.scaling = {
+                (float) transform["scaling"][0],
+                (float) transform["scaling"][1],
+                (float) transform["scaling"][2]
+            };
+        }
     } else if (type.compare("CAMERA") == 0) {
         // カメラ
         levelData->cameras.emplace_back(LevelData::CameraData{});

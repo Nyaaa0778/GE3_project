@@ -9,7 +9,7 @@
 #include "Vector3.h"
 #include "Vector4.h"
 #include "Matrix4x4.h"
-#include "Transform.h"
+#include "WorldTransform.h"
 #include "PrimitiveRenderer.h"
 
 class Camera;
@@ -25,14 +25,18 @@ public:
 	void Draw() override;
 
 	// Transform Getter/Setter
-	const Vector3& GetPosition() const { return position_; }
-	void SetPosition(const Vector3& position) { position_ = position; }
+	const Vector3& GetPosition() const { return worldTransform_.translation; }
+	void SetPosition(const Vector3& position) { worldTransform_.translation = position; }
 
-	const Vector3& GetRotation() const { return rotation_; }
-	void SetRotation(const Vector3& rotation) { rotation_ = rotation; }
+	const Vector3& GetRotation() const { return worldTransform_.rotation; }
+	void SetRotation(const Vector3& rotation) { worldTransform_.rotation = rotation; }
 
-	const Vector3& GetScale() const { return scale_; }
-	void SetScale(const Vector3& scale) { scale_ = scale; }
+	const Vector3& GetScale() const { return worldTransform_.scale; }
+	void SetScale(const Vector3& scale) { worldTransform_.scale = scale; }
+
+	// 親子関係の設定
+	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
+	void SetParent(const WorldTransform* parent) { worldTransform_.parent = parent; }
 
 	// Color Setter
 	void SetColor(const Vector4& color);
@@ -77,16 +81,10 @@ private:
 		Matrix4x4 uvTransform;
 	};
 
-	struct TransformationMatrix
-	{
-		Matrix4x4 WVP;
-	};
+	// (座標変換行列データはWorldTransformに移管)
 
-	// Transform
-	Transform transform_ {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
-	Vector3 position_ = {0.0f, 0.0f, 0.0f};
-	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
-	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+	// ワールド変換データ
+	WorldTransform worldTransform_;
 
 	Vector2 uvTranslation_ = {0.0f, 0.0f};
 
@@ -104,11 +102,7 @@ private:
 	ComPtr<ID3D12Resource> materialBuffer_ = nullptr;
 	Material* materialData_ = nullptr;
 
-	ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
-	TransformationMatrix* transformationMatrixData_ = nullptr;
-
 	// データ作成処理
 	void CreateMesh();
 	void CreateMaterialData();
-	void CreateTransformationMatrixData();
 };

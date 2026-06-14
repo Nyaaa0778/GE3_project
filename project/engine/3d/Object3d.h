@@ -3,7 +3,7 @@
 #include "Object3dRenderer.h"
 
 #include <Matrix4x4.h>
-#include <Transform.h>
+#include "WorldTransform.h"
 #include <Vector2.h>
 #include <Vector3.h>
 #include <Vector4.h>
@@ -45,11 +45,17 @@ public:
 	//================================================================================
 
 	// 位置
-	const Vector3& GetPosition() const { return position_; }
+	const Vector3& GetPosition() const {
+		return externalWorldTransform_ ? externalWorldTransform_->translation : worldTransform_.translation;
+	}
 	// 回転
-	const Vector3& GetRotate() const { return rotation_; }
+	const Vector3& GetRotate() const {
+		return externalWorldTransform_ ? externalWorldTransform_->rotation : worldTransform_.rotation;
+	}
 	// 拡縮
-	const Vector3& GetScale() const { return scale_; }
+	const Vector3& GetScale() const {
+		return externalWorldTransform_ ? externalWorldTransform_->scale : worldTransform_.scale;
+	}
 	// 色
 	const Vector4& GetColor() const;
 	// BlendMode
@@ -57,25 +63,46 @@ public:
 	// ライティングの種類
 	void SetLightingType(LightingType type);
 
-	//// ライトの色
-	//const Vector4& GetLightColor() const { return directionalLightData_->color; }
-	//// ライトの向き
-	//const Vector3& GetLightDirection() const {
-	//	return directionalLightData_->direction;
-	//}
-	//// ライトの輝度
-	//float GetLightIntensity() const { return directionalLightData_->intensity; }
+	// 親子関係の設定
+	const WorldTransform* GetWorldTransform() const { return externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_; }
+	void SetParent(const WorldTransform* parent) {
+		if (externalWorldTransform_) {
+			const_cast<WorldTransform*>(externalWorldTransform_)->parent = parent;
+		} else {
+			worldTransform_.parent = parent;
+		}
+	}
+	// 外部トランスフォームの設定
+	void SetWorldTransform(WorldTransform* worldTransform) { externalWorldTransform_ = worldTransform; }
 
 	//================================================================================
 	// Setter
 	//================================================================================
 
 	// 位置
-	void SetPosition(const Vector3& position) { position_ = position; }
+	void SetPosition(const Vector3& position) {
+		if (externalWorldTransform_) {
+			externalWorldTransform_->translation = position;
+		} else {
+			worldTransform_.translation = position;
+		}
+	}
 	// 回転
-	void SetRotation(Vector3 rotation) { rotation_ = rotation; }
+	void SetRotation(Vector3 rotation) {
+		if (externalWorldTransform_) {
+			externalWorldTransform_->rotation = rotation;
+		} else {
+			worldTransform_.rotation = rotation;
+		}
+	}
 	// 拡縮
-	void SetScale(const Vector3& scale) { scale_ = scale; }
+	void SetScale(const Vector3& scale) {
+		if (externalWorldTransform_) {
+			externalWorldTransform_->scale = scale;
+		} else {
+			worldTransform_.scale = scale;
+		}
+	}
 	// 色
 	void SetColor(const Vector4& color);
 	// BlendMode
@@ -113,12 +140,7 @@ private:
 	// 内部構造体
 	//================================================================================
 
-	// 座標変換行列データ
-	struct TransformationMatrix {
-		Matrix4x4 WVP;
-		Matrix4x4 World;
-		Matrix4x4 WorldInverseTranspose;
-	};
+	// (座標変換行列データはWorldTransformに移管)
 
 	//// 平行光源
 	//struct DirectionalLight {
@@ -151,31 +173,13 @@ private:
 	Camera* camera_ = nullptr;
 
 	//================================================================================
-	// GPUリソース（定数バッファ）
+	// GPUリソース（定数バッファ）と座標
 	//================================================================================
 
-	// バッファリソース
-	ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	TransformationMatrix* transformationMatrixData_ = nullptr;
-
-	//// バッファリソース
-	//ComPtr<ID3D12Resource> directionalLightBuffer_ = nullptr;
-	//// バッファリソースないのデータを指すポインタ
-	//DirectionalLight* directionalLightData_ = nullptr;
-
-	//================================================================================
-	// Transform
-	//================================================================================
-
-	// 3DオブジェクトのTransform
-	Transform transform_ {};
-	// 位置
-	Vector3 position_ = {0.0f, 0.0f, 0.0f};
-	// 回転
-	Vector3 rotation_ = {0.0f, 0.0f, 0.0f};
-	// 拡縮
-	Vector3 scale_ = {1.0f, 1.0f, 1.0f};
+	// ワールド変換データ
+	WorldTransform worldTransform_;
+	// 外部参照用ワールド変換データ（指定がある場合はこちらを優先して使用）
+	WorldTransform* externalWorldTransform_ = nullptr;
 
 	// BlendMode
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
@@ -187,10 +191,7 @@ private:
 	// データ作成処理
 	//================================================================================
 
-	/// <summary>
-	/// 座標変換行列データの作成
-	/// </summary>
-	void CreateTransformationMatrixData();
+	// (初期化はworldTransform_.Initialize()にて行うため削除)
 	/*/// <summary>
 	/// 平行光源データの作成
 	/// </summary>

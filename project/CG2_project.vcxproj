@@ -170,6 +170,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\core\utility\Random.cpp" />
     <ClCompile Include="engine\core\debug\D3DResourceLeakChecker.cpp" />
     <ClCompile Include="engine\core\graphics\DirectXCommon.cpp" />
+    <ClCompile Include="engine\core\graphics\WorldTransform.cpp" />
     <ClCompile Include="engine\math\MathUtility.cpp" />
     <ClCompile Include="engine\audio\AudioManager.cpp" />
     <ClCompile Include="externals\imgui\imgui.cpp">
@@ -211,6 +212,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\framework\scene\ISceneFactory.cpp" />
     <ClCompile Include="engine\3d\LightManager.cpp" />
     <ClCompile Include="engine\level\LevelLoader.cpp" />
+    <ClCompile Include="engine\level\Level.cpp" />
     <ClCompile Include="main.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -234,6 +236,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effects\primitive\Plane.cpp" />
     <ClCompile Include="engine\effects\primitive\Primitive.cpp" />
     <ClCompile Include="engine\effects\primitive\PrimitiveRenderer.cpp" />
+    <ClCompile Include="game\player\Reticle.cpp" />
+    <ClCompile Include="game\player\Player.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -324,6 +328,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\core\utility\Random.h" />
     <ClInclude Include="engine\core\debug\D3DResourceLeakChecker.h" />
     <ClInclude Include="engine\core\graphics\DirectXCommon.h" />
+    <ClInclude Include="engine\core\graphics\WorldTransform.h" />
     <ClInclude Include="engine\3d\LightingType.h" />
     <ClInclude Include="engine\level\LevelData.h" />
     <ClInclude Include="engine\math\Matrix4x4.h" />
@@ -374,6 +379,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\effects\primitive\Primitive.h" />
     <ClInclude Include="engine\effects\primitive\PrimitiveRenderer.h" />
     <ClInclude Include="engine\level\LevelLoader.h" />
+    <ClInclude Include="engine\level\Level.h" />
+    <ClInclude Include="game\player\Reticle.h" />
+    <ClInclude Include="game\player\Player.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

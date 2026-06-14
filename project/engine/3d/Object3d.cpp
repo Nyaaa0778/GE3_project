@@ -25,13 +25,8 @@ void Object3d::Initialize(const std::string& modelName, const std::string& exten
 	// モデルをセット
 	SetModel(modelName, extension);
 
-	// 座標変換行列データの作成
-	CreateTransformationMatrixData();
-	//// 平行光源データの作成
-	//CreateDirectionalLightData();
-
-	// Transform変数を作成
-	transform_ = {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+	// 座標変換行列データの初期化
+	worldTransform_.Initialize();
 
 	// デフォルトカメラを設定
 	camera_ = Object3dRenderer::GetInstance()->GetDefaultCamera();
@@ -41,27 +36,31 @@ void Object3d::Initialize(const std::string& modelName, const std::string& exten
 /// </summary>
 void Object3d::Update() {
 
-	transform_.scale = {scale_.x, scale_.y, scale_.z};
-	transform_.rotation = {rotation_.x, rotation_.y, rotation_.z};
-	transform_.translation = {position_.x, position_.y, position_.z};
+	WorldTransform* wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
 
-	// transformからworldMatrixを作成
-	Matrix4x4 worldMatrix = MakeAffineMatrix(
-		transform_.scale, transform_.rotation, transform_.translation);
+	// もし内部のトランスフォームなら、ここでUpdateMatrixも呼ぶ
+	if (!externalWorldTransform_) {
+		worldTransform_.UpdateMatrix();
+	}
 
 	Matrix4x4 worldViewProjectionMatrix;
 
 	if (camera_) {
 		const Matrix4x4& viewProjectionMatrix = camera_->GetViewProjectionMatrix();
-		worldViewProjectionMatrix = worldMatrix * viewProjectionMatrix;
+		worldViewProjectionMatrix = wt->matWorld * viewProjectionMatrix;
 	} else {
-		worldViewProjectionMatrix = worldMatrix;
+		worldViewProjectionMatrix = wt->matWorld;
 	}
 
-	transformationMatrixData_->WVP = model_->GetModelData().rootNode.localMatrix * worldViewProjectionMatrix;
-	transformationMatrixData_->World = model_->GetModelData().rootNode.localMatrix * worldMatrix;
-
-	transformationMatrixData_->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldMatrix));
+	if (wt->constMap) {
+		if (model_) {
+			wt->constMap->WVP = model_->GetModelData().rootNode.localMatrix * worldViewProjectionMatrix;
+			wt->constMap->World = model_->GetModelData().rootNode.localMatrix * wt->matWorld;
+		} else {
+			wt->constMap->WVP = worldViewProjectionMatrix;
+			wt->constMap->World = wt->matWorld;
+		}
+	}
 }
 /// <summary>
 /// 描画
@@ -70,11 +69,13 @@ void Object3d::Draw() {
 
 	object3dRenderer_->SetupCommonRenderState();
 
+	WorldTransform* wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+
 	// 座標変換行列のCBufferの場所を設定
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+			1, wt->constBuffer->GetGPUVirtualAddress());
 
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
@@ -105,25 +106,7 @@ void Object3d::Draw() {
 // データ作成処理
 //================================================================================
 
-/// <summary>
-/// 座標変換行列データの作成
-/// </summary>
-void Object3d::CreateTransformationMatrixData() {
-	// 座標変換行列リソースを作成
-	transformationMatrixBuffer_ =
-		object3dRenderer_->GetDxCommon()->CreateBufferResource(
-			sizeof(TransformationMatrix));
-
-	// transformationMatrixResourceに座標変換行列データを書き込む
-	transformationMatrixBuffer_->Map(
-		0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-
-	// 単位行列を書き込んでおく
-	transformationMatrixData_->WVP = MakeIdentityMatrix();
-	transformationMatrixData_->World = MakeIdentityMatrix();
-
-	transformationMatrixData_->WorldInverseTranspose = MakeIdentityMatrix();
-}
+// (座標変換行列データの作成はWorldTransformに移管したため削除)
 ///// <summary>
 ///// 平行光源データの作成
 ///// </summary>

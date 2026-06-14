@@ -28,8 +28,8 @@ void Sprite::Initialize(std::string filePath) {
 	CreateIndexData();
 	// マテリアルデータの作成
 	CreateMaterialData();
-	// 座標変換行列データの作成
-	CreateTransformationMatrixData();
+	// 座標変換行列データの初期化
+	worldTransform_.Initialize();
 
 	AdjustTextureSize();
 }
@@ -82,12 +82,12 @@ void Sprite::Update() {
 	indexData_[5] = 2;
 
 	// Transform情報を作る
-	transform_ = {{GetDisplaySize().x, GetDisplaySize().y, 1.0f},
-		{0.0f, 0.0f, rotation_},
-		{position_.x, position_.y, 0.0f}};
+	worldTransform_.scale = {GetDisplaySize().x, GetDisplaySize().y, 1.0f};
+	worldTransform_.rotation = {0.0f, 0.0f, rotation_};
+	worldTransform_.translation = {position_.x, position_.y, 0.0f};
 
-	Matrix4x4 worldMatrix = MakeAffineMatrix(
-		transform_.scale, transform_.rotation, transform_.translation);
+	worldTransform_.UpdateMatrix();
+
 	Matrix4x4 viewMatrix = MakeIdentityMatrix();
 	Matrix4x4 projectionMatrix = MakeOrthographicMatrix(
 		0.0f, 0.0f,
@@ -95,7 +95,9 @@ void Sprite::Update() {
 		static_cast<float>(DirectXCommon::GetInstance()->GetClientHeight()), 0.0f,
 		100.0f);
 
-	transformationMatrixData_->WVP = worldMatrix * viewMatrix * projectionMatrix;
+	if (worldTransform_.constMap) {
+		worldTransform_.constMap->WVP = worldTransform_.matWorld * viewMatrix * projectionMatrix;
+	}
 }
 /// <summary>
 /// 描画
@@ -121,7 +123,7 @@ void Sprite::Draw() {
 	DirectXCommon::GetInstance()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+			1, worldTransform_.constBuffer->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableの先頭を設定
 	DirectXCommon::GetInstance()
@@ -186,21 +188,7 @@ void Sprite::CreateMaterialData() {
 	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	materialData_->uvTransform = MakeIdentityMatrix();
 }
-/// <summary>
-/// 座標変換行列データの作成
-/// </summary>
-void Sprite::CreateTransformationMatrixData() {
-	// 座標変換行列リソースを作る
-	transformationMatrixBuffer_ =
-		DirectXCommon::GetInstance()->CreateBufferResource(
-			sizeof(TransformationMatrix));
-
-	// 書き込むためのアドレスを取得して、座標変換行列データに書き込む
-	transformationMatrixBuffer_->Map(
-		0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-	// 単位行列に書き込んでおく
-	transformationMatrixData_->WVP = MakeIdentityMatrix();
-}
+// (座標変換行列データの作成はWorldTransformに移管したため削除)
 
 //================================================================================
 // テクスチャサイズ

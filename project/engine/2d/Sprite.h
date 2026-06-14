@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Matrix4x4.h>
-#include <Transform.h>
+#include "WorldTransform.h"
 #include <Vector2.h>
 #include <Vector3.h>
 #include <Vector4.h>
@@ -101,10 +101,7 @@ private:
 		Matrix4x4 uvTransform;
 	};
 
-	// 座標変換行列データ
-	struct TransformationMatrix {
-		Matrix4x4 WVP;
-	};
+	// (座標変換行列データはWorldTransformに移管)
 
 private:
 	//================================================================================
@@ -139,10 +136,7 @@ private:
 	// バッファリソース内のデータを指すポインタ
 	Material* materialData_ = nullptr;
 
-	// バッファリソース(定数バッファ)
-	ComPtr<ID3D12Resource> transformationMatrixBuffer_ = nullptr;
-	// バッファリソース内のデータを指すポインタ
-	TransformationMatrix* transformationMatrixData_ = nullptr;
+	// (定数バッファはWorldTransformに移管)
 
 	//================================================================================
 	// テクスチャ情報
@@ -165,8 +159,8 @@ private:
 	// Transform / 見た目
 	//================================================================================
 
-	// Transform
-	Transform transform_ {};
+	// ワールド変換データ
+	WorldTransform worldTransform_;
 	// 位置
 	Vector2 position_ = {0.0f, 0.0f};
 	// 回転
@@ -198,10 +192,7 @@ private:
 	/// マテリアルデータの作成
 	/// </summary>
 	void CreateMaterialData();
-	/// <summary>
-	/// 座標変換行列データの作成
-	/// </summary>
-	void CreateTransformationMatrixData();
+	// (初期化はworldTransform_.Initialize()にて行うため削除)
 
 	//================================================================================
 	// テクスチャサイズ

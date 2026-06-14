@@ -1,13 +1,14 @@
 #pragma once
 
 #include "IScene.h"
+#include "Level.h"
+#include "../player/Player.h"
 
 #include <memory>
 #include <vector>
 
 class Object3d;
 class Camera;
-class Primitive;
 
 class GamePlayScene : public IScene {
 public:
@@ -23,10 +24,26 @@ public:
 	void Finalize() override;
 
 private:
-	// モデル
-	std::unique_ptr<Object3d> obj_;
-	std::vector<std::unique_ptr<Object3d>> objects_;
+	// ------------------------------------
+	// レベル
+	// ------------------------------------
 
+	std::unique_ptr<Level> level_;
+
+	// ------------------------------------
+	// 自機
+	// ------------------------------------
+
+	std::unique_ptr<Player> player_;
+	// モデル
+	std::unique_ptr<Object3d> playerModel_;
+
+	// ------------------------------------
 	// カメラ
+	// ------------------------------------
+
 	std::unique_ptr<Camera> camera_;
+
+private:
+	void UpdateImGui();
 };

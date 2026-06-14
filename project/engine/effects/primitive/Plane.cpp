@@ -21,7 +21,7 @@ void Plane::Initialize(const std::string& textureFilePath)
 	// 各種リソースの作成
 	CreateMesh();
 	CreateMaterialData();
-	CreateTransformationMatrixData();
+	worldTransform_.Initialize();
 
 	// テクスチャの読み込み（デフォルト）
 	TextureManager::GetInstance()->LoadTexture("resources/sprites/" + textureFilePath_);
@@ -29,23 +29,19 @@ void Plane::Initialize(const std::string& textureFilePath)
 
 void Plane::Update()
 {
-	transform_.scale = {scale_.x, scale_.y, scale_.z};
-	transform_.rotation = {rotation_.x, rotation_.y, rotation_.z};
-	transform_.translation = {position_.x, position_.y, position_.z};
-
-	// transformからworldMatrixを作成
-	Matrix4x4 worldMatrix = MakeAffineMatrix(
-		transform_.scale, transform_.rotation, transform_.translation);
+	worldTransform_.UpdateMatrix();
 
 	Matrix4x4 worldViewProjectionMatrix;
 	if (camera_) {
 		const Matrix4x4& viewProjectionMatrix = camera_->GetViewProjectionMatrix();
-		worldViewProjectionMatrix = worldMatrix * viewProjectionMatrix;
+		worldViewProjectionMatrix = worldTransform_.matWorld * viewProjectionMatrix;
 	} else {
-		worldViewProjectionMatrix = worldMatrix;
+		worldViewProjectionMatrix = worldTransform_.matWorld;
 	}
 
-	transformationMatrixData_->WVP = worldViewProjectionMatrix;
+	if (worldTransform_.constMap) {
+		worldTransform_.constMap->WVP = worldViewProjectionMatrix;
+	}
 }
 
 void Plane::Draw()
@@ -64,7 +60,7 @@ void Plane::Draw()
 	commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
 
 	// b1 (VS): TransformationMatrix
-	commandList->SetGraphicsRootConstantBufferView(1, transformationMatrixBuffer_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(1, worldTransform_.constBuffer->GetGPUVirtualAddress());
 
 	// t0: Texture
 	auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("resources/sprites/" + textureFilePath_);
@@ -173,23 +169,15 @@ void Plane::CreateMaterialData()
 	materialData_->uvTransform = MakeIdentityMatrix();
 }
 
-void Plane::CreateTransformationMatrixData()
-{
-	auto dxCommon = DirectXCommon::GetInstance();
-
-	transformationMatrixBuffer_ = dxCommon->CreateBufferResource(sizeof(TransformationMatrix));
-	transformationMatrixBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&transformationMatrixData_));
-
-	transformationMatrixData_->WVP = MakeIdentityMatrix();
-}
+// (座標変換行列データの作成はWorldTransformに移管したため削除)
 
 void Plane::DrawImGui(const char* windowName) {
 #ifdef USE_IMGUI
 	ImGui::Begin(windowName);
 
-	ImGui::DragFloat3("Position", &position_.x, 0.1f);
-	ImGui::DragFloat3("Rotation", &rotation_.x, 0.01f);
-	ImGui::DragFloat3("Scale", &scale_.x, 0.1f);
+	ImGui::DragFloat3("Position", &worldTransform_.translation.x, 0.1f);
+	ImGui::DragFloat3("Rotation", &worldTransform_.rotation.x, 0.01f);
+	ImGui::DragFloat3("Scale", &worldTransform_.scale.x, 0.1f);
 
 	static int currentBlendMode = static_cast<int>(blendMode_);
 	const char* blendModeNames[] = { "None", "Normal", "Add", "Subtract", "Multiply", "Screen" };

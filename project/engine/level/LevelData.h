@@ -27,6 +27,7 @@ struct LevelData {
 		std::string entityType; 
 		Vector3 translation;
 		Vector3 rotation;
+		Vector3 scaling = { 1.0f, 1.0f, 1.0f };
 	};
 
 	std::vector<ObjectData> objects;
