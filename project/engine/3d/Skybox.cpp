@@ -40,7 +40,7 @@ void Skybox::Draw() {
     Matrix4x4 worldMatrix = MakeAffineMatrix(
         {500.0f, 500.0f, 500.0f},
         {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f}
+        camera_->GetTranslate()
     );
 
     // カメラのView行列をそのまま使う

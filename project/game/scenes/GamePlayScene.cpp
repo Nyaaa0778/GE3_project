@@ -25,6 +25,15 @@ void GamePlayScene::Initialize() {
     skybox_ = std::make_unique<Skybox>();
     skybox_->Initialize("resources/sprites/rostock_laage_airport_4k.dds", camera_.get());
 
+    reflectionSphere_ = std::make_unique<Object3d>();
+    reflectionSphere_->Initialize("sphere");
+    reflectionSphere_->SetCamera(camera_.get());
+    if (skybox_) {
+        reflectionSphere_->SetEnvironmentTextureHandle(skybox_->GetTextureSrvHandleGPU());
+    }
+    reflectionSphere_->SetEnvironmentCoefficient(1.0f);
+    reflectionSphere_->SetPosition({ 5.0f, 0.0f, 30.0f });
+
     collisionManager_ = std::make_unique<CollisionManager>();
 }
 
@@ -78,6 +87,10 @@ void GamePlayScene::Update() {
 
     player_->Update(railCameraController_->GetWorldTransform());
     UpdateEnemies();
+
+    if (reflectionSphere_) {
+        reflectionSphere_->Update();
+    }
 
     if (collisionManager_) {
         collisionManager_->CheckAllCollisions(player_.get(), enemies_);
@@ -169,7 +182,13 @@ void GamePlayScene::Draw() {
         if (e) e->Draw();
     }
 
-    // skybox_->Draw();
+    if (reflectionSphere_) {
+        reflectionSphere_->Draw();
+    }
+
+    if (skybox_) {
+        skybox_->Draw();
+    }
 }
 
 void GamePlayScene::Finalize() {}
@@ -247,6 +266,31 @@ void GamePlayScene::DrawImGui() {
         if (ImGui::BeginTabItem("🛤️ Rail Editor")) {
             if (railPathEditor_) {
                 railPathEditor_->DrawImGuiInline();
+            }
+            ImGui::EndTabItem();
+        }
+
+        // -------------------------------------------------------
+        // [4] Reflection Object タブ
+        // -------------------------------------------------------
+        if (ImGui::BeginTabItem("🔮 Reflection Object")) {
+            if (reflectionSphere_) {
+                Vector3 pos = reflectionSphere_->GetPosition();
+                if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
+                    reflectionSphere_->SetPosition(pos);
+                }
+                Vector3 rot = reflectionSphere_->GetRotate();
+                if (ImGui::DragFloat3("Rotation", &rot.x, 0.01f)) {
+                    reflectionSphere_->SetRotation(rot);
+                }
+                Vector3 scale = reflectionSphere_->GetScale();
+                if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
+                    reflectionSphere_->SetScale(scale);
+                }
+                float envCoeff = reflectionSphere_->GetEnvironmentCoefficient();
+                if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
+                    reflectionSphere_->SetEnvironmentCoefficient(envCoeff);
+                }
             }
             ImGui::EndTabItem();
         }
