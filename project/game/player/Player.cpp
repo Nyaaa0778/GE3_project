@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include "Camera.h"
 
 #include <MyEngine.h>
 #include <MathUtility.h>
@@ -57,13 +58,14 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	// ------------------------------------
 
 	reticle_ = std::make_unique<Object3d>();
-	reticle_->Initialize("cube");
+	reticle_->Initialize("sphere");
 	reticle_->SetCamera(camera_);
 	//reticle_->SetScale({0.5f, 0.5f, 0.5f});
 
 	worldTransformReticle_.Initialize();
 	worldTransformReticle_.scale = kReticleDrawSize;
-	worldTransformReticle_.parent = &worldTransform_;
+	// 親子関係を設定せず、ワールド空間に直接配置する
+	worldTransformReticle_.parent = nullptr;
 }
 
 void Player::Update() {
@@ -138,8 +140,17 @@ void Player::UpdateMove() {
 void Player::UpdateReticle() {
 	const float kDistancePlayerToReticle = 50.0f;
 
-	// ローカル座標系で自機の前方に配置
-	worldTransformReticle_.translation = {0.0f, 0.0f, kDistancePlayerToReticle};
+	// ① Z方向向きのオフセットベクトルを作り、自キャラと同じ回転をかける
+	Vector3 offset = {0.0f, 0.0f, kDistancePlayerToReticle};
+	Matrix4x4 rotateMatrix = MathUtility::MakeRotateMatrix(worldTransform_.rotation);
+	offset = MathUtility::Transform(offset, rotateMatrix);
+
+	// ② 自キャラ座標から、オフセットベクトル分進んだ座標が、3Dレティクルの座標となる
+	Vector3 reticleWorldPos = worldTransform_.GetWorldPosition() + offset;
+
+	// この座標を3Dレティクルのワールド座標（translation）として設定
+	worldTransformReticle_.translation = reticleWorldPos;
+
 	worldTransformReticle_.UpdateMatrix();
 
 	reticle_->SetWorldTransform(&worldTransformReticle_);
@@ -152,13 +163,17 @@ void Player::Attack() {
 	if (input->PushKey(DIK_SPACE)) {
 		auto newBullet = std::make_unique<PlayerBullet>();
 
-		bulletVelocity_ = worldTransformReticle_.GetWorldPosition() - worldTransform_.GetWorldPosition();
+		// 自機のワールド座標を取得
+		Vector3 spawnPos = worldTransform_.GetWorldPosition();
+
+		// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
+		bulletVelocity_ = worldTransformReticle_.GetWorldPosition() - spawnPos;
 		bulletVelocity_ = Normalize(bulletVelocity_) * kBulletSpeed;
 
-		// 初期化
-		newBullet->Initialize(camera_, worldTransform_.GetWorldPosition(), bulletVelocity_);
+		// 弾を初期化（親は nullptr でワールド空間上に配置する）
+		newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
 
-		// 弾を登録する（所有権を bullet_ に渡す）
+		// 弾を登録する
 		bullets_.push_back(std::move(newBullet));
 	}
 }

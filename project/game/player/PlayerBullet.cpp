@@ -7,15 +7,14 @@
 
 using namespace MathUtility;
 
-void PlayerBullet::Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity, const WorldTransform* parent) {
+void PlayerBullet::Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity) {
     model_ = std::make_unique<Object3d>();
     model_->Initialize("cube");
     model_->SetCamera(camera);
 
     worldTransform_.Initialize();
     worldTransform_.translation = pos;
-    worldTransform_.parent = parent;
-    worldTransform_.camera_ = camera;
+    //worldTransform_.camera_ = camera;
     velocity_ = velocity;
 }
 
