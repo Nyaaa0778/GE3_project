@@ -27,20 +27,22 @@ void Box::Initialize(const std::string& textureFilePath)
 	TextureManager::GetInstance()->LoadTexture("resources/sprites/" + textureFilePath_);
 }
 
+void Box::SetWorldTransform(WorldTransform* worldTransform)
+{
+	externalWorldTransform_ = worldTransform;
+}
+
 void Box::Update()
 {
-	worldTransform_.UpdateMatrix();
+	Matrix4x4 viewProjectionMatrix = camera_ ? camera_->GetViewProjectionMatrix() : MakeIdentityMatrix();
 
-	Matrix4x4 worldViewProjectionMatrix;
-	if (camera_) {
-		const Matrix4x4& viewProjectionMatrix = camera_->GetViewProjectionMatrix();
-		worldViewProjectionMatrix = worldTransform_.matWorld * viewProjectionMatrix;
+	if (externalWorldTransform_) {
+		worldTransform_.matWorld = externalWorldTransform_->matWorld;
+		worldTransform_.constMap->World = worldTransform_.matWorld;
+		worldTransform_.constMap->WVP = Multiply(worldTransform_.matWorld, viewProjectionMatrix);
+		worldTransform_.constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldTransform_.matWorld));
 	} else {
-		worldViewProjectionMatrix = worldTransform_.matWorld;
-	}
-
-	if (worldTransform_.constMap) {
-		worldTransform_.constMap->WVP = worldViewProjectionMatrix;
+		worldTransform_.UpdateMatrix();
 	}
 }
 
@@ -194,6 +196,7 @@ void Box::CreateMaterialData()
 
 	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	materialData_->uvTransform = MakeIdentityMatrix();
+	materialData_->alphaReference = 0.0f;
 }
 
 // (座標変換行列データの作成はWorldTransformに移管したため削除)

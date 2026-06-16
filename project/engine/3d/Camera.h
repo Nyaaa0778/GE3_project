@@ -39,14 +39,20 @@ public:
 		return cameraBuffer_->GetGPUVirtualAddress();
 	}
 
+	// 外部から行列を直接設定した際の同期処理
+	void UpdateViewProjection();
+
+public:
+	// 行列メンバの公開
+	Matrix4x4 matWorld;
+	Matrix4x4 matView;
+
 private:
 	//================================================================================
 	// Transform と行列 / 投影パラメータ
 	//================================================================================
 
 	Transform transform_;
-	Matrix4x4 worldMatrix_;
-	Matrix4x4 viewMatrix_;
 
 	Matrix4x4 projectionMatrix_;
 	// 水平方向視野角
@@ -70,9 +76,9 @@ public:
 	//================================================================================
 
 	// ワールド行列
-	const Matrix4x4& GetWorldMatrix() const { return worldMatrix_; }
+	const Matrix4x4& GetWorldMatrix() const { return matWorld; }
 	// ビュー行列
-	const Matrix4x4& GetViewMatrix() const { return viewMatrix_; }
+	const Matrix4x4& GetViewMatrix() const { return matView; }
 	// プロジェクション行列
 	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
 	// ビュープロジェクション行列

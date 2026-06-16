@@ -1,14 +1,17 @@
 #pragma once
 
 #include "IScene.h"
-#include "Level.h"
-#include "../player/Player.h"
 
 #include <memory>
 #include <vector>
 
 class Object3d;
 class Camera;
+class DebugCamera;
+class RailCameraController;
+class Player;
+class Level;
+class Skydome;
 
 class GamePlayScene : public IScene {
 public:
@@ -43,6 +46,22 @@ private:
 	// ------------------------------------
 
 	std::unique_ptr<Camera> camera_;
+
+	// レールカメラ
+	std::unique_ptr<RailCameraController> railCamera_;
+
+	// デバッグカメラ
+	std::unique_ptr<DebugCamera> debugCamera_;
+	bool useDebugCamera_ = false;
+
+	// ------------------------------------
+	// 天球
+	// ------------------------------------
+
+	std::unique_ptr<Skydome> skydome_;
+
+	// モデル
+	std::unique_ptr<Object3d> skydomeModel_;
 
 private:
 	void UpdateImGui();

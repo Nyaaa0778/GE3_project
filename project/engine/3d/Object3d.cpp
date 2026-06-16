@@ -34,23 +34,20 @@ void Object3d::Initialize(const std::string& modelName, const std::string& exten
 /// <summary>
 /// 更新
 /// </summary>
-void Object3d::Update() {
+void Object3d::Update(WorldTransform* worldTransform) {
 
-	WorldTransform* wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+	WorldTransform* wt = worldTransform;
+	if (!wt) {
+		wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+	}
 
-	// もし内部のトランスフォームなら、ここでUpdateMatrixも呼ぶ
-	if (!externalWorldTransform_) {
+	Matrix4x4 viewProjectionMatrix = camera_ ? camera_->GetViewProjectionMatrix() : MakeIdentityMatrix();
+
+	if (!worldTransform && !externalWorldTransform_) {
 		worldTransform_.UpdateMatrix();
 	}
 
-	Matrix4x4 worldViewProjectionMatrix;
-
-	if (camera_) {
-		const Matrix4x4& viewProjectionMatrix = camera_->GetViewProjectionMatrix();
-		worldViewProjectionMatrix = wt->matWorld * viewProjectionMatrix;
-	} else {
-		worldViewProjectionMatrix = wt->matWorld;
-	}
+	Matrix4x4 worldViewProjectionMatrix = wt->matWorld * viewProjectionMatrix;
 
 	if (wt->constMap) {
 		if (model_) {
@@ -65,11 +62,14 @@ void Object3d::Update() {
 /// <summary>
 /// 描画
 /// </summary>
-void Object3d::Draw() {
+void Object3d::Draw(WorldTransform* worldTransform) {
 
 	object3dRenderer_->SetupCommonRenderState();
 
-	WorldTransform* wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+	WorldTransform* wt = worldTransform;
+	if (!wt) {
+		wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+	}
 
 	// 座標変換行列のCBufferの場所を設定
 	object3dRenderer_->GetDxCommon()
@@ -82,19 +82,14 @@ void Object3d::Draw() {
 		->SetGraphicsRootConstantBufferView(
 			2, camera_->GetConstantBufferVideoAddress());
 
-	// 平行光源CBufferの場所を設定
+	// ライトCBufferの場所を設定
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			3, LightManager::GetInstance()->GetDirectionalLightConstantBufferVideoAddress());
-
-	object3dRenderer_->GetDxCommon()
-		->GetCommandList()
-		->SetGraphicsRootConstantBufferView(
-			5, LightManager::GetInstance()->GetLocalLightConstantBufferVideoAddress());
+			3, LightManager::GetInstance()->GetConstantBufferVideoAddress());
 
 	object3dRenderer_->GetDxCommon()->GetCommandList()
-		->SetGraphicsRootDescriptorTable(6, environmentTextureSrvHandleGPU_);
+		->SetGraphicsRootDescriptorTable(5, environmentTextureSrvHandleGPU_);
 
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_) {

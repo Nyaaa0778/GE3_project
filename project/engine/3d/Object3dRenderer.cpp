@@ -69,7 +69,7 @@ void Object3dRenderer::CreateRootSignature() {
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	D3D12_ROOT_PARAMETER rootParameters[7] = {};
+	D3D12_ROOT_PARAMETER rootParameters[6] = {};
 
 	// 0: Material (PS b0)
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -86,7 +86,7 @@ void Object3dRenderer::CreateRootSignature() {
 	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[2].Descriptor.ShaderRegister = 2;
 
-	// 3: DirectionalLight (PS b1)
+	// 3: LightData (PS b1)
 	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[3].Descriptor.ShaderRegister = 1;
@@ -103,22 +103,17 @@ void Object3dRenderer::CreateRootSignature() {
 	rootParameters[4].DescriptorTable.pDescriptorRanges = descriptorRange;
 	rootParameters[4].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
 
-	// 5: LocalLight
-	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // 定数バッファ
-	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // ピクセルシェーダーで使う
-	rootParameters[5].Descriptor.ShaderRegister = 3; // レジスタ番号 (b3)
-
-	// 6: Environment Texture (PS t1)
+	// 5: Environment Texture (PS t1)
 	D3D12_DESCRIPTOR_RANGE envRange {};
 	envRange.BaseShaderRegister = 1;
 	envRange.NumDescriptors = 1;
 	envRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	envRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-	rootParameters[6].DescriptorTable.pDescriptorRanges = &envRange;
-	rootParameters[6].DescriptorTable.NumDescriptorRanges = 1;
+	rootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[5].DescriptorTable.pDescriptorRanges = &envRange;
+	rootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
 
 	descriptionRootSignature.pParameters =
 		rootParameters; // ルートパラメータ配列へのポインタ

@@ -47,6 +47,9 @@ public:
 	// Camera Setter
 	void SetCamera(Camera* camera) override { camera_ = camera; }
 
+	// 外部トランスフォームの設定
+	void SetWorldTransform(WorldTransform* worldTransform) override;
+
 	// ImGui
 	void DrawImGui(const char* windowName) override;
 
@@ -77,6 +80,7 @@ private:
 	struct Material {
 		Vector4 color;
 		Matrix4x4 uvTransform;
+		float alphaReference;
 	};
 
 	// (座標変換行列データはWorldTransformに移管)
@@ -88,6 +92,7 @@ private:
 
 	// 外部参照
 	Camera* camera_ = nullptr;
+	WorldTransform* externalWorldTransform_ = nullptr;
 	std::string textureFilePath_ = "uvChecker.png";
 	PrimitiveRenderer::BlendMode blendMode_ = PrimitiveRenderer::BlendMode::kNormal;
 

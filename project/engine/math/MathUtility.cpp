@@ -67,6 +67,15 @@ namespace MathUtility {
 		return {v.x / length, v.y / length, v.z / length};
 	}
 
+	Vector3 Transform(const Vector3& v, const Matrix4x4& m) {
+		float w = v.x * m.m[0][3] + v.y * m.m[1][3] + v.z * m.m[2][3] + m.m[3][3];
+		return {
+			(v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + m.m[3][0]) / w,
+			(v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + m.m[3][1]) / w,
+			(v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + m.m[3][2]) / w,
+		};
+	}
+
 	//================================================================================
 	// ベクトル演算子オーバーロード
 	//================================================================================
@@ -165,6 +174,44 @@ namespace MathUtility {
 		}
 
 		return result;
+	}
+
+	//================================================================================
+	// ベクトルと行列の演算
+	//================================================================================
+
+	Vector3 Multiply(const Matrix4x4& m, const Vector3& v) {
+		// w成分を1.0とした4次元ベクトルとして計算
+		float x = m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3] * 1.0f;
+		float y = m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3] * 1.0f;
+		float z = m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3] * 1.0f;
+		float w = m.m[3][0] * v.x + m.m[3][1] * v.y + m.m[3][2] * v.z + m.m[3][3] * 1.0f;
+
+		// 透視投影を考慮し、wが1以外（かつ0以外）ならwで割る
+		if (w != 0.0f && w != 1.0f) {
+			x /= w;
+			y /= w;
+			z /= w;
+		}
+
+		return Vector3(x, y, z); // Vector3のコンストラクタがあると仮定
+	}
+
+	Vector3 Multiply(const Vector3& v, const Matrix4x4& m) {
+		// w成分を1.0とした4次元ベクトルとして計算
+		float x = v.x * m.m[0][0] + v.y * m.m[1][0] + v.z * m.m[2][0] + 1.0f * m.m[3][0];
+		float y = v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + 1.0f * m.m[3][1];
+		float z = v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + 1.0f * m.m[3][2];
+		float w = v.x * m.m[0][3] + v.y * m.m[1][3] + v.z * m.m[2][3] + 1.0f * m.m[3][3];
+
+		// 透視投影を考慮し、wが1以外（かつ0以外）ならwで割る
+		if (w != 0.0f && w != 1.0f) {
+			x /= w;
+			y /= w;
+			z /= w;
+		}
+
+		return Vector3(x, y, z);
 	}
 
 	//================================================================================
@@ -531,6 +578,23 @@ namespace MathUtility {
 		result.m[3][1] = 0.0f;
 		result.m[3][2] = -nearClip * farClip / (farClip - nearClip);
 		result.m[3][3] = 0.0f;
+
+		return result;
+	}
+
+	/// <summary>
+	/// ビューポート変換行列の作成
+	/// </summary>
+	Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth) {
+		Matrix4x4 result = MakeIdentityMatrix();
+
+		result.m[0][0] = width / 2.0f;
+		result.m[1][1] = -height / 2.0f; // Y軸を反転（上方向プラスから画面の下方向プラスへ変換）
+		result.m[2][2] = maxDepth - minDepth;
+
+		result.m[3][0] = left + width / 2.0f;
+		result.m[3][1] = top + height / 2.0f;
+		result.m[3][2] = minDepth;
 
 		return result;
 	}

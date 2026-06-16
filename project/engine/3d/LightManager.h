@@ -9,10 +9,13 @@
 
 class DirectXCommon;
 
-enum class LocalLightType {
-	kPoint = 0, // 点光源
-	kSpot = 1,  // スポットライト
-};
+#include <cassert>
+
+//================================================================================
+// 定数
+//================================================================================
+static constexpr int kMaxPointLights = 8;
+static constexpr int kMaxSpotLights = 4;
 
 //================================================================================
 // LightManager クラス
@@ -28,17 +31,33 @@ public:
 		float intensity;   // 輝度
 	};
 
-	struct LocalLight {
-		Vector4 color;         // ライトの色
-		Vector3 position;      // ライトの位置
-		float intensity;       // 輝度
-		Vector3 direction;     // 向き (スポットライト用)
-		float distance;        // ライトの届く距離
-		float decay;           // 減衰率
-		float cosAngle;        // スポットライトの余弦
-		float cosFalloffStart; // falloffの開始角度
-		uint32_t type;          // ローカルライトの種類 (0:Point, 1:Spot)
+	struct PointLight {
+		Vector4 color;     // ライトの色 (16 bytes)
+		Vector3 position;  // ライトの位置 (12 bytes)
+		float intensity;   // 輝度 (4 bytes)
+		float distance;    // ライトの届く距離 (4 bytes)
+		float decay;       // 減衰率 (4 bytes)
+		int32_t enabled;   // 有効フラグ (4 bytes)
+		float pad;         // パディング (4 bytes) -> 合計48バイト (16バイト境界アライメント)
 	};
+
+	struct SpotLight {
+		Vector4 color;         // ライトの色 (16 bytes)
+		Vector3 position;      // ライトの位置 (12 bytes)
+		float intensity;       // 輝度 (4 bytes)
+		Vector3 direction;     // 向き (12 bytes)
+		float distance;        // 届く距離 (4 bytes)
+		float decay;           // 減衰率 (4 bytes)
+		float cosAngle;        // スポットライトの余弦 (4 bytes)
+		float cosFalloffStart; // falloffの開始角度 (4 bytes)
+		int32_t enabled;       // 有効フラグ (4 bytes)
+	};
+
+	struct LightData {
+		DirectionalLight directionalLight; // 32 bytes
+		PointLight pointLights[kMaxPointLights]; // 8 * 48 = 384 bytes
+		SpotLight spotLights[kMaxSpotLights];   // 4 * 64 = 256 bytes
+	}; // 合計: 672 bytes (16の倍数)
 
 	//================================================================================
 	// シングルトン
@@ -53,53 +72,152 @@ public:
 	void Initialize(DirectXCommon* dxCommon);
 
 	//================================================================================
+	// GPUアドレスの取得
+	//================================================================================
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferVideoAddress() const { return lightDataBuffer_->GetGPUVirtualAddress(); }
+
+	//================================================================================
 	// DirectionalLight (平行光源) の取得・設定
 	//================================================================================
-	// GPUアドレスの取得
-	D3D12_GPU_VIRTUAL_ADDRESS GetDirectionalLightConstantBufferVideoAddress() const { return directionalLightBuffer_->GetGPUVirtualAddress(); }
+	const Vector4& GetDirectionalLightColor() const { return lightData_->directionalLight.color; }
+	const Vector3& GetDirectionalLightDirection() const { return lightData_->directionalLight.direction; }
+	float GetDirectionalLightIntensity() const { return lightData_->directionalLight.intensity; }
 
-	// 各種Getter
-	const Vector4& GetDirectionalLightColor() const { return directionalLightData_->color; }
-	const Vector3& GetDirectionalLightDirection() const { return directionalLightData_->direction; }
-	float GetDirectionalLightIntensity() const { return directionalLightData_->intensity; }
-
-	// 各種Setter
-	void SetDirectionalLightColor(const Vector4& color) { directionalLightData_->color = color; }
-	void SetDirectionalLightDirection(const Vector3& direction) { directionalLightData_->direction = direction; }
-	void SetDirectionalLightIntensity(float intensity) { directionalLightData_->intensity = intensity; }
+	void SetDirectionalLightColor(const Vector4& color) { lightData_->directionalLight.color = color; }
+	void SetDirectionalLightDirection(const Vector3& direction) { lightData_->directionalLight.direction = direction; }
+	void SetDirectionalLightIntensity(float intensity) { lightData_->directionalLight.intensity = intensity; }
 
 	//================================================================================
-	// LocalLight (PoinLight / SpotLight) の取得・設定
+	// PointLight (点光源) の取得・設定
 	//================================================================================
+	const Vector4& GetPointLightColor(int index) const {
+		assert(index >= 0 && index < kMaxPointLights);
+		return lightData_->pointLights[index].color;
+	}
+	const Vector3& GetPointLightPosition(int index) const {
+		assert(index >= 0 && index < kMaxPointLights);
+		return lightData_->pointLights[index].position;
+	}
+	float GetPointLightIntensity(int index) const {
+		assert(index >= 0 && index < kMaxPointLights);
+		return lightData_->pointLights[index].intensity;
+	}
+	float GetPointLightDistance(int index) const {
+		assert(index >= 0 && index < kMaxPointLights);
+		return lightData_->pointLights[index].distance;
+	}
+	float GetPointLightDecay(int index) const {
+		assert(index >= 0 && index < kMaxPointLights);
+		return lightData_->pointLights[index].decay;
+	}
+	bool GetPointLightEnabled(int index) const {
+		assert(index >= 0 && index < kMaxPointLights);
+		return lightData_->pointLights[index].enabled != 0;
+	}
 
-	D3D12_GPU_VIRTUAL_ADDRESS GetLocalLightConstantBufferVideoAddress() const { return localLightBuffer_->GetGPUVirtualAddress(); }
+	void SetPointLightColor(int index, const Vector4& color) {
+		assert(index >= 0 && index < kMaxPointLights);
+		lightData_->pointLights[index].color = color;
+	}
+	void SetPointLightPosition(int index, const Vector3& position) {
+		assert(index >= 0 && index < kMaxPointLights);
+		lightData_->pointLights[index].position = position;
+	}
+	void SetPointLightIntensity(int index, float intensity) {
+		assert(index >= 0 && index < kMaxPointLights);
+		lightData_->pointLights[index].intensity = intensity;
+	}
+	void SetPointLightDistance(int index, float distance) {
+		assert(index >= 0 && index < kMaxPointLights);
+		lightData_->pointLights[index].distance = distance;
+	}
+	void SetPointLightDecay(int index, float decay) {
+		assert(index >= 0 && index < kMaxPointLights);
+		lightData_->pointLights[index].decay = decay;
+	}
+	void SetPointLightEnabled(int index, bool enabled) {
+		assert(index >= 0 && index < kMaxPointLights);
+		lightData_->pointLights[index].enabled = enabled ? 1 : 0;
+	}
 
-	// 各種Getter
-	const Vector4& GetLocalLightColor() const { return localLightData_->color; }
-	const Vector3& GetLocalLightPosition() const { return localLightData_->position; }
-	float GetLocalLightIntensity() const { return localLightData_->intensity; }
-	const Vector3& GetLocalLightDirection() const { return localLightData_->direction; }
-	float GetLocalLightDistance() const { return localLightData_->distance; }
-	float GetLocalLightDecay() const { return localLightData_->decay; }
-	float GetLocalLightCosAngle() const { return localLightData_->cosAngle; }
-	float GetLocalLightCosFalloffStart() const { return localLightData_->cosFalloffStart; }
-	LocalLightType GetLocalLightType() const { return static_cast<LocalLightType>(localLightData_->type); }
+	//================================================================================
+	// SpotLight (スポットライト) の取得・設定
+	//================================================================================
+	const Vector4& GetSpotLightColor(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].color;
+	}
+	const Vector3& GetSpotLightPosition(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].position;
+	}
+	float GetSpotLightIntensity(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].intensity;
+	}
+	const Vector3& GetSpotLightDirection(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].direction;
+	}
+	float GetSpotLightDistance(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].distance;
+	}
+	float GetSpotLightDecay(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].decay;
+	}
+	float GetSpotLightCosAngle(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].cosAngle;
+	}
+	float GetSpotLightCosFalloffStart(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].cosFalloffStart;
+	}
+	bool GetSpotLightEnabled(int index) const {
+		assert(index >= 0 && index < kMaxSpotLights);
+		return lightData_->spotLights[index].enabled != 0;
+	}
 
-	// 各種Setter
-	void SetLocalLightColor(const Vector4& color) { localLightData_->color = color; }
-	void SetLocalLightPosition(const Vector3& position) { localLightData_->position = position; }
-	void SetLocalLightIntensity(float intensity) { localLightData_->intensity = intensity; }
-	void SetLocalLightDirection(const Vector3& direction) { localLightData_->direction = direction; }
-	void SetLocalLightDistance(float distance) { localLightData_->distance = distance; }
-	void SetLocalLightDecay(float decay) { localLightData_->decay = decay; }
-	void SetLocalLightCosAngle(float cosAngle) { localLightData_->cosAngle = cosAngle; }
-	void SetLocalLightCosFalloffStart(float cosFalloffStart) { localLightData_->cosFalloffStart = cosFalloffStart; }
-	void SetLocalLightType(LocalLightType type) { localLightData_->type = static_cast<uint32_t>(type); }
+	void SetSpotLightColor(int index, const Vector4& color) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].color = color;
+	}
+	void SetSpotLightPosition(int index, const Vector3& position) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].position = position;
+	}
+	void SetSpotLightIntensity(int index, float intensity) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].intensity = intensity;
+	}
+	void SetSpotLightDirection(int index, const Vector3& direction) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].direction = direction;
+	}
+	void SetSpotLightDistance(int index, float distance) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].distance = distance;
+	}
+	void SetSpotLightDecay(int index, float decay) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].decay = decay;
+	}
+	void SetSpotLightCosAngle(int index, float cosAngle) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].cosAngle = cosAngle;
+	}
+	void SetSpotLightCosFalloffStart(int index, float cosFalloffStart) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].cosFalloffStart = cosFalloffStart;
+	}
+	void SetSpotLightEnabled(int index, bool enabled) {
+		assert(index >= 0 && index < kMaxSpotLights);
+		lightData_->spotLights[index].enabled = enabled ? 1 : 0;
+	}
 
 private:
-	//================================================================================
-	// プライベート関数 (シングルトン・肥大化防止用)
-	//================================================================================
 	// シングルトンのためコンストラクタを隠蔽
 	LightManager() = default;
 	~LightManager() = default;
@@ -107,18 +225,10 @@ private:
 	LightManager(const LightManager&) = delete;
 	LightManager& operator=(const LightManager&) = delete;
 
-	// 初期化処理の分割
-	void InitializeDirectionalLight(DirectXCommon* dxCommon);
-	void InitializeLocalLight(DirectXCommon* dxCommon);
-
 private:
 	//================================================================================
 	// メンバ変数
 	//================================================================================
-	// DirectionalLight用
-	Microsoft::WRL::ComPtr<ID3D12Resource> directionalLightBuffer_; // 定数バッファ
-	DirectionalLight* directionalLightData_ = nullptr;              // マップ用ポインタ
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> localLightBuffer_;
-	LocalLight* localLightData_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> lightDataBuffer_; // 定数バッファ
+	LightData* lightData_ = nullptr;                        // マップ用ポインタ
 };

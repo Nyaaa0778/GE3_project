@@ -8,6 +8,21 @@
 
 using namespace MathUtility;
 
+namespace {
+std::string ResolvePath(const std::string& filePath) {
+    // 既に "resources/" が含まれていればそのまま
+    if (filePath.find("resources/") != std::string::npos) {
+        return filePath;
+    }
+    // "sprites/" で始まっている場合は "resources/" を付与
+    if (filePath.rfind("sprites/", 0) == 0) {
+        return "resources/" + filePath;
+    }
+    // それ以外は "resources/sprites/" を付与
+    return "resources/sprites/" + filePath;
+}
+}
+
 //================================================================================
 // パブリック関数
 //================================================================================
@@ -15,40 +30,44 @@ using namespace MathUtility;
 void Skybox::Initialize(const std::array<std::string, 6>& filePaths, Camera* camera) {
     InitializeCommon(camera);
 
+    std::array<std::string, 6> resolvedPaths;
+    for (size_t i = 0; i < 6; ++i) {
+        resolvedPaths[i] = ResolvePath(filePaths[i]);
+    }
+
     // テクスチャのロードとキューブマップ合成
-    textureSrvHandleGPU_ = TextureManager::GetInstance()->CreateCubemapFromFiles(filePaths);
+    textureSrvHandleGPU_ = TextureManager::GetInstance()->CreateCubemapFromFiles(resolvedPaths);
 }
 
 void Skybox::Initialize(const std::string& ddsFilePath, Camera* camera) {
     InitializeCommon(camera);
 
+    std::string resolvedPath = ResolvePath(ddsFilePath);
+
     // DDSを読み込む
     TextureManager* textureManager = TextureManager::GetInstance();
-    textureManager->LoadTexture(ddsFilePath);
+    textureManager->LoadTexture(resolvedPath);
 
     // 念のため、本当に cubemap か確認
-    assert(textureManager->GetMetaData(ddsFilePath).IsCubemap());
+    assert(textureManager->GetMetaData(resolvedPath).IsCubemap());
 
     // GPUハンドルを取得
-    textureSrvHandleGPU_ = textureManager->GetSrvHandleGPU(ddsFilePath);
+    textureSrvHandleGPU_ = textureManager->GetSrvHandleGPU(resolvedPath);
 }
 
 void Skybox::Draw() {
     auto commandList = DirectXCommon::GetInstance()->GetCommandList();
 
-    // 大きめの箱をワールドに置く
-    Matrix4x4 worldMatrix = MakeAffineMatrix(
-        {500.0f, 500.0f, 500.0f},
-        {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f}
-    );
+    // ビュー行列から平行移動を除去
+    Matrix4x4 viewNoTranslation = camera_->GetViewMatrix();
+    viewNoTranslation.m[0][3] = 0.0f;
+    viewNoTranslation.m[1][3] = 0.0f;
+    viewNoTranslation.m[2][3] = 0.0f;
 
-    // カメラのView行列をそのまま使う
-    Matrix4x4 viewMatrix = camera_->GetViewMatrix();
+    // スケールも位置オフセットも不要。単位行列でOK
+    Matrix4x4 worldMatrix = MakeAffineMatrix({1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f});
 
-    Matrix4x4 wvpMatrix =
-        Multiply(worldMatrix, Multiply(viewMatrix, camera_->GetProjectionMatrix()));
-    constMap_->wvp = wvpMatrix;
+    constMap_->wvp = Multiply(worldMatrix, Multiply(viewNoTranslation, camera_->GetProjectionMatrix()));
 
     SkyboxRenderer::GetInstance()->PreDraw();
 

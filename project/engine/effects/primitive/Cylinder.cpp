@@ -32,20 +32,22 @@ void Cylinder::Initialize(const std::string& textureFilePath)
 	TextureManager::GetInstance()->LoadTexture("resources/sprites/" + textureFilePath_);
 }
 
+void Cylinder::SetWorldTransform(WorldTransform* worldTransform)
+{
+	externalWorldTransform_ = worldTransform;
+}
+
 void Cylinder::Update()
 {
-	worldTransform_.UpdateMatrix();
+	Matrix4x4 viewProjectionMatrix = camera_ ? camera_->GetViewProjectionMatrix() : MakeIdentityMatrix();
 
-	Matrix4x4 worldViewProjectionMatrix;
-	if (camera_) {
-		const Matrix4x4& viewProjectionMatrix = camera_->GetViewProjectionMatrix();
-		worldViewProjectionMatrix = worldTransform_.matWorld * viewProjectionMatrix;
+	if (externalWorldTransform_) {
+		worldTransform_.matWorld = externalWorldTransform_->matWorld;
+		worldTransform_.constMap->World = worldTransform_.matWorld;
+		worldTransform_.constMap->WVP = Multiply(worldTransform_.matWorld, viewProjectionMatrix);
+		worldTransform_.constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(worldTransform_.matWorld));
 	} else {
-		worldViewProjectionMatrix = worldTransform_.matWorld;
-	}
-
-	if (worldTransform_.constMap) {
-		worldTransform_.constMap->WVP = worldViewProjectionMatrix;
+		worldTransform_.UpdateMatrix();
 	}
 
 	if (materialData_) {

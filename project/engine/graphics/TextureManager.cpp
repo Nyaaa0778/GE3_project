@@ -96,6 +96,7 @@ void TextureManager::LoadTexture(const std::string& filePath) {
 	assert(SUCCEEDED(hr));
 
 	textureData.metadata = mipImages.GetMetadata();
+	textureData.metadata.format = DirectX::MakeSRGB(textureData.metadata.format);
 	textureData.resource =
 		DirectXCommon::GetInstance()->CreateTextureResource(textureData.metadata);
 
@@ -205,6 +206,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE TextureManager::CreateCubemapFromFiles(const std::ar
 
 	// 5. リソース作成
 	textureData.metadata = cubeMeta;
+	textureData.metadata.format = DirectX::MakeSRGB(textureData.metadata.format);
 	textureData.resource = dxCommon_->CreateTextureResource(textureData.metadata);
 
 	// 6. 指定された形式の UploadTextureData を使用して転送

@@ -27,16 +27,32 @@ void Plane::Initialize(const std::string& textureFilePath)
 	TextureManager::GetInstance()->LoadTexture("resources/sprites/" + textureFilePath_);
 }
 
+void Plane::SetWorldTransform(WorldTransform* worldTransform)
+{
+	externalWorldTransform_ = worldTransform;
+}
+
 void Plane::Update()
 {
-	worldTransform_.UpdateMatrix();
+	Matrix4x4 matWorld;
+	if (externalWorldTransform_) {
+		matWorld = externalWorldTransform_->matWorld;
+		worldTransform_.matWorld = matWorld;
+		if (worldTransform_.constMap) {
+			worldTransform_.constMap->World = matWorld;
+			worldTransform_.constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(matWorld));
+		}
+	} else {
+		worldTransform_.UpdateMatrix();
+		matWorld = worldTransform_.matWorld;
+	}
 
 	Matrix4x4 worldViewProjectionMatrix;
 	if (camera_) {
 		const Matrix4x4& viewProjectionMatrix = camera_->GetViewProjectionMatrix();
-		worldViewProjectionMatrix = worldTransform_.matWorld * viewProjectionMatrix;
+		worldViewProjectionMatrix = matWorld * viewProjectionMatrix;
 	} else {
-		worldViewProjectionMatrix = worldTransform_.matWorld;
+		worldViewProjectionMatrix = matWorld;
 	}
 
 	if (worldTransform_.constMap) {
@@ -167,6 +183,7 @@ void Plane::CreateMaterialData()
 
 	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 	materialData_->uvTransform = MakeIdentityMatrix();
+	materialData_->alphaReference = 0.0f;
 }
 
 // (座標変換行列データの作成はWorldTransformに移管したため削除)

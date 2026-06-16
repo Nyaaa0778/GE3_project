@@ -40,6 +40,8 @@ namespace MathUtility {
 	// 正規化
 	Vector3 Normalize(const Vector3& v);
 
+	Vector3 Transform(const Vector3& v, const Matrix4x4& m);
+
 	//================================================================================
 	// ベクトル演算子オーバーロード
 	//================================================================================
@@ -73,6 +75,13 @@ namespace MathUtility {
 	/// 行列同士の積
 	/// </summary>
 	Matrix4x4 Multiply(const Matrix4x4& m1, const Matrix4x4& m2);
+
+	//================================================================================
+	// ベクトルと行列の演算
+	//================================================================================
+
+	Vector3 Multiply(const Matrix4x4& m, const Vector3& v);
+	Vector3 Multiply(const Vector3& v, const Matrix4x4& m);
 
 	//================================================================================
 	// ベクトル演算子オーバーロード
@@ -175,4 +184,15 @@ namespace MathUtility {
 	/// <returns>指定されたパラメータで遠近感を持った透視投影を行う行列。遠ざかるほど小さく見える</returns>
 	Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
 		float nearClip, float farClip);
+
+	/// <summary>
+	/// ビューポート変換行列の作成
+	/// </summary>
+	/// <param name="left">左端の座標（通常は0）</param>
+	/// <param name="top">上端の座標（通常は0）</param>
+	/// <param name="width">画面の横幅</param>
+	/// <param name="height">画面の縦幅</param>
+	/// <param name="minDepth">最小深度（通常は0.0f）</param>
+	/// <param name="maxDepth">最大深度（通常は1.0f）</param>
+	Matrix4x4 MakeViewportMatrix(float left, float top, float width, float height, float minDepth, float maxDepth);
 } // namespace MathUtility

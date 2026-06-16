@@ -2,6 +2,8 @@
 #include "DirectXCommon.h"
 #include "MathUtility.h"
 
+#include "Camera.h"
+
 void WorldTransform::Initialize() {
 	// 定数バッファの作成
 	constBuffer = DirectXCommon::GetInstance()->CreateBufferResource(sizeof(TransformationMatrix));
@@ -19,17 +21,22 @@ void WorldTransform::Initialize() {
 }
 
 void WorldTransform::UpdateMatrix() {
-	// アフィン変換行列の作成
-	matWorld = MathUtility::MakeAffineMatrix(scale, rotation, translation);
+    matWorld = MathUtility::MakeAffineMatrix(scale, rotation, translation);
 
-	// 親があれば合成する
-	if (parent) {
-		matWorld = MathUtility::Multiply(matWorld, parent->matWorld);
-	}
+    if (parent) {
+        matWorld = MathUtility::Multiply(matWorld, parent->matWorld);
+    }
 
-	// 転送（GPUバッファへの書き込み）
-	if (constMap) {
-		constMap->World = matWorld;
-		constMap->WorldInverseTranspose = MathUtility::MakeTransposeMatrix(MathUtility::MakeInverseMatrix(matWorld));
-	}
+    if (constMap) {
+        constMap->World = matWorld;
+        // cameraがセットされていればWVPを計算
+        if (camera_) {
+            constMap->WVP = MathUtility::Multiply(matWorld, camera_->GetViewProjectionMatrix());
+        }
+        constMap->WorldInverseTranspose = MathUtility::MakeTransposeMatrix(MathUtility::MakeInverseMatrix(matWorld));
+    }
+}
+
+Vector3 WorldTransform::GetWorldPosition() const {
+	return { matWorld.m[3][0], matWorld.m[3][1], matWorld.m[3][2] };
 }

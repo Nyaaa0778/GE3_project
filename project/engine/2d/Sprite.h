@@ -21,7 +21,9 @@ public:
 	/// 初期化
 	/// </summary>
 	/// <param name="filePath">使いたいテクスチャのファイルパス</param>
-	void Initialize(std::string filePath);
+	/// <param name="position">初期位置</param>
+	/// <param name="anchorPoint">アンカーポイント</param>
+	void Initialize(std::string filePath, const Vector2& position = { 0.0f, 0.0f }, const Vector2& anchorPoint = { 0.0f, 0.0f });
 	/// <summary>
 	/// 更新
 	/// </summary>

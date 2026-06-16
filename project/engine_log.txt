@@ -1,0 +1,80 @@
+Use Adapter:NVIDIA GeForce RTX 4060 Laptop GPU
+FeatureLevel : 12.2
+Complete create D3D12Device!!!
+Begin CompileShader,path:resources/shaders/sprite/Sprite.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/sprite/Sprite.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/sprite/Sprite.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/sprite/Sprite.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/object3d/Object3d.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/object3d/Object3d.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/object3d/Object3d.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/object3d/Object3d.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/skybox/Skybox.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/skybox/Skybox.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/skybox/Skybox.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/skybox/Skybox.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/primitive/Primitive.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/primitive/Primitive.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/primitive/Primitive.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/primitive/Primitive.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/particle/Particle.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/particle/Particle.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/particle/Particle.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/particle/Particle.PS.hlsl, profile:ps_6_0
+Model Loaded: sphere.obj
+RootNode localMatrix:
+  [1.000000, 0.000000, 0.000000, 0.000000]
+  [0.000000, 1.000000, 0.000000, 0.000000]
+  [0.000000, 0.000000, 1.000000, 0.000000]
+  [0.000000, 0.000000, 0.000000, 1.000000]
+Model Loaded: skydome.obj
+RootNode localMatrix:
+  [1.000000, 0.000000, 0.000000, 0.000000]
+  [0.000000, 1.000000, 0.000000, 0.000000]
+  [0.000000, 0.000000, 1.000000, 0.000000]
+  [0.000000, 0.000000, 0.000000, 1.000000]
+Model Loaded: cube.obj
+RootNode localMatrix:
+  [1.000000, 0.000000, 0.000000, 0.000000]
+  [0.000000, 1.000000, 0.000000, 0.000000]
+  [0.000000, 0.000000, 1.000000, 0.000000]
+  [0.000000, 0.000000, 0.000000, 1.000000]
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000035, 94.800087)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000035, 96.300087)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 97.800087)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 97.900085)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 98.000092)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 98.100090)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 98.200089)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 98.300095)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 98.400093)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000036, 98.500092)
+Use Adapter:NVIDIA GeForce RTX 4060 Laptop GPU
+FeatureLevel : 12.2
+Complete create D3D12Device!!!
+Begin CompileShader,path:resources/shaders/sprite/Sprite.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/sprite/Sprite.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/sprite/Sprite.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/sprite/Sprite.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/object3d/Object3d.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/object3d/Object3d.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/object3d/Object3d.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/object3d/Object3d.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/skybox/Skybox.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/skybox/Skybox.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/skybox/Skybox.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/skybox/Skybox.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/primitive/Primitive.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/primitive/Primitive.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/primitive/Primitive.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/primitive/Primitive.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/particle/Particle.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/particle/Particle.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/particle/Particle.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/particle/Particle.PS.hlsl, profile:ps_6_0
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000032, 60.500015)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000033, 62.100014)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000034, 63.700012)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000034, 63.800011)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000034, 63.900017)
+AABB Collision Detected: Bullet passing through Reticle! Position: (7.000000, 0.000034, 64.000015)

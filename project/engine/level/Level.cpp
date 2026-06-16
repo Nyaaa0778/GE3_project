@@ -61,13 +61,11 @@ void Level::ApplyLightParameters() const {
 	if (!lights_.empty()) {
 		const auto& lightData = lights_[0];
 
-		// 点光源（Local Light）の設定
-		LightManager::GetInstance()->SetLocalLightPosition(lightData.translation);
-		LightManager::GetInstance()->SetLocalLightIntensity(1.0f);
-		LightManager::GetInstance()->SetLocalLightDistance(50.0f);
-
-		// 平行光源（Directional Light）は使用しないため無効化（強度 0.0f）
-		LightManager::GetInstance()->SetDirectionalLightIntensity(0.0f);
+		// 点光源の設定 (0番目)
+		LightManager::GetInstance()->SetPointLightPosition(0, lightData.translation);
+		LightManager::GetInstance()->SetPointLightIntensity(0, 1.0f);
+		LightManager::GetInstance()->SetPointLightDistance(0, 50.0f);
+		LightManager::GetInstance()->SetPointLightEnabled(0, true);
 	}
 }
 

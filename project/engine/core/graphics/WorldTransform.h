@@ -4,6 +4,8 @@
 #include <Vector3.h>
 #include <Matrix4x4.h>
 
+class Camera;
+
 // 座標変換行列データ（GPU送信用）
 struct TransformationMatrix {
 	Matrix4x4 WVP;
@@ -26,8 +28,12 @@ struct WorldTransform {
 	// マッピング済みデータのアドレス
 	TransformationMatrix* constMap = nullptr;
 
+	Camera* camera_ = nullptr;
+
 	// 初期化
 	void Initialize();
 	// 行列の更新
 	void UpdateMatrix();
+	// ワールド座標の取得
+	Vector3 GetWorldPosition() const;
 };

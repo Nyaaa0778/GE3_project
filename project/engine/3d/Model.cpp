@@ -226,7 +226,7 @@ void Model::CreateMaterialData() {
 
 	// マテリアルデータの初期値を書き込む
 	materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-	materialData_->lightingType = static_cast<int32_t>(LightingType::kBlinnPhong);
+	materialData_->lightingType = static_cast<int32_t>(LightingType::kNone);
 	materialData_->uvTransform = MakeIdentityMatrix();
 	materialData_->shininess = 70.0f;
 	materialData_->environmentCoefficient = 0.0f;

@@ -9,6 +9,7 @@
 #include "PrimitiveRenderer.h"
 
 class Camera;
+struct WorldTransform;
 
 class Primitive
 {
@@ -45,6 +46,7 @@ public:
 
 	// 共通インターフェース
 	virtual void SetCamera(Camera* camera) = 0;
+	virtual void SetWorldTransform(WorldTransform* worldTransform) = 0;
 	virtual void DrawImGui(const char* windowName) = 0;
 
 	// Buffer Getters

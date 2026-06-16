@@ -14,12 +14,12 @@ Camera::Camera()
 		static_cast<float>(DirectXCommon::GetInstance()->GetClientHeight())), // アスペクト比
 	nearClip_(0.1f),  // ニアクリップ距離
 	farClip_(100.0f), // ファークリップ距離
-	worldMatrix_(MakeAffineMatrix(transform_.scale, transform_.rotation,
+	matWorld(MakeAffineMatrix(transform_.scale, transform_.rotation,
 		transform_.translation)), // ワールド行列
-	viewMatrix_(MakeInverseMatrix(worldMatrix_)),           // ビュー行列
+	matView(MakeInverseMatrix(matWorld)),           // ビュー行列
 	projectionMatrix_(fovY_, aspectRatio_, nearClip_,
 		farClip_), // プロジェクション行列
-	viewProjectionMatrix_(viewMatrix_*
+	viewProjectionMatrix_(matView*
 		projectionMatrix_) // ビュープロジェクション行列
 {
 }
@@ -38,10 +38,10 @@ Camera::Camera()
 //}
 
 void Camera::CalculateMatrix() {
-	worldMatrix_ = MakeAffineMatrix(transform_.scale, transform_.rotation, transform_.translation);
-	viewMatrix_ = MakeInverseMatrix(worldMatrix_);
+	matWorld = MakeAffineMatrix(transform_.scale, transform_.rotation, transform_.translation);
+	matView = MakeInverseMatrix(matWorld);
 	projectionMatrix_ = MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
-	viewProjectionMatrix_ = viewMatrix_ * projectionMatrix_;
+	viewProjectionMatrix_ = matView * projectionMatrix_;
 
 	if (cameraData_) {
 		cameraData_->worldPosition = transform_.translation;
@@ -57,4 +57,12 @@ void Camera::CreateConstantBuffer() {
 
 	// 初期値を書き込む
 	cameraData_->worldPosition = transform_.translation;
+}
+
+void Camera::UpdateViewProjection() {
+	viewProjectionMatrix_ = matView * projectionMatrix_;
+
+	if (cameraData_) {
+		cameraData_->worldPosition = { matWorld.m[3][0], matWorld.m[3][1], matWorld.m[3][2] };
+	}
 }

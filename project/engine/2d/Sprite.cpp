@@ -16,9 +16,11 @@ using namespace MathUtility;
 /// 初期化
 /// </summary>
 /// <param name="filePath">使いたいテクスチャのファイルパス</param>
-void Sprite::Initialize(std::string filePath) {
+void Sprite::Initialize(std::string filePath, const Vector2& position, const Vector2& anchorPoint) {
 	// 引数で受け取ってメンバ変数に記録する
 	filePath_ = filePath;
+	position_ = position;
+	anchorPoint_ = anchorPoint;
 
 	SetTexture(filePath);
 
@@ -88,15 +90,10 @@ void Sprite::Update() {
 
 	worldTransform_.UpdateMatrix();
 
-	Matrix4x4 viewMatrix = MakeIdentityMatrix();
-	Matrix4x4 projectionMatrix = MakeOrthographicMatrix(
-		0.0f, 0.0f,
-		static_cast<float>(DirectXCommon::GetInstance()->GetClientWidth()),
-		static_cast<float>(DirectXCommon::GetInstance()->GetClientHeight()), 0.0f,
-		100.0f);
-
 	if (worldTransform_.constMap) {
-		worldTransform_.constMap->WVP = worldTransform_.matWorld * viewMatrix * projectionMatrix;
+		Matrix4x4 matProjection = MakeOrthographicMatrix(
+			0.0f, 0.0f, static_cast<float>(WinApp::kClientWidth), static_cast<float>(WinApp::kClientHeight), 0.0f, 1.0f);
+		worldTransform_.constMap->WVP = Multiply(worldTransform_.matWorld, matProjection);
 	}
 }
 /// <summary>

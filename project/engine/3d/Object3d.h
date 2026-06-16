@@ -8,11 +8,14 @@
 #include <Vector3.h>
 #include <Vector4.h>
 
+struct ModelData;
+
 #include <d3d12.h>
 #include <string>
 #include <wrl.h>
 
 #include "LightingType.h"
+#include "Model.h"
 
 class Model;
 class Camera;
@@ -33,11 +36,14 @@ public:
 	/// <summary>
 	/// 更新
 	/// </summary>
-	void Update();
+	/// <summary>
+	/// 更新
+	/// </summary>
+	void Update(WorldTransform* worldTransform = nullptr);
 	/// <summary>
 	/// 描画
 	/// </summary>
-	void Draw();
+	void Draw(WorldTransform* worldTransform = nullptr);
 
 public:
 	//================================================================================

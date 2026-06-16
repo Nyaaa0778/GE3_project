@@ -11,17 +11,26 @@ struct Material
 };
 ConstantBuffer<Material> gMaterial : register(b0);
 
-// ----- 平行光源 -----
+// ----- ライトデータ -----
 struct DirectionalLight
 {
     float32_t4 color; // ライトの色
     float32_t3 direction; // ライトの向き
     float32_t intensity; // 輝度
 };
-ConstantBuffer<DirectionalLight> gDirectionalLight : register(b1);
 
-// ----- ローカルライト (Point & Spot 統合) -----
-struct LocalLight
+struct PointLight
+{
+    float32_t4 color;
+    float32_t3 position;
+    float32_t intensity;
+    float32_t distance;
+    float32_t decay;
+    int32_t enabled;
+    float32_t pad;
+};
+
+struct SpotLight
 {
     float32_t4 color;
     float32_t3 position;
@@ -31,9 +40,17 @@ struct LocalLight
     float32_t decay;
     float32_t cosAngle;
     float32_t cosFalloffStart;
-    int32_t type; // 0: Point, 1: Spot
+    int32_t enabled;
 };
-ConstantBuffer<LocalLight> gLocalLight : register(b3);
+
+struct LightData
+{
+    DirectionalLight directionalLight;
+    PointLight pointLights[8];
+    SpotLight spotLights[4];
+};
+
+ConstantBuffer<LightData> gLightData : register(b1);
 
 // ----- カメラ -----
 struct Camera
@@ -57,7 +74,7 @@ struct PixelShaderOutput
 // ==========================================
 float3 CalculateDirectionalLight(float3 normal, float3 toEye, float3 baseColor)
 {
-    float3 lightDir = normalize(gDirectionalLight.direction);
+    float3 lightDir = normalize(gLightData.directionalLight.direction);
     float3 diffuse = float3(0.0f, 0.0f, 0.0f);
     float3 specular = float3(0.0f, 0.0f, 0.0f);
 
@@ -68,13 +85,13 @@ float3 CalculateDirectionalLight(float3 normal, float3 toEye, float3 baseColor)
     {
         // ランバート (1:Lambert, 3:Phong, 4:BlinnPhong は基本ランバートベース)
         float cos = saturate(dot(normal, -lightDir));
-        diffuse = baseColor * gDirectionalLight.color.rgb * cos * gDirectionalLight.intensity;
+        diffuse = baseColor * gLightData.directionalLight.color.rgb * cos * gLightData.directionalLight.intensity;
     }
     else if (gMaterial.lightingType == 2)
     {
         // ハーフランバート (2:HalfLambert)
         float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
-        diffuse = baseColor * gDirectionalLight.color.rgb * cos * gDirectionalLight.intensity;
+        diffuse = baseColor * gLightData.directionalLight.color.rgb * cos * gLightData.directionalLight.intensity;
     }
 
     /* -------------------------------------------
@@ -85,14 +102,14 @@ float3 CalculateDirectionalLight(float3 normal, float3 toEye, float3 baseColor)
         // フォン反射 (3:Phong)
         float3 reflectDir = reflect(lightDir, normal);
         float rDotE = dot(reflectDir, toEye);
-        specular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * pow(saturate(rDotE), gMaterial.shininess);
+        specular = gLightData.directionalLight.color.rgb * gLightData.directionalLight.intensity * pow(saturate(rDotE), gMaterial.shininess);
     }
     else if (gMaterial.lightingType == 4)
     {
         // ブリン・フォン反射 (4:BlinnPhong)
         float3 halfVector = normalize(-lightDir + toEye);
         float nDotH = dot(normal, halfVector);
-        specular = gDirectionalLight.color.rgb * gDirectionalLight.intensity * pow(saturate(nDotH), gMaterial.shininess);
+        specular = gLightData.directionalLight.color.rgb * gLightData.directionalLight.intensity * pow(saturate(nDotH), gMaterial.shininess);
     }
 
     // 拡散反射と鏡面反射を足して返す
@@ -102,25 +119,24 @@ float3 CalculateDirectionalLight(float3 normal, float3 toEye, float3 baseColor)
 // ==========================================
 // PointLightの計算
 // ==========================================
-float3 CalculatePointLight(float3 normal, float3 worldPosition, float3 toEye, float3 baseColor)
+float3 CalculatePointLight(PointLight light, float3 normal, float3 worldPosition, float3 toEye, float3 baseColor)
 {
     // ライトへの方向と距離
-    float3 lightVec = worldPosition - gLocalLight.position;
+    float3 lightVec = worldPosition - light.position;
     float3 lightDir = normalize(lightVec);
     float distance = length(lightVec);
     
     // 1. 距離による減衰 (Factor)
-    // gLocalLight.distance は有効半径として扱う
-    float factor = pow(saturate(-distance / gLocalLight.distance + 1.0f), gLocalLight.decay);
+    float factor = pow(saturate(-distance / light.distance + 1.0f), light.decay);
     
     // 2. 拡散反射 (Half-Lambert)
     float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
-    float3 diffuse = baseColor * gLocalLight.color.rgb * cos * gLocalLight.intensity * factor;
+    float3 diffuse = baseColor * light.color.rgb * cos * light.intensity * factor;
     
     // 3. 鏡面反射 (Blinn-Phong)
     float3 halfVector = normalize(-lightDir + toEye);
     float nDotH = dot(normal, halfVector);
-    float3 specular = gLocalLight.color.rgb * gLocalLight.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor;
+    float3 specular = light.color.rgb * light.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor;
     
     return diffuse + specular;
 }
@@ -128,30 +144,28 @@ float3 CalculatePointLight(float3 normal, float3 worldPosition, float3 toEye, fl
 // ==========================================
 // SpotLightの計算
 // ==========================================
-float3 CalculateSpotLight(float3 normal, float3 worldPosition, float3 toEye, float3 baseColor)
+float3 CalculateSpotLight(SpotLight light, float3 normal, float3 worldPosition, float3 toEye, float3 baseColor)
 {
     // 基本的なベクトル計算
-    float3 lightVec = worldPosition - gLocalLight.position;
+    float3 lightVec = worldPosition - light.position;
     float3 lightDir = normalize(lightVec);
     float distance = length(lightVec);
     
     // 1. 距離による減衰
-    float factor = pow(saturate(-distance / gLocalLight.distance + 1.0f), gLocalLight.decay);
+    float factor = pow(saturate(-distance / light.distance + 1.0f), light.decay);
     
     // 2. 角度による減衰 (Spotlight Falloff)
-    // ライトの向きと、ピクセルへの方向の余弦（cos）を求める
-    float cosAngle = dot(lightDir, normalize(gLocalLight.direction));
-    // 指定された角度範囲で線形補間して減衰させる
-    float falloffFactor = saturate((cosAngle - gLocalLight.cosAngle) / (gLocalLight.cosFalloffStart - gLocalLight.cosAngle));
+    float cosAngle = dot(lightDir, normalize(light.direction));
+    float falloffFactor = saturate((cosAngle - light.cosAngle) / (light.cosFalloffStart - light.cosAngle));
     
     // 3. 拡散反射 (Half-Lambert)
     float cos = pow(saturate(dot(normal, -lightDir) * 0.5f + 0.5f), 2.0f);
-    float3 diffuse = baseColor * gLocalLight.color.rgb * cos * gLocalLight.intensity * factor * falloffFactor;
+    float3 diffuse = baseColor * light.color.rgb * cos * light.intensity * factor * falloffFactor;
     
     // 4. 鏡面反射 (Blinn-Phong)
     float3 halfVector = normalize(-lightDir + toEye);
     float nDotH = dot(normal, halfVector);
-    float3 specular = gLocalLight.color.rgb * gLocalLight.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor * falloffFactor;
+    float3 specular = light.color.rgb * light.intensity * pow(saturate(nDotH), gMaterial.shininess) * factor * falloffFactor;
     
     return diffuse + specular;
 }
@@ -182,16 +196,22 @@ PixelShaderOutput main(VertexShaderOutput input)
         // ① 平行光源の計算
         finalColor += CalculateDirectionalLight(N, toEye, baseColor);
 
-        // ② ローカルライトの計算 (C++側から送られてきた type で分岐)
-        if (gLocalLight.type == 0)
+        // ② 点光源の配列ループ
+        for (int32_t i = 0; i < 8; ++i)
         {
-            // PointLightとして計算 (必要な引数はgLocalLightから渡すように引数を調整してください)
-            finalColor += CalculatePointLight(N, input.worldPosition, toEye, baseColor);
+            if (gLightData.pointLights[i].enabled != 0)
+            {
+                finalColor += CalculatePointLight(gLightData.pointLights[i], N, input.worldPosition, toEye, baseColor);
+            }
         }
-        else if (gLocalLight.type == 1)
+
+        // ③ スポットライトの配列ループ
+        for (int32_t j = 0; j < 4; ++j)
         {
-            // SpotLightとして計算
-            finalColor += CalculateSpotLight(N, input.worldPosition, toEye, baseColor);
+            if (gLightData.spotLights[j].enabled != 0)
+            {
+                finalColor += CalculateSpotLight(gLightData.spotLights[j], N, input.worldPosition, toEye, baseColor);
+            }
         }
     }
     else
@@ -207,11 +227,14 @@ PixelShaderOutput main(VertexShaderOutput input)
     output.color.a = gMaterial.color.a * textureColor.a;
     
     // 環境マップによる環境光の計算と加算
-    float3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
-    float3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
-    float4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
-    
-    output.color.rgb += environmentColor.rgb * gMaterial.environmentCoefficient;
+    if (gMaterial.environmentCoefficient > 0.0f)
+    {
+        float3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
+        float3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
+        float4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
+        
+        output.color.rgb += environmentColor.rgb * gMaterial.environmentCoefficient;
+    }
 
     return output;
 }
