@@ -14,11 +14,6 @@
 
 using namespace MathUtility;
 
-struct AABB {
-	Vector3 min;
-	Vector3 max;
-};
-
 Player::Player() = default;
 
 Player::~Player() = default;
@@ -44,7 +39,7 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	worldTransform_.translation = InitialPos;
 
 	// モデルに自身のトランスフォームをセット
-	model_->SetWorldTransform(&worldTransform_);
+	model_->SetWorldTransform(&worldTransform_);	
 
 	// ------------------------------------
 	// カメラ
@@ -60,18 +55,20 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	reticle_ = std::make_unique<Object3d>();
 	reticle_->Initialize("sphere");
 	reticle_->SetCamera(camera_);
-	//reticle_->SetScale({0.5f, 0.5f, 0.5f});
 
 	worldTransformReticle_.Initialize();
 	worldTransformReticle_.scale = kReticleDrawSize;
 	// 親子関係を設定せず、ワールド空間に直接配置する
 	worldTransformReticle_.parent = nullptr;
+
+	// コライダーの初期設定
+	SetShape(ColliderShape::kSphere);
+	SetSphere({ 1.0f });
 }
 
 void Player::Update() {
-
-    // 移動処理
-    UpdateMove();
+	// 移動処理
+	UpdateMove();
 
 	// トランスフォーム行列の更新と転送
 	worldTransform_.UpdateMatrix();
@@ -79,11 +76,11 @@ void Player::Update() {
 	// 照準の更新
 	UpdateReticle();
 
+	// 攻撃
 	Attack();
+	
 	// 弾の更新
-	for (const auto& bullet : bullets_) {
-		bullet->Update();
-	}
+	UpdateBullet();
 
 	// モデルの更新
 	model_->Update();
@@ -104,34 +101,34 @@ void Player::Draw() {
 /// 移動処理
 /// </summary>
 void Player::UpdateMove() {
-    // 移動方向ベクトル
-    Vector3 move = {0.0f, 0.0f, 0.0f};
+	// 移動方向ベクトル
+	Vector3 move = {0.0f, 0.0f, 0.0f};
 
-    // 入力取得
-    Input* input = Input::GetInstance();
+	// 入力取得
+	Input* input = Input::GetInstance();
 
-    // X軸（左右）
-    if (input->PushKey(DIK_D)) { move.x += 1.0f; }
-    if (input->PushKey(DIK_A)) { move.x -= 1.0f; }
+	// X軸（左右）
+	if (input->PushKey(DIK_D)) { move.x += 1.0f; }
+	if (input->PushKey(DIK_A)) { move.x -= 1.0f; }
 
-    // Y軸（上下）
-    if (input->PushKey(DIK_W)) { move.y += 1.0f; }
-    if (input->PushKey(DIK_S)) { move.y -= 1.0f; }
+	// Y軸（上下）
+	if (input->PushKey(DIK_W)) { move.y += 1.0f; }
+	if (input->PushKey(DIK_S)) { move.y -= 1.0f; }
 
-    // 斜め移動の速度を一定にするための正規化
-    float length = std::sqrt(move.x * move.x + move.y * move.y);
-    if (length > 0.0f) {
-        move.x /= length;
-        move.y /= length;
-    }
+	// 斜め移動の速度を一定にするための正規化
+	float length = std::sqrt(move.x * move.x + move.y * move.y);
+	if (length > 0.0f) {
+		move.x /= length;
+		move.y /= length;
+	}
 
-    // 速度を適用して移動
-    worldTransform_.translation.x += move.x * kBaseSpeed;
-    worldTransform_.translation.y += move.y * kBaseSpeed;
+	// 速度を適用して移動
+	worldTransform_.translation.x += move.x * kBaseSpeed;
+	worldTransform_.translation.y += move.y * kBaseSpeed;
 
-    // 範囲を超えないように制限
-    worldTransform_.translation.x = std::clamp(worldTransform_.translation.x, -kMoveLimitX, kMoveLimitX);
-    worldTransform_.translation.y = std::clamp(worldTransform_.translation.y, -kMoveLimitY, kMoveLimitY);
+	// 範囲を超えないように制限
+	worldTransform_.translation.x = std::clamp(worldTransform_.translation.x, -kMoveLimitX, kMoveLimitX);
+	worldTransform_.translation.y = std::clamp(worldTransform_.translation.y, -kMoveLimitY, kMoveLimitY);
 }
 
 /// <summary>
@@ -157,24 +154,61 @@ void Player::UpdateReticle() {
 	reticle_->Update();
 }
 
+/// <summary>
+/// 弾の更新
+/// </summary>
+void Player::UpdateBullet() {
+	// クールダウンタイマーの更新
+	if (cooldownTimer_ > 0.0f) {
+		cooldownTimer_ -= TimeManager::GetInstance()->GetDeltaTime();
+	}
+
+	// 弾の更新
+	for (const auto& bullet : bullets_) {
+		bullet->Update();
+	}
+
+	bullets_.remove_if([](const std::unique_ptr<PlayerBullet>& bullet) {
+		// 条件に一致すれば true を返すだけで、自動的に delete される
+		return bullet->IsDead();
+	});
+}
+
+/// <summary>
+/// 攻撃
+/// </summary>
 void Player::Attack() {
 	auto* input = Input::GetInstance();
 
+	// クールダウンが終了しており、キーが押されていたら発射
 	if (input->PushKey(DIK_SPACE)) {
-		auto newBullet = std::make_unique<PlayerBullet>();
+		if(cooldownTimer_ <= 0.0f)
+		{
+			auto newBullet = std::make_unique<PlayerBullet>();
 
-		// 自機のワールド座標を取得
-		Vector3 spawnPos = worldTransform_.GetWorldPosition();
+			// 自機のワールド座標を取得
+			Vector3 spawnPos = worldTransform_.GetWorldPosition();
 
-		// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
-		bulletVelocity_ = worldTransformReticle_.GetWorldPosition() - spawnPos;
-		bulletVelocity_ = Normalize(bulletVelocity_) * kBulletSpeed;
+			// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
+			bulletVelocity_ = worldTransformReticle_.GetWorldPosition() - spawnPos;
+			bulletVelocity_ = Normalize(bulletVelocity_) * kBulletSpeed;
 
-		// 弾を初期化（親は nullptr でワールド空間上に配置する）
-		newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
+			// 弾を初期化（親は nullptr でワールド空間上に配置する）
+			newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
 
-		// 弾を登録する
-		bullets_.push_back(std::move(newBullet));
+			// 弾を登録する
+			bullets_.push_back(std::move(newBullet));
+
+			// クールダウンを設定
+			cooldownTimer_ = kCooldownDuration;
+		}
 	}
 }
 
+void Player::OnCollision() {
+	// 被弾処理など（必要に応じて）
+}
+
+Vector3 Player::GetWorldPosition() {
+	return worldTransform_.GetWorldPosition();
+}

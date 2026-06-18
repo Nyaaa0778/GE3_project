@@ -1,7 +1,8 @@
 #include "Logger.h"
 
-#include<Windows.h>
+#include <Windows.h>
 #include <debugapi.h>
+#include <fstream>
 
 namespace Logger {
 	/// <summary>

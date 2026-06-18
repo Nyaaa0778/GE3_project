@@ -1,0 +1,50 @@
+Use Adapter:NVIDIA GeForce RTX 4060 Laptop GPU
+FeatureLevel : 12.2
+Complete create D3D12Device!!!
+Begin CompileShader,path:resources/shaders/sprite/Sprite.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/sprite/Sprite.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/sprite/Sprite.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/sprite/Sprite.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/object3d/Object3d.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/object3d/Object3d.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/object3d/Object3d.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/object3d/Object3d.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/skybox/Skybox.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/skybox/Skybox.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/skybox/Skybox.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/skybox/Skybox.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/primitive/Primitive.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/primitive/Primitive.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/primitive/Primitive.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/primitive/Primitive.PS.hlsl, profile:ps_6_0
+Begin CompileShader,path:resources/shaders/particle/Particle.VS.hlsl,profile:vs_6_0
+Compile Succeeded, path:resources/shaders/particle/Particle.VS.hlsl, profile:vs_6_0
+Begin CompileShader,path:resources/shaders/particle/Particle.PS.hlsl,profile:ps_6_0
+Compile Succeeded, path:resources/shaders/particle/Particle.PS.hlsl, profile:ps_6_0
+[Collision] AABB Pos: (0.00, 0.00, 49.72) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 40.80) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.97) distSq: 66.7496 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.71) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 42.30) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.96) distSq: 44.3562 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.70) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 43.80) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.95) distSq: 26.5230 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.69) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 45.30) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.94) distSq: 13.2500 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.68) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 46.80) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.93) distSq: 4.5371 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.67) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 48.30) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.92) distSq: 0.3845 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.67) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 39.90) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.92) distSq: 81.3614 radiusSq: 0.0400 result: 0
+[Collision] AABB Pos: (0.00, 0.00, 49.66) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 49.80) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 49.80) distSq: 0.0000 radiusSq: 0.0400 result: 1
+[Collision] AABB Pos: (0.00, 0.00, 49.66) Size: (1.50, 1.50, 1.50)
+[Collision] Sphere Pos: (0.00, 0.00, 41.40) Radius: 0.20
+[Collision] Closest Point: (0.00, 0.00, 48.91) distSq: 56.4009 radiusSq: 0.0400 result: 0

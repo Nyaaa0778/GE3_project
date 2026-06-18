@@ -5,11 +5,16 @@
 #include <Vector3.h>
 
 #include "WorldTransform.h"
+#include "Collider.h"
 
 class Object3d;
 class Camera;
 
-class PlayerBullet {
+class PlayerBullet : public Collider {
+public:
+	// コライダーの仮想関数をオーバーライド
+	void OnCollision() override;
+	Vector3 GetWorldPosition() override;
 public:
 	void Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity);
 
@@ -19,13 +24,14 @@ public:
 
 	Vector3 GetPosition() const { return worldTransform_.translation; }
 
+	bool IsDead() const { return isDead_; }
 private:
 	std::unique_ptr<Object3d> model_;
 	WorldTransform worldTransform_;
 	Vector3 velocity_ = {};
 
 	// 寿命
-	static constexpr float kLifeTime = 120.0f;
+	static constexpr float kLifeTime = 1.0f;
 	// 消滅タイマー
 	float deathTimer_ = kLifeTime;
 	// 消滅フラグ

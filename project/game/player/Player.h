@@ -7,19 +7,25 @@
 #include <Vector3.h>
 #include <WorldTransform.h>
 
+#include "Collider.h"
+
 class Object3d;
 class Camera;
 class Primitive;
 
 class PlayerBullet;
 
-class Player {
+class Player : public Collider {
 public:
 	Player();
 	~Player();
 	void Initialize(const Vector3& InitialPos, Object3d* model, Camera* camera);
 	void Update();
 	void Draw();
+
+	// コライダーの仮想関数をオーバーライド
+	void OnCollision() override;
+	Vector3 GetWorldPosition() override;
 
 
 public:
@@ -30,6 +36,9 @@ public:
 	bool GetIsReticleHit() const { return isReticleHit_; }
 
 	void SetParent(const WorldTransform* parent) { worldTransform_.parent = parent; }
+
+	// 弾リストのゲッター
+	const std::list<std::unique_ptr<PlayerBullet>>& GetBullets() const { return bullets_; }
 private:
 	// ------------------------------------
 	// 本体
@@ -57,6 +66,9 @@ private:
 	bool isAlive_ = true;
 	bool isReticleHit_ = false;
 
+	// 当たり判定の大きさ
+	static constexpr Vector3 kCollisionSize = {1.0f, 1.0f, 1.0f};
+
 	// ------------------------------------
 	// 照準
 	// ------------------------------------
@@ -83,6 +95,9 @@ private:
 	Vector3 bulletVelocity_ = {0.0f, 0.0f, 0.0f};
 	static constexpr float kBulletSpeed = 1.5f;
 
+	static constexpr float kCooldownDuration = 0.1f;
+	float cooldownTimer_ = 0.0f;
+
 private:
 	/// <summary>
 	/// 移動処理
@@ -93,6 +108,11 @@ private:
 	/// 照準の更新
 	/// </summary>
 	void UpdateReticle();
+
+	/// <summary>
+	/// 弾の更新
+	/// </summary>
+	void UpdateBullet();
 
 	void Attack();
 };

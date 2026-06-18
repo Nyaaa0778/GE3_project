@@ -9,8 +9,12 @@
 #include "LightManager.h"
 
 #include "Player.h"
+#include "PlayerBullet.h"
+#include "EnemyBase.h"
 #include "RailCameraController.h"
 #include "Skydome.h"
+#include "RusherEnemy.h"
+#include "Collider.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -84,6 +88,22 @@ void GamePlayScene::Initialize() {
 	player_->GetWorldTransform()->translation.z = 20.0f;
 
 	// ------------------------------------
+	// 敵
+	// ------------------------------------
+
+	// モデル
+	enemyModel_ = std::make_unique<Object3d>();
+	enemyModel_->Initialize("cube");
+	enemyModel_->SetCamera(camera_.get());
+	enemyModel_->SetLightingType(LightingType::kHalfLambert);
+
+	// テスト用エネミー生成 (プレイヤーの少し前方)
+	auto enemy = std::make_unique<RusherEnemy>();
+	Vector3 enemyPos = { 0.0f, 0.0f, 50.0f }; // プレイヤーが z=20.0f に配置されるため
+	enemy->Initialize(enemyModel_.get(), camera_.get(), enemyPos, player_.get());
+	enemies_.push_back(std::move(enemy));
+
+	// ------------------------------------
 	// 天球
 	// ------------------------------------
 
@@ -128,6 +148,22 @@ void GamePlayScene::Update() {
 	player_->Update();
 
 	// ------------------------------------
+	// 敵
+	// ------------------------------------
+
+	for (auto& enemy : enemies_) {
+		enemy->Update();
+	}
+
+	// 衝突判定を実行
+	CheckAllCollisions();
+
+	// 死亡した敵をリストから除外 (isAlive_がfalseのものを削除)
+	enemies_.remove_if([](const std::unique_ptr<EnemyBase>& enemy) {
+		return !enemy->IsAlive();
+	});
+
+	// ------------------------------------
 	// オブジェクト
 	// ------------------------------------
 
@@ -158,9 +194,38 @@ void GamePlayScene::Draw() {
 	// ------------------------------------
 
 	player_->Draw();
+
+	// ------------------------------------
+	// 敵
+	// ------------------------------------
+
+	for (auto& enemy : enemies_) {
+		enemy->Draw();
+	}
 }
 
 void GamePlayScene::Finalize() {}
+
+void GamePlayScene::CheckAllCollisions() {
+	// プレイヤーと敵の衝突判定
+	for (auto& enemy : enemies_) {
+		if (Collision::CheckCollision(player_.get(), enemy.get())) {
+			player_->OnCollision();
+			enemy->OnCollision();
+		}
+	}
+
+	// プレイヤーの弾と敵の衝突判定
+	const auto& bullets = player_->GetBullets();
+	for (const auto& bullet : bullets) {
+		for (auto& enemy : enemies_) {
+			if (Collision::CheckCollision(bullet.get(), enemy.get())) {
+				bullet->OnCollision();
+				enemy->OnCollision();
+			}
+		}
+	}
+}
 
 void GamePlayScene::UpdateImGui() {
 	ImGui::Begin("Window");
@@ -168,18 +233,6 @@ void GamePlayScene::UpdateImGui() {
 	// ─────────────────────
 	// Player Object
 	// ─────────────────────
-
-	ImGui::SeparatorText("Reticle Debug");
-	ImGui::Text("Reticle matWorld pos: %.2f, %.2f, %.2f",
-				player_->GetReticleMatWorld().m[3][0],
-				player_->GetReticleMatWorld().m[3][1],
-				player_->GetReticleMatWorld().m[3][2]);
-	ImGui::Text("Reticle Collision: %s", player_->GetIsReticleHit() ? "HIT!" : "No Hit");
-
-	ImGui::Text("Player matWorld pos: %.2f, %.2f, %.2f",
-				player_->GetWorldTransform()->matWorld.m[3][0],
-				player_->GetWorldTransform()->matWorld.m[3][1],
-				player_->GetWorldTransform()->matWorld.m[3][2]);
 
 	ImGui::SeparatorText("Player");
 
@@ -247,3 +300,4 @@ void GamePlayScene::UpdateImGui() {
 
 	ImGui::End();
 }
+

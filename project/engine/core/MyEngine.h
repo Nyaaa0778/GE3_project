@@ -7,6 +7,7 @@
 #include "Camera.h"
 #include "debugCamera.h"
 #include "WinApp.h"
+#include "TimeManager.h"
 
 // 描画
 #include "Object3d.h"

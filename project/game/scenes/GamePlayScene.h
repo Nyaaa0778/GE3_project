@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <vector>
+#include <list>
 
 class Object3d;
 class Camera;
@@ -12,6 +13,8 @@ class RailCameraController;
 class Player;
 class Level;
 class Skydome;
+class EnemyBase;
+class Collider;
 
 class GamePlayScene : public IScene {
 public:
@@ -63,6 +66,16 @@ private:
 	// モデル
 	std::unique_ptr<Object3d> skydomeModel_;
 
+	// ------------------------------------
+	// 敵
+	// ------------------------------------
+
+	std::unique_ptr<Object3d> enemyModel_;
+	std::list<std::unique_ptr<EnemyBase>> enemies_;
+
 private:
+	// 全ての衝突判定をチェック
+	void CheckAllCollisions();
+
 	void UpdateImGui();
 };
