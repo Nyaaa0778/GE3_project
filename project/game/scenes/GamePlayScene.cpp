@@ -126,6 +126,23 @@ void GamePlayScene::Initialize() {
 
 	// 画面シェイク
 	shake_ = std::make_unique<Shake>();
+
+	// ------------------------------------
+	// ゴール初期化
+	// ------------------------------------
+	goal_ = std::make_unique<Goal>();
+	Vector3 goalPos = { 0.0f, 0.0f, 150.0f };
+	if (railCamera_) {
+		const auto& controlPoints = railCamera_->GetControlPoints();
+		if (!controlPoints.empty()) {
+			goalPos = controlPoints.back();
+		}
+		// レールカメラのループをオフにしてゴール地点で停止するようにする
+		railCamera_->SetIsLoop(false);
+	}
+	goal_->Initialize(goalPos, camera_.get());
+
+	isGoalReached_ = false;
 }
 
 void GamePlayScene::Update() {
@@ -165,43 +182,74 @@ void GamePlayScene::Update() {
 	}
 
 	// ------------------------------------
-	// 自機
+	// ゴールの更新・アニメーション
 	// ------------------------------------
-
-	player_->Update();
-
-	// ------------------------------------
-	// 敵
-	// ------------------------------------
-
-	for (auto& enemy : enemies_) {
-		enemy->Update();
+	if (goal_) {
+		goal_->Update();
 	}
 
-	// 衝突判定を実行
-	CheckAllCollisions();
-
-	// 死亡した敵のリストから除外しつつ、RusherEnemyであれば衝撃波を発生させる
-	for (auto it = enemies_.begin(); it != enemies_.end(); ) {
-		if (!(*it)->IsAlive()) {
-			if (dynamic_cast<RusherEnemy*>(it->get())) {
-				auto shockwave = std::make_unique<Shockwave>();
-				shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
-				shockwaves_.push_back(std::move(shockwave));
+	// ------------------------------------
+	// ゴール到達判定とシーン遷移
+	// ------------------------------------
+	if (isGoalReached_) {
+		Input* input = Input::GetInstance();
+		if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
+			SceneManager::GetInstance()->ChangeScene("TITLE");
+			return;
+		}
+	} else {
+		// 自機との衝突判定によるゴール到達チェック
+		if (player_ && goal_) {
+			if (Collision::CheckCollision(player_.get(), goal_.get())) {
+				isGoalReached_ = true;
+				if (railCamera_) {
+					railCamera_->SetIsPlaying(false);
+				}
 			}
-			it = enemies_.erase(it);
-		} else {
-			++it;
+		}
+
+		// カメラがレール末尾に到達したことによるゴール到達チェック
+		if (railCamera_ && !railCamera_->GetIsLoop()) {
+			float maxTime = static_cast<float>((std::max)(0ULL, railCamera_->GetControlPoints().size()) - 1);
+			if (railCamera_->GetSplineTime() >= maxTime) {
+				isGoalReached_ = true;
+				railCamera_->SetIsPlaying(false);
+			}
 		}
 	}
 
-	// 衝撃波エフェクトの更新と終了したエフェクトの削除
-	for (auto& shockwave : shockwaves_) {
-		shockwave->Update();
+	// ------------------------------------
+	// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
+	// ------------------------------------
+	if (!isGoalReached_) {
+		player_->Update();
+
+		for (auto& enemy : enemies_) {
+			enemy->Update();
+		}
+
+		CheckAllCollisions();
+
+		for (auto it = enemies_.begin(); it != enemies_.end(); ) {
+			if (!(*it)->IsAlive()) {
+				if (dynamic_cast<RusherEnemy*>(it->get())) {
+					auto shockwave = std::make_unique<Shockwave>();
+					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
+					shockwaves_.push_back(std::move(shockwave));
+				}
+				it = enemies_.erase(it);
+			} else {
+				++it;
+			}
+		}
+
+		for (auto& shockwave : shockwaves_) {
+			shockwave->Update();
+		}
+		shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
+			return shockwave->IsFinished();
+		});
 	}
-	shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
-		return shockwave->IsFinished();
-						  });
 
 	// ------------------------------------
 
@@ -229,6 +277,13 @@ void GamePlayScene::Draw() {
 	// ------------------------------------
 
 	level_->Draw();
+
+	// ------------------------------------
+	// ゴール
+	// ------------------------------------
+	if (goal_) {
+		goal_->Draw();
+	}
 
 	// ------------------------------------
 	// 自機
@@ -357,5 +412,56 @@ void GamePlayScene::UpdateImGui() {
 	}
 
 	ImGui::End();
+
+	if (goal_) {
+		goal_->DrawImGui("Goal Settings");
+	}
+
+	if (isGoalReached_) {
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(450.0f, 220.0f));
+		ImGuiWindowFlags clearFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.85f)); // Dark glassmorphism-like background
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
+
+		if (ImGui::Begin("Game Clear Overlay", nullptr, clearFlags)) {
+			ImGui::Spacing();
+			ImGui::Spacing();
+			
+			// Gold colored text
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.0f, 1.0f));
+			ImGui::SetWindowFontScale(2.5f);
+			const char* titleText = "STAGE CLEAR!";
+			float textWidth = ImGui::CalcTextSize(titleText).x * 2.5f;
+			ImGui::SetCursorPosX((450.0f - textWidth) * 0.5f);
+			ImGui::Text("%s", titleText);
+			ImGui::PopStyleColor();
+			ImGui::SetWindowFontScale(1.0f);
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			const char* subText = "Press ENTER or Button [A] to Return to Title";
+			float subTextWidth = ImGui::CalcTextSize(subText).x;
+			ImGui::SetCursorPosX((450.0f - subTextWidth) * 0.5f);
+			ImGui::Text("%s", subText);
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			
+			// Center button
+			float btnWidth = 150.0f;
+			ImGui::SetCursorPosX((450.0f - btnWidth) * 0.5f);
+			if (ImGui::Button("Return to Title", ImVec2(btnWidth, 35.0f))) {
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+			}
+		}
+		ImGui::End();
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor();
+	}
 #endif
 }

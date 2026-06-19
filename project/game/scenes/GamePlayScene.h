@@ -1,6 +1,8 @@
 #pragma once
 
 #include "IScene.h"
+#include "WorldTransform.h"
+#include "../goal/Goal.h"
 
 #include <memory>
 #include <vector>
@@ -82,6 +84,12 @@ private:
 
 	std::list<std::unique_ptr<Shockwave>> shockwaves_;
 	std::unique_ptr<Shake> shake_;
+
+	// ------------------------------------
+	// ゴール
+	// ------------------------------------
+	std::unique_ptr<Goal> goal_;
+	bool isGoalReached_ = false;
 
 private:
 	// 全ての衝突判定をチェック

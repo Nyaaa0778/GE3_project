@@ -29,6 +29,18 @@ public:
 	const std::vector<Vector3>& GetControlPoints() const { return controlPoints_; }
 	void SetControlPoints(const std::vector<Vector3>& points) { controlPoints_ = points; }
 
+	bool GetIsLoop() const { return isLoop_; }
+	void SetIsLoop(bool isLoop) { isLoop_ = isLoop; }
+
+	bool GetIsPlaying() const { return isPlaying_; }
+	void SetIsPlaying(bool isPlaying) { isPlaying_ = isPlaying; }
+
+	float GetSplineTime() const { return splineTime_; }
+	void SetSplineTime(float time) { splineTime_ = time; }
+
+	float GetSpeed() const { return speed_; }
+	void SetSpeed(float speed) { speed_ = speed; }
+
 private:
 	// スプライン計算用のヘルパー
 	Vector3 EvaluateSpline(const std::vector<Vector3>& points, float time) const;

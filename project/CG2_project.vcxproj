@@ -161,6 +161,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="engine\effects\primitive\Ring.cpp" />
     <ClCompile Include="game\collider\Collider.cpp" />
     <ClCompile Include="game\enemy\EnemyBase.cpp" />
     <ClCompile Include="engine\core\utility\Easing.cpp" />
@@ -242,9 +243,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\camera\RailCameraController.cpp" />
     <ClCompile Include="game\camera\Shake.cpp" />
     <ClCompile Include="engine\3d\Skydome.cpp" />
-     <ClCompile Include="game\player\PlayerBullet.cpp" />
+    <ClCompile Include="game\player\PlayerBullet.cpp" />
     <ClCompile Include="game\enemy\RusherEnemy.cpp" />
     <ClCompile Include="game\enemy\Shockwave.cpp" />
+    <ClCompile Include="game\goal\Goal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -326,6 +328,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\effects\primitive\Ring.h" />
     <ClInclude Include="game\collider\Collider.h" />
     <ClInclude Include="game\enemy\EnemyBase.h" />
     <ClInclude Include="engine\core\utility\Easing.h" />
@@ -396,6 +399,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\player\PlayerBullet.h" />
     <ClInclude Include="game\enemy\RusherEnemy.h" />
     <ClInclude Include="game\enemy\Shockwave.h" />
+    <ClInclude Include="game\goal\Goal.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

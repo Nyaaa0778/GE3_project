@@ -118,9 +118,10 @@ void Cylinder::CreateMesh() {
 	// 画像のスライドに合わせた定数定義
 	// ==========================================
 	const uint32_t kCylinderDivide = numSlices_; // スライス数（クラスのメンバに依存させます）
-	const float kTopRadius = 1.0f;
-	const float kBottomRadius = 1.0f;
-	const float kHeight = 3.0f;
+	const float kTopRadius = 0.5f;
+	const float kBottomRadius = 0.5f;
+	const float kHeight = 1.0f;
+	const float kHalfHeight = kHeight * 0.5f;
 
 	// 画像の std::numbers::pi_v<float> の代わりに、既存定義の M_PI を使います
 	const float radianPerDivide = 2.0f * static_cast<float>(M_PI) / static_cast<float>(kCylinderDivide);
@@ -151,14 +152,14 @@ void Cylinder::CreateMesh() {
 		// position, texcoord, normal (画像通りの順序で代入)
 
 		// 1つ目の三角形
-		vertexData[vIdx++] = {{-sin * kTopRadius, kHeight, cos * kTopRadius, 1.0f}, {u, 0.0f}, {-sin, 0.0f, cos}};
-		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
-		vertexData[vIdx++] = {{-sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
+		vertexData[vIdx++] = {{-sin * kTopRadius, kHalfHeight, cos * kTopRadius, 1.0f}, {u, 0.0f}, {-sin, 0.0f, cos}};
+		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHalfHeight, cosNext * kTopRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
+		vertexData[vIdx++] = {{-sin * kBottomRadius, -kHalfHeight, cos * kBottomRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
 
 		// 2つ目の三角形
-		vertexData[vIdx++] = {{-sin * kBottomRadius, 0.0f, cos * kBottomRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
-		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHeight, cosNext * kTopRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
-		vertexData[vIdx++] = {{-sinNext * kBottomRadius, 0.0f, cosNext * kBottomRadius, 1.0f}, {uNext, 1.0f}, {-sinNext, 0.0f, cosNext}};
+		vertexData[vIdx++] = {{-sin * kBottomRadius, -kHalfHeight, cos * kBottomRadius, 1.0f}, {u, 1.0f}, {-sin, 0.0f, cos}};
+		vertexData[vIdx++] = {{-sinNext * kTopRadius, kHalfHeight, cosNext * kTopRadius, 1.0f}, {uNext, 0.0f}, {-sinNext, 0.0f, cosNext}};
+		vertexData[vIdx++] = {{-sinNext * kBottomRadius, -kHalfHeight, cosNext * kBottomRadius, 1.0f}, {uNext, 1.0f}, {-sinNext, 0.0f, cosNext}};
 	}
 
 	// ==========================================
