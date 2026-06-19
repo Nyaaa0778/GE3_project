@@ -38,6 +38,11 @@ public:
 	// 指定したエンティティタイプのスポーナーデータを取得
 	const LevelData::SpawnerData* GetSpawner(const std::string& entityType) const;
 
+	/// <summary>
+	/// 指定したエンティティタイプに部分一致するすべてのスパーナーデータを取得
+	/// </summary>
+	std::vector<LevelData::SpawnerData> GetSpawners(const std::string& entityType) const;
+
 
 private:
 	// 静的配置モデル

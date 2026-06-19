@@ -63,6 +63,69 @@
                     1.0
                 ]
             }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_1",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    50.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_2",
+            "transform": {
+                "translation": [
+                    5.0,
+                    0.0,
+                    80.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_3",
+            "transform": {
+                "translation": [
+                    -5.0,
+                    2.0,
+                    110.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.2,
+                    1.2,
+                    1.2
+                ]
+            }
         }
     ]
-}
+}

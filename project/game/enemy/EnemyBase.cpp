@@ -11,19 +11,19 @@ void EnemyBase::Initialize(Object3d* model, Camera* camera, const Vector3& pos) 
 	worldTransform_.Initialize();
 	worldTransform_.translation = pos;
 
-	// モデルに自身のトランスフォームとカメラをセット
-	model_->SetWorldTransform(&worldTransform_);
+	// モデルにカメラをセット（トランスフォームはUpdate/Draw時に引数で渡すため、ここではセットしない）
 	model_->SetCamera(camera_);
 }
 
 void EnemyBase::Update() {
 	worldTransform_.UpdateMatrix();
-	model_->Update();
+	model_->Update(&worldTransform_);
 }
 
 void EnemyBase::Draw() {
-	model_->Draw();
+	model_->Draw(&worldTransform_);
 }
+
 
 void EnemyBase::OnCollision() {
 	// 被弾時に生存フラグをfalseにする

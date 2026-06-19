@@ -70,7 +70,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 	// 自機
 	// ------------------------------------
-	
+
 	// モデル
 	playerModel_ = std::make_unique<Object3d>();
 	playerModel_->Initialize("sphere");
@@ -99,11 +99,16 @@ void GamePlayScene::Initialize() {
 	enemyModel_->SetCamera(camera_.get());
 	enemyModel_->SetLightingType(LightingType::kHalfLambert);
 
-	// テスト用エネミー生成 (プレイヤーの少し前方)
-	auto enemy = std::make_unique<RusherEnemy>();
-	Vector3 enemyPos = { 0.0f, 0.0f, 50.0f }; // プレイヤーが z=20.0f に配置されるため
-	enemy->Initialize(enemyModel_.get(), camera_.get(), enemyPos, player_.get());
-	enemies_.push_back(std::move(enemy));
+	// Spawnerデータから "Enemy" という名前が含まれるものをすべて取得して生成
+	std::vector<LevelData::SpawnerData> enemySpawners = level_->GetSpawners("Enemy");
+	for (const auto& spawnerData : enemySpawners) {
+		auto enemy = std::make_unique<RusherEnemy>();
+		enemy->Initialize(enemyModel_.get(), camera_.get(), spawnerData.translation, player_.get());
+		enemy->GetWorldTransform().rotation = spawnerData.rotation;
+		enemy->GetWorldTransform().scale = spawnerData.scaling;
+
+		enemies_.push_back(std::move(enemy));
+	}
 
 	// ------------------------------------
 	// 天球
@@ -180,7 +185,7 @@ void GamePlayScene::Update() {
 	}
 	shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
 		return shockwave->IsFinished();
-	});
+						  });
 
 	// ------------------------------------
 
@@ -329,4 +334,3 @@ void GamePlayScene::UpdateImGui() {
 
 	ImGui::End();
 }
-

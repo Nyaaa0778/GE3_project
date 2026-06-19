@@ -55,9 +55,11 @@ private:
 	// 衝撃波エフェクトの各種パラメータ設定定数
 	static constexpr size_t kRingCount = 3;             // 生成するリングの総数
 	static constexpr float kRingDuration = 0.6f;        // 各リングの寿命（秒）
-	static constexpr float kBaseMaxScale = 3.0f;        // 基準となる最大スケール（1番目のリング）
-	static constexpr float kScaleDecreaseRatio = 0.8f;  // 後続リングのスケール減衰比率（0.8倍ずつ小さくする）
-	static constexpr float kDelayInterval = 0.15f;      // リング同士の発生時間差（秒）
+
+	// 各リングのパラメータを定数配列として定義
+	static constexpr float kRingDelays[kRingCount] = { 0.0f, 0.15f, 0.30f };
+	static constexpr float kRingMaxScales[kRingCount] = { 3.0f, 2.4f, 1.8f };
+
 	
 	// 「ほわほわん」フェードイン・フェードアウト比率
 	static constexpr float kFadeInDurationRatio = 0.2f; // 寿命の最初の何割でフェードインするか（20%）
@@ -84,4 +86,12 @@ private:
 	// 行列およびトランスフォーム計算用定数
 	static constexpr float kScaleZDefault = 1.0f;       // 2DのPlaneメッシュのため、Zスケールは1.0固定
 	static constexpr float kMatrixTranslationW = 1.0f;  // 同次座標系におけるW値の初期設定値
+
+	// 行列のインデックスアクセス定数
+	static constexpr size_t kRowTranslation = 3;
+	static constexpr size_t kColX = 0;
+	static constexpr size_t kColY = 1;
+	static constexpr size_t kColZ = 2;
+	static constexpr size_t kColW = 3;
 };
+

@@ -23,7 +23,7 @@ void RailCameraController::Update() {
 	// 1. 移動と回転の処理（
 	// ------------------------------------
 	// Z軸方向に毎フレーム 0.1f ずつ移動させる（奥へ進む）
-	worldTransform_.translation.z += 0.1f;
+	worldTransform_.translation.z += 0.3f;
 
 	// ------------------------------------
 	// 2. 行列の計算

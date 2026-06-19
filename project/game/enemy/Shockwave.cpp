@@ -23,12 +23,10 @@ void Shockwave::Initialize(Camera* camera, const Vector3& position) {
 		rings_[i].plane->SetWorldTransform(&rings_[i].worldTransform);
 		rings_[i].plane->SetBlendMode(PrimitiveRenderer::BlendMode::kAdd);
 
-		// ループのインデックスからディレイとスケールを計算（マジックナンバー排除）
-		rings_[i].delay = static_cast<float>(i) * kDelayInterval;
-		
-		// 等差でスケールを減衰させる (i=0 -> 3.0f, i=1 -> 2.4f, i=2 -> 1.8f)
-		float scaleDiff = kBaseMaxScale * (kOne - kScaleDecreaseRatio);
-		rings_[i].maxScale = kBaseMaxScale - static_cast<float>(i) * scaleDiff;
+		// 定数配列からディレイと最大スケールを適用
+		rings_[i].delay = kRingDelays[i];
+		rings_[i].maxScale = kRingMaxScales[i];
+
 	}
 }
 
@@ -58,10 +56,11 @@ void Shockwave::Update() {
 
 		// ビルボード行列の計算
 		Matrix4x4 billboardMatrix = camera_->GetWorldMatrix();
-		billboardMatrix.m[3][0] = kZero;
-		billboardMatrix.m[3][1] = kZero;
-		billboardMatrix.m[3][2] = kZero;
-		billboardMatrix.m[3][3] = kMatrixTranslationW;
+		billboardMatrix.m[kRowTranslation][kColX] = kZero;
+		billboardMatrix.m[kRowTranslation][kColY] = kZero;
+		billboardMatrix.m[kRowTranslation][kColZ] = kZero;
+		billboardMatrix.m[kRowTranslation][kColW] = kMatrixTranslationW;
+
 
 		Matrix4x4 scaleMatrix = MathUtility::MakeScaleMatrix({ currentScale, currentScale, kScaleZDefault });
 		Matrix4x4 translateMatrix = MathUtility::MakeTranslateMatrix(position_);

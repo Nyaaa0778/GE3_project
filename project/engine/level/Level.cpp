@@ -99,3 +99,14 @@ const LevelData::SpawnerData* Level::GetSpawner(const std::string& entityType) c
 	}
 	return &defaultSpawner;
 }
+
+std::vector<LevelData::SpawnerData> Level::GetSpawners(const std::string& entityType) const {
+	std::vector<LevelData::SpawnerData> result;
+	for (const auto& spawner : spawners_) {
+		if (spawner.entityType.find(entityType) != std::string::npos) {
+			result.push_back(spawner);
+		}
+	}
+	return result;
+}
+
