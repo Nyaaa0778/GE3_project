@@ -14,7 +14,9 @@
 #include "RailCameraController.h"
 #include "Skydome.h"
 #include "RusherEnemy.h"
+#include "Shockwave.h"
 #include "Collider.h"
+
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -158,12 +160,30 @@ void GamePlayScene::Update() {
 	// 衝突判定を実行
 	CheckAllCollisions();
 
-	// 死亡した敵をリストから除外 (isAlive_がfalseのものを削除)
-	enemies_.remove_if([](const std::unique_ptr<EnemyBase>& enemy) {
-		return !enemy->IsAlive();
+	// 死亡した敵のリストから除外しつつ、RusherEnemyであれば衝撃波を発生させる
+	for (auto it = enemies_.begin(); it != enemies_.end(); ) {
+		if (!(*it)->IsAlive()) {
+			if (dynamic_cast<RusherEnemy*>(it->get())) {
+				auto shockwave = std::make_unique<Shockwave>();
+				shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
+				shockwaves_.push_back(std::move(shockwave));
+			}
+			it = enemies_.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	// 衝撃波エフェクトの更新と終了したエフェクトの削除
+	for (auto& shockwave : shockwaves_) {
+		shockwave->Update();
+	}
+	shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
+		return shockwave->IsFinished();
 	});
 
 	// ------------------------------------
+
 	// オブジェクト
 	// ------------------------------------
 
@@ -202,7 +222,16 @@ void GamePlayScene::Draw() {
 	for (auto& enemy : enemies_) {
 		enemy->Draw();
 	}
+
+	// ------------------------------------
+	// 衝撃波エフェクト
+	// ------------------------------------
+
+	for (auto& shockwave : shockwaves_) {
+		shockwave->Draw();
+	}
 }
+
 
 void GamePlayScene::Finalize() {}
 

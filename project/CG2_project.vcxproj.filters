@@ -279,6 +279,9 @@
     <ClCompile Include="game\enemy\RusherEnemy.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="game\enemy\Shockwave.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="game\collider\Collider.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -515,6 +518,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\enemy\RusherEnemy.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\enemy\Shockwave.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\collider\Collider.h">

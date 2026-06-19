@@ -241,8 +241,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\player\Player.cpp" />
     <ClCompile Include="game\camera\RailCameraController.cpp" />
     <ClCompile Include="engine\3d\Skydome.cpp" />
-    <ClCompile Include="game\player\PlayerBullet.cpp" />
+     <ClCompile Include="game\player\PlayerBullet.cpp" />
     <ClCompile Include="game\enemy\RusherEnemy.cpp" />
+    <ClCompile Include="game\enemy\Shockwave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -392,6 +393,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\Skydome.h" />
     <ClInclude Include="game\player\PlayerBullet.h" />
     <ClInclude Include="game\enemy\RusherEnemy.h" />
+    <ClInclude Include="game\enemy\Shockwave.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

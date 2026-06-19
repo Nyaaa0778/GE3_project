@@ -15,6 +15,8 @@ class Level;
 class Skydome;
 class EnemyBase;
 class Collider;
+class Shockwave;
+
 
 class GamePlayScene : public IScene {
 public:
@@ -73,9 +75,15 @@ private:
 	std::unique_ptr<Object3d> enemyModel_;
 	std::list<std::unique_ptr<EnemyBase>> enemies_;
 
+	// ------------------------------------
+	// エフェクト
+	// ------------------------------------
+
+	std::list<std::unique_ptr<Shockwave>> shockwaves_;
+
 private:
 	// 全ての衝突判定をチェック
 	void CheckAllCollisions();
 
 	void UpdateImGui();
-};
+};
