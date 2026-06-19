@@ -67,6 +67,9 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 }
 
 void Player::Update() {
+	// プレイヤーの回転を常に(0, 0, 0)にする（親であるレールカメラの向きに平行にする）
+	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
+
 	// 移動処理
 	UpdateMove();
 
@@ -137,13 +140,17 @@ void Player::UpdateMove() {
 void Player::UpdateReticle() {
 	const float kDistancePlayerToReticle = 50.0f;
 
-	// ① Z方向向きのオフセットベクトルを作り、自キャラと同じ回転をかける
-	Vector3 offset = {0.0f, 0.0f, kDistancePlayerToReticle};
-	Matrix4x4 rotateMatrix = MathUtility::MakeRotateMatrix(worldTransform_.rotation);
-	offset = MathUtility::Transform(offset, rotateMatrix);
+	// 自機のワールド行列から正面方向（Z軸）のベクトルを抽出する
+	// matWorld.m[2][0]～[2][2] が Z軸（正面）
+	Vector3 forward = { worldTransform_.matWorld.m[2][0], worldTransform_.matWorld.m[2][1], worldTransform_.matWorld.m[2][2] };
+	if (Length(forward) > 0.0001f) {
+		forward = Normalize(forward);
+	} else {
+		forward = { 0.0f, 0.0f, 1.0f };
+	}
 
-	// ② 自キャラ座標から、オフセットベクトル分進んだ座標が、3Dレティクルの座標となる
-	Vector3 reticleWorldPos = worldTransform_.GetWorldPosition() + offset;
+	// 自キャラ座標から、正面方向ベクトル分進んだ座標が、3Dレティクルの座標となる
+	Vector3 reticleWorldPos = worldTransform_.GetWorldPosition() + forward * kDistancePlayerToReticle;
 
 	// この座標を3Dレティクルのワールド座標（translation）として設定
 	worldTransformReticle_.translation = reticleWorldPos;

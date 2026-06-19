@@ -16,6 +16,7 @@ class Skydome;
 class EnemyBase;
 class Collider;
 class Shockwave;
+class Shake;
 
 
 class GamePlayScene : public IScene {
@@ -80,6 +81,7 @@ private:
 	// ------------------------------------
 
 	std::list<std::unique_ptr<Shockwave>> shockwaves_;
+	std::unique_ptr<Shake> shake_;
 
 private:
 	// 全ての衝突判定をチェック

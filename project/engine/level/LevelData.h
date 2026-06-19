@@ -34,4 +34,5 @@ struct LevelData {
 	std::vector<SpawnerData> spawners;
 	std::vector<CameraData> cameras;
 	std::vector<LightData> lights;
+	std::vector<Vector3> railSpline;
 };

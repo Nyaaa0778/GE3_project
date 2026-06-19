@@ -16,6 +16,8 @@
 #include "RusherEnemy.h"
 #include "Shockwave.h"
 #include "Collider.h"
+#include "Shake.h"
+#include "TimeManager.h"
 
 
 GamePlayScene::GamePlayScene() = default;
@@ -46,7 +48,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get());
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -121,6 +123,9 @@ void GamePlayScene::Initialize() {
 
 	skydome_ = std::make_unique<Skydome>();
 	skydome_->Initialize(skydomeModel_.get());
+
+	// 画面シェイク
+	shake_ = std::make_unique<Shake>();
 }
 
 void GamePlayScene::Update() {
@@ -138,13 +143,24 @@ void GamePlayScene::Update() {
 	// カメラ
 	// ------------------------------------
 
+	if (railCamera_) {
+		railCamera_->Update(!useDebugCamera_);
+	}
 	if (useDebugCamera_) {
 		debugCamera_->Update(camera_.get());
-	} else {
-		if (railCamera_) {
-			railCamera_->Update();
-		} else if (camera_) {
-			camera_->CalculateMatrix();
+	}
+
+	// 画面シェイクの更新と適用
+	if (shake_) {
+		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
+		if (shake_->IsActive() && !useDebugCamera_) {
+			Vector3 offset = shake_->GetOffset();
+			camera_->matWorld.m[3][0] += offset.x;
+			camera_->matWorld.m[3][1] += offset.y;
+			camera_->matWorld.m[3][2] += offset.z;
+
+			camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
+			camera_->UpdateViewProjection();
 		}
 	}
 
@@ -246,6 +262,9 @@ void GamePlayScene::CheckAllCollisions() {
 		if (Collision::CheckCollision(player_.get(), enemy.get())) {
 			player_->OnCollision();
 			enemy->OnCollision();
+			if (shake_) {
+				shake_->Start(0.4f, 0.8f);
+			}
 		}
 	}
 
@@ -262,6 +281,7 @@ void GamePlayScene::CheckAllCollisions() {
 }
 
 void GamePlayScene::UpdateImGui() {
+#ifdef USE_IMGUI
 	ImGui::Begin("Window");
 
 	// ─────────────────────
@@ -332,5 +352,10 @@ void GamePlayScene::UpdateImGui() {
 		}
 	}
 
+	if (railCamera_) {
+		railCamera_->DrawDebugSpline();
+	}
+
 	ImGui::End();
+#endif
 }

@@ -33,6 +33,37 @@ std::unique_ptr<LevelData> LevelLoader::Load(const std::string& filename) {
     // レベルデータ格納用インスタンスを生成
     std::unique_ptr<LevelData> levelData = std::make_unique<LevelData>();
 
+    // rail_splineの読み込み
+    if (deserialized.contains("rail_spline")) {
+        for (const auto& point : deserialized["rail_spline"]) {
+            if (point.is_array() && point.size() >= 3) {
+                levelData->railSpline.push_back({
+                    point[0].get<float>(),
+                    point[1].get<float>(),
+                    point[2].get<float>()
+                });
+            }
+        }
+    } else if (deserialized.contains("objects")) {
+        // Fallback: type "CURVE" のオブジェクトを検索し、control_points を取得
+        for (const auto& obj : deserialized["objects"]) {
+            if (obj.contains("type") && obj["type"].get<std::string>() == "CURVE") {
+                if (obj.contains("control_points")) {
+                    for (const auto& pt : obj["control_points"]) {
+                        if (pt.is_array() && pt.size() >= 3) {
+                            levelData->railSpline.push_back({
+                                pt[0].get<float>(),
+                                pt[1].get<float>(),
+                                pt[2].get<float>()
+                            });
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     // objects の全オブジェクトを走査
     for (nlohmann::json& object : deserialized["objects"]) {
         assert(object.contains("type"));
