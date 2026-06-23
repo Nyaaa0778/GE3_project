@@ -2,12 +2,34 @@
 
 #include <d3d12.h>
 #include <memory>
+#include <string>
 #include <wrl.h>
+#include <Vector4.h>
 
 class DirectXCommon;
 
 class PostProcessRenderer
 {
+public:
+	//================================================================================
+	// 描画モード
+	//================================================================================
+	enum class PostProcessMode {
+		kNormal,
+		kRadialBlur,
+		kDissolve,
+	};
+
+	//================================================================================
+	// ディゾルブパラメータ
+	//================================================================================
+	struct DissolveParams {
+		float threshold;
+		float edgeWidth;
+		float padding[2];
+		Vector4 edgeColor;
+	};
+
 public:
 	//================================================================================
 	// シングルトン
@@ -61,6 +83,19 @@ public:
 	/// <param name="srvHandle">画面に貼り付けたいテクスチャのSRVハンドル</param>
 	void Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle);
 
+public:
+	//================================================================================
+	// Getter / Setter
+	//================================================================================
+	void SetMode(PostProcessMode mode) { mode_ = mode; }
+	PostProcessMode GetMode() const { return mode_; }
+
+	void SetDissolveThreshold(float threshold);
+	float GetDissolveThreshold() const { return dissolveThreshold_; }
+
+	void SetDissolveNoiseTexture(const std::string& filePath);
+	const std::string& GetDissolveNoiseTexture() const { return dissolveNoiseTextureFilePath_; }
+
 private:
 	//================================================================================
 	// 型エイリアス
@@ -76,8 +111,25 @@ private:
 	//================================================================================
 	// GPU リソース
 	//================================================================================
-	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+	// ルートシグネチャ
+	ComPtr<ID3D12RootSignature> rootSignatureNormal_ = nullptr;
+	ComPtr<ID3D12RootSignature> rootSignatureDissolve_ = nullptr;
+
+	// パイプラインステート
+	ComPtr<ID3D12PipelineState> pipelineStateNormal_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateRadialBlur_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateDissolve_ = nullptr;
+
+	// 定数バッファ
+	ComPtr<ID3D12Resource> constantBufferDissolve_ = nullptr;
+	DissolveParams* dissolveParamsData_ = nullptr;
+
+	//================================================================================
+	// 設定パラメータ
+	//================================================================================
+	PostProcessMode mode_ = PostProcessMode::kNormal;
+	float dissolveThreshold_ = 0.0f;
+	std::string dissolveNoiseTextureFilePath_ = "resources/sprites/noise0.png";
 
 	//================================================================================
 	// パイプライン構築

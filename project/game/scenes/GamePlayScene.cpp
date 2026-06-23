@@ -1,11 +1,16 @@
 #include "GamePlayScene.h"
 
 #include <MyEngine.h>
+#include "PostProcessRenderer.h"
+#include "TextureManager.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
 
 void GamePlayScene::Initialize() {
+	// ノイズテクスチャを事前にロードしてキャッシュしておく
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise0.png");
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise1.png");
 
 	// object3dの初期化
 	obj_ = std::make_unique<Object3d>();
@@ -101,6 +106,35 @@ void GamePlayScene::Update() {
 	//    camera_->SetRotate(rot);
 	//  }
 	//}
+
+	// ─────────────────────
+	// PostProcess
+	// ─────────────────────
+	ImGui::SeparatorText("PostProcess Settings");
+	{
+		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
+		const char* modes[] = { "Normal", "RadialBlur", "Dissolve" };
+		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
+			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
+		}
+
+		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
+			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
+			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
+				PostProcessRenderer::GetInstance()->SetDissolveThreshold(threshold);
+			}
+
+			static int noiseIndex = 0;
+			const char* noises[] = { "noise0", "noise1" };
+			if (ImGui::Combo("Dissolve Noise", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
+				if (noiseIndex == 0) {
+					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise0.png");
+				} else {
+					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise1.png");
+				}
+			}
+		}
+	}
 
 	ImGui::End();
 
