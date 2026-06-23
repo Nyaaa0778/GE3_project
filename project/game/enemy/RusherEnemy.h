@@ -42,7 +42,7 @@ private:
 	// 移動速度
 	static constexpr float kSpeed = 0.01f;
 	// 突進速度
-	static constexpr float kRushSpeed = 0.02f;
+	static constexpr float kRushSpeed = 0.5f;
 
 	// 状態遷移のしきい値距離
 	static constexpr float kApproachRange = 40.0f;

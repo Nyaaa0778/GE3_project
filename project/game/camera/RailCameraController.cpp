@@ -38,7 +38,7 @@ void RailCameraController::Initialize(Camera* camera, const std::vector<Vector3>
 	splineTime_ = 0.0f;
 	isPlaying_ = true;
 	isLoop_ = false;
-	speed_ = 0.005f;
+	speed_ = 0.002f;
 
 	worldTransform_.Initialize();
 	

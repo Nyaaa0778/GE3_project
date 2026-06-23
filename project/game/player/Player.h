@@ -93,7 +93,7 @@ private:
 	std::list<std::unique_ptr<PlayerBullet>> bullets_;
 
 	Vector3 bulletVelocity_ = {0.0f, 0.0f, 0.0f};
-	static constexpr float kBulletSpeed = 2.0f;
+	static constexpr float kBulletSpeed = 5.0f;
 
 	static constexpr float kCooldownDuration = 0.1f;
 	float cooldownTimer_ = 0.0f;

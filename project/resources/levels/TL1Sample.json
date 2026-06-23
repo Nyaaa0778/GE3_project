@@ -2,14 +2,8 @@
     "name": "scene",
     "objects": [
         {
-            "type": "LIGHT",
             "name": "Light",
             "transform": {
-                "translation": [
-                    4.076245307922363,
-                    5.903861999511719,
-                    1.0054539442062378
-                ],
                 "rotation": [
                     -0.6503279805183411,
                     -1.8663909435272217,
@@ -19,18 +13,18 @@
                     1.0,
                     1.0,
                     0.9999999403953552
+                ],
+                "translation": [
+                    4.076245307922363,
+                    5.903861999511719,
+                    1.0054539442062378
                 ]
-            }
+            },
+            "type": "LIGHT"
         },
         {
-            "type": "CAMERA",
             "name": "Camera",
             "transform": {
-                "translation": [
-                    0.0,
-                    0.0,
-                    -20.0
-                ],
                 "rotation": [
                     -1.5707964897155762,
                     -0.0,
@@ -40,18 +34,18 @@
                     1.0,
                     1.0,
                     1.0
-                ]
-            }
-        },
-        {
-            "type": "PlayerSpawn",
-            "name": "PlayerSpawn",
-            "transform": {
+                ],
                 "translation": [
                     0.0,
                     0.0,
-                    0.0
-                ],
+                    -20.0
+                ]
+            },
+            "type": "CAMERA"
+        },
+        {
+            "name": "PlayerSpawn",
+            "transform": {
                 "rotation": [
                     -0.0,
                     -0.0,
@@ -61,18 +55,39 @@
                     1.0,
                     1.0,
                     1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
                 ]
-            }
+            },
+            "type": "PlayerSpawn"
         },
         {
-            "type": "PlayerSpawn",
             "name": "Enemy_Rusher_1",
             "transform": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
                 "translation": [
                     0.0,
                     0.0,
                     50.0
-                ],
+                ]
+            },
+            "type": "PlayerSpawn"
+        },
+        {
+            "name": "Enemy_Rusher_2",
+            "transform": {
                 "rotation": [
                     0.0,
                     0.0,
@@ -82,39 +97,18 @@
                     1.0,
                     1.0,
                     1.0
-                ]
-            }
-        },
-        {
-            "type": "PlayerSpawn",
-            "name": "Enemy_Rusher_2",
-            "transform": {
+                ],
                 "translation": [
                     5.0,
                     0.0,
                     80.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    1.0
                 ]
-            }
+            },
+            "type": "PlayerSpawn"
         },
         {
-            "type": "PlayerSpawn",
             "name": "Enemy_Rusher_3",
             "transform": {
-                "translation": [
-                    -5.0,
-                    2.0,
-                    110.0
-                ],
                 "rotation": [
                     0.0,
                     0.0,
@@ -124,8 +118,36 @@
                     1.2,
                     1.2,
                     1.2
+                ],
+                "translation": [
+                    -5.0,
+                    2.0,
+                    110.0
                 ]
-            }
+            },
+            "type": "PlayerSpawn"
         }
+    ],
+    "rail_spline": [
+        [
+            0.0,
+            0.0,
+            0.0
+        ],
+        [
+            -16.60890769958496,
+            4.799499988555908,
+            50.77030563354492
+        ],
+        [
+            -0.9736518263816833,
+            6.2316083908081055,
+            101.2267074584961
+        ],
+        [
+            5.164217472076416,
+            0.7387598752975464,
+            150.20350646972656
+        ]
     ]
-}
+}

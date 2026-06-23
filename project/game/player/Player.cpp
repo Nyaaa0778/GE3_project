@@ -146,18 +146,30 @@ void Player::UpdateMove() {
 /// </summary>
 void Player::UpdateReticle() {
 	const float kDistancePlayerToReticle = 50.0f;
+	const float kReticleScaleX = 2.0f; // 照準の横方向の可動域倍率 (1.0f より大きい値で広がる)
+	const float kReticleScaleY = 2.0f; // 照準の縦方向の可動域倍率 (1.0f より大きい値で広がる)
 
-	// 自機のワールド行列から正面方向（Z軸）のベクトルを抽出する
-	// matWorld.m[2][0]～[2][2] が Z軸（正面）
-	Vector3 forward = { worldTransform_.matWorld.m[2][0], worldTransform_.matWorld.m[2][1], worldTransform_.matWorld.m[2][2] };
-	if (Length(forward) > 0.0001f) {
-		forward = Normalize(forward);
+	Vector3 reticleWorldPos = {};
+
+	if (worldTransform_.parent) {
+		// 親（レールカメラ）のローカル空間で照準位置を計算（自機の位置に比例してさらに外側へ）
+		Vector3 reticleLocalPos = {};
+		reticleLocalPos.x = worldTransform_.translation.x * kReticleScaleX;
+		reticleLocalPos.y = worldTransform_.translation.y * kReticleScaleY;
+		reticleLocalPos.z = worldTransform_.translation.z + kDistancePlayerToReticle;
+
+		// 親のワールド行列を使ってワールド空間の座標に変換する
+		reticleWorldPos = MathUtility::Transform(reticleLocalPos, worldTransform_.parent->matWorld);
 	} else {
-		forward = { 0.0f, 0.0f, 1.0f };
+		// 親がいない場合のフォールバック（従来通り正面方向へ配置）
+		Vector3 forward = { worldTransform_.matWorld.m[2][0], worldTransform_.matWorld.m[2][1], worldTransform_.matWorld.m[2][2] };
+		if (Length(forward) > 0.0001f) {
+			forward = Normalize(forward);
+		} else {
+			forward = { 0.0f, 0.0f, 1.0f };
+		}
+		reticleWorldPos = worldTransform_.GetWorldPosition() + forward * kDistancePlayerToReticle;
 	}
-
-	// 自キャラ座標から、正面方向ベクトル分進んだ座標が、3Dレティクルの座標となる
-	Vector3 reticleWorldPos = worldTransform_.GetWorldPosition() + forward * kDistancePlayerToReticle;
 
 	// この座標を3Dレティクルのワールド座標（translation）として設定
 	worldTransformReticle_.translation = reticleWorldPos;
