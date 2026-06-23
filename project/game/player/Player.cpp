@@ -216,8 +216,14 @@ void Player::Attack() {
 			Vector3 spawnPos = worldTransform_.GetWorldPosition();
 
 			// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
-			bulletVelocity_ = worldTransformReticle_.GetWorldPosition() - spawnPos;
-			bulletVelocity_ = Normalize(bulletVelocity_) * kBulletSpeed;
+			Vector3 shootDir = worldTransformReticle_.GetWorldPosition() - spawnPos;
+			shootDir = Normalize(shootDir);
+
+			// 自機の1フレームあたりの移動ベクトル（慣性）を計算
+			Vector3 playerFrameVelocity = worldTransform_.GetWorldPosition() - prevWorldPos_;
+
+			// 弾の速度（自機の速度＋射撃方向の弾速）
+			bulletVelocity_ = playerFrameVelocity + shootDir * kBulletSpeed;
 
 			// 弾を初期化（親は nullptr でワールド空間上に配置する）
 			newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
@@ -229,7 +235,7 @@ void Player::Attack() {
 			Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
 
 			// 射撃方向の算出
-			Vector3 shootDir = Normalize(bulletVelocity_);
+			shootDir = Normalize(bulletVelocity_);
 			// 球体自機の少し前方から射出する
 			Vector3 effectSpawnPos = spawnPos + shootDir * 1.2f;
 
