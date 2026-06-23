@@ -25,7 +25,7 @@ void RailCameraController::Initialize(Camera* camera, const std::vector<Vector3>
 
 	// コントロールポイントの初期化
 	controlPoints_ = initialPoints;
-	if (controlPoints_.size() < 4) {
+	if (controlPoints_.empty()) {
 		// 初期軌道がない場合はデフォルトのZ軸パスを作成
 		controlPoints_ = {
 			{ 0.0f, 0.0f, 0.0f },
@@ -56,7 +56,7 @@ void RailCameraController::Update(bool activeController) {
 	// 1. スプライン再生処理
 	// ------------------------------------
 	size_t n = controlPoints_.size();
-	if (isPlaying_ && n >= 4) {
+	if (isPlaying_ && n >= 2) {
 		splineTime_ += speed_;
 		float maxTime = static_cast<float>(n - 1);
 		if (splineTime_ >= maxTime) {
@@ -230,7 +230,7 @@ void RailCameraController::Update(bool activeController) {
 	
 	float maxT = (std::max)(0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
 	if (ImGui::SliderFloat("Position Time", &splineTime_, 0.0f, maxT, "%.3f")) {
-		if (!isPlaying_ && controlPoints_.size() >= 4) {
+		if (!isPlaying_ && controlPoints_.size() >= 2) {
 			Vector3 position = EvaluateSpline(controlPoints_, splineTime_);
 			worldTransform_.translation = position;
 
@@ -252,7 +252,7 @@ void RailCameraController::Update(bool activeController) {
 
 	if (ImGui::Button("Reset to Start")) {
 		splineTime_ = 0.0f;
-		if (controlPoints_.size() >= 4) {
+		if (controlPoints_.size() >= 2) {
 			worldTransform_.translation = controlPoints_[0];
 			worldTransform_.UpdateMatrix();
 			if (activeController) {
@@ -322,12 +322,13 @@ void RailCameraController::Update(bool activeController) {
 
 void RailCameraController::DrawDebugSpline() {
 #ifdef USE_IMGUI
-	if (controlPoints_.size() < 2) return;
+	if (controlPoints_.empty()) return;
 
 	ImDrawList* drawList = ImGui::GetForegroundDrawList();
 
 	// 1. スプライン軌跡の描画
-	const int segments = 150;
+	if (controlPoints_.size() >= 2) {
+		const int segments = 150;
 	float totalTime = static_cast<float>(controlPoints_.size() - 1);
 	Vector2 prevScreen = { 0.0f, 0.0f };
 	bool hasPrev = false;
@@ -351,6 +352,7 @@ void RailCameraController::DrawDebugSpline() {
 			hasPrev = false;
 		}
 	}
+	} // if (controlPoints_.size() >= 2)
 
 	// 2. 制御点（丸ノード）の描画
 	for (size_t i = 0; i < controlPoints_.size(); ++i) {
@@ -415,7 +417,8 @@ void RailCameraController::SaveToJson() {
 
 Vector3 RailCameraController::EvaluateSpline(const std::vector<Vector3>& points, float time) const {
 	size_t n = points.size();
-	if (n < 4) return {0.0f, 0.0f, 0.0f};
+	if (n == 0) return {0.0f, 0.0f, 0.0f};
+	if (n == 1) return points[0];
 
 	size_t segmentIndex = static_cast<size_t>(time);
 	float t = 0.0f;
@@ -431,7 +434,8 @@ Vector3 RailCameraController::EvaluateSpline(const std::vector<Vector3>& points,
 
 Vector3 RailCameraController::EvaluateSplineTangent(const std::vector<Vector3>& points, float time) const {
 	size_t n = points.size();
-	if (n < 4) return {0.0f, 0.0f, 1.0f};
+	if (n == 0) return {0.0f, 0.0f, 1.0f};
+	if (n == 1) return {0.0f, 0.0f, 1.0f};
 
 	size_t segmentIndex = static_cast<size_t>(time);
 	float t = 0.0f;
@@ -447,7 +451,8 @@ Vector3 RailCameraController::EvaluateSplineTangent(const std::vector<Vector3>& 
 
 Vector3 RailCameraController::CatmullRomSpline(const std::vector<Vector3>& points, size_t index, float t) const {
 	size_t n = points.size();
-	if (n < 4) return {0.0f, 0.0f, 0.0f};
+	if (n == 0) return {0.0f, 0.0f, 0.0f};
+	if (n == 1) return points[0];
 
 	size_t i0 = (index == 0) ? 0 : index - 1;
 	size_t i1 = index;
@@ -472,7 +477,8 @@ Vector3 RailCameraController::CatmullRomSpline(const std::vector<Vector3>& point
 
 Vector3 RailCameraController::CatmullRomTangent(const std::vector<Vector3>& points, size_t index, float t) const {
 	size_t n = points.size();
-	if (n < 4) return {0.0f, 0.0f, 1.0f};
+	if (n == 0) return {0.0f, 0.0f, 1.0f};
+	if (n == 1) return {0.0f, 0.0f, 1.0f};
 
 	size_t i0 = (index == 0) ? 0 : index - 1;
 	size_t i1 = index;
