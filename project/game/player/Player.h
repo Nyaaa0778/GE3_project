@@ -98,6 +98,9 @@ private:
 	static constexpr float kCooldownDuration = 0.1f;
 	float cooldownTimer_ = 0.0f;
 
+	// 前フレームのワールド座標（速度計算用）
+	Vector3 prevWorldPos_ = { 0.0f, 0.0f, 0.0f };
+
 private:
 	/// <summary>
 	/// 移動処理

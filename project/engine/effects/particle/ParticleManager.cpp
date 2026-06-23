@@ -383,7 +383,9 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 	// 登録済みの名前かチェック
 	const bool alreadyExists =
 		(particleGroups_.find(groupName) != particleGroups_.end());
-	assert(!alreadyExists);
+	if (alreadyExists) {
+		return;
+	}
 
 	// 新たに空っぽのパーティクルグループを作成し、コンテナに登録
 
@@ -467,6 +469,59 @@ void ParticleManager::Emit(const std::string groupName,
 			break; // 上限以上は積まない
 		}
 		group.particles.push_back(MakeParticle(emitPosition));
+	}
+}
+
+/// <summary>
+/// 詳細なパラメータを指定してパーティクルを発生させる
+/// </summary>
+void ParticleManager::Emit(const std::string& groupName, const Vector3& emitPosition,
+	const Vector3& velocity, const Vector4& color, const Vector3& scale,
+	float lifeTime, uint32_t count)
+{
+	auto it = particleGroups_.find(groupName);
+	assert(it != particleGroups_.end() && "Particle group not found.");
+
+	ParticleGroup& group = it->second;
+
+	for (uint32_t i = 0; i < count; ++i) {
+		if (group.particles.size() >= kMaxInstancePerGroup) {
+			break; // 上限以上は積まない
+		}
+
+		Particle particle {};
+
+		// スケールに微少なランダム性を与える
+		float randScale = Random::RangeFloat(0.8f, 1.2f);
+		particle.transform.scale = { scale.x * randScale, scale.y * randScale, scale.z * randScale };
+
+		// ランダムなZ回転
+		float randomZ = Random::RangeFloat(0.0f, std::numbers::pi_v<float> * 2.0f);
+		particle.transform.rotation = { 0.0f, 0.0f, randomZ };
+
+		particle.transform.translation = emitPosition;
+
+		// 速度に少しの揺らぎを与える
+		Vector3 speedNoise = Random::RangeVector3(-0.2f, 0.2f);
+		particle.velocity = { velocity.x + speedNoise.x, velocity.y + speedNoise.y, velocity.z + speedNoise.z };
+
+		particle.color = color;
+		// 寿命に少しの揺らぎを与える
+		particle.lifeTime = lifeTime * Random::RangeFloat(0.8f, 1.2f);
+		particle.currentTime = 0.0f;
+
+		group.particles.push_back(particle);
+	}
+}
+
+/// <summary>
+/// すべてのパーティクルグループからパーティクルをクリアする
+/// </summary>
+void ParticleManager::ClearAllParticles()
+{
+	for (auto& [name, group] : particleGroups_) {
+		group.particles.clear();
+		group.instanceCount = 0;
 	}
 }
 

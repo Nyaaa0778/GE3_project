@@ -120,6 +120,18 @@ public:
 	void Emit(const std::string groupName, const Vector3& emitPosition,
 		uint32_t count);
 
+	/// <summary>
+	/// 詳細なパラメータを指定してパーティクルを発生させる
+	/// </summary>
+	void Emit(const std::string& groupName, const Vector3& emitPosition,
+		const Vector3& velocity, const Vector4& color, const Vector3& scale,
+		float lifeTime, uint32_t count);
+
+	/// <summary>
+	/// すべてのパーティクルグループからパーティクルをクリアする
+	/// </summary>
+	void ClearAllParticles();
+
 private:
 	//================================================================================
 	// 型エイリアス

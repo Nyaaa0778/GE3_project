@@ -143,6 +143,10 @@ void GamePlayScene::Initialize() {
 	goal_->Initialize(goalPos, camera_.get());
 
 	isGoalReached_ = false;
+
+	// パーティクルグループの作成と初期クリア
+	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
+	ParticleManager::GetInstance()->ClearAllParticles();
 }
 
 void GamePlayScene::Update() {
@@ -263,6 +267,11 @@ void GamePlayScene::Update() {
 	// ------------------------------------
 
 	skydome_->Update();
+
+	// ------------------------------------
+	// パーティクルの更新
+	// ------------------------------------
+	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 }
 
 void GamePlayScene::Draw() {
@@ -306,6 +315,11 @@ void GamePlayScene::Draw() {
 	for (auto& shockwave : shockwaves_) {
 		shockwave->Draw();
 	}
+
+	// ------------------------------------
+	// パーティクル描画
+	// ------------------------------------
+	ParticleManager::GetInstance()->Draw();
 }
 
 
