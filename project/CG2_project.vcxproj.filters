@@ -286,6 +286,7 @@
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl" />
     <FxCompile Include="resources\shaders\finalBlit\GaussianFilter.PS.hlsl" />
     <FxCompile Include="resources\shaders\finalBlit\Outline.PS.hlsl" />
+    <FxCompile Include="resources\shaders\finalBlit\RadialBlur.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
