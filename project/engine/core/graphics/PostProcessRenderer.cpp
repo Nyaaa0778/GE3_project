@@ -240,6 +240,136 @@ void PostProcessRenderer::CreateGraphicsPipeline() {
 	}
 
 	// ----------------------------------------------------
+	// 3. BoxFilter モード用 PSO
+	// ----------------------------------------------------
+	{
+		ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/BoxFilter.PS.hlsl", L"ps_6_0");
+		assert(pixelShaderBlob != nullptr);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC gdesc {};
+		gdesc.pRootSignature = rootSignatureNormal_.Get();
+		gdesc.InputLayout = inputLayOutDesc;
+		gdesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		gdesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
+		gdesc.BlendState = blendDesc;
+		gdesc.RasterizerState = rasterizerDesc;
+		gdesc.DepthStencilState = depthStencilDesc;
+		gdesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		gdesc.NumRenderTargets = 1;
+		gdesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		gdesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gdesc.SampleDesc.Count = 1;
+		gdesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gdesc, IID_PPV_ARGS(&pipelineStateBoxFilter_));
+		assert(SUCCEEDED(hr));
+	}
+
+	// ----------------------------------------------------
+	// 4. GaussianFilter モード用 PSO
+	// ----------------------------------------------------
+	{
+		ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/GaussianFilter.PS.hlsl", L"ps_6_0");
+		assert(pixelShaderBlob != nullptr);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC gdesc {};
+		gdesc.pRootSignature = rootSignatureNormal_.Get();
+		gdesc.InputLayout = inputLayOutDesc;
+		gdesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		gdesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
+		gdesc.BlendState = blendDesc;
+		gdesc.RasterizerState = rasterizerDesc;
+		gdesc.DepthStencilState = depthStencilDesc;
+		gdesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		gdesc.NumRenderTargets = 1;
+		gdesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		gdesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gdesc.SampleDesc.Count = 1;
+		gdesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gdesc, IID_PPV_ARGS(&pipelineStateGaussianFilter_));
+		assert(SUCCEEDED(hr));
+	}
+
+	// ----------------------------------------------------
+	// 5. Grayscale モード用 PSO
+	// ----------------------------------------------------
+	{
+		ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/Grayscale.PS.hlsl", L"ps_6_0");
+		assert(pixelShaderBlob != nullptr);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC gdesc {};
+		gdesc.pRootSignature = rootSignatureNormal_.Get();
+		gdesc.InputLayout = inputLayOutDesc;
+		gdesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		gdesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
+		gdesc.BlendState = blendDesc;
+		gdesc.RasterizerState = rasterizerDesc;
+		gdesc.DepthStencilState = depthStencilDesc;
+		gdesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		gdesc.NumRenderTargets = 1;
+		gdesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		gdesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gdesc.SampleDesc.Count = 1;
+		gdesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gdesc, IID_PPV_ARGS(&pipelineStateGrayscale_));
+		assert(SUCCEEDED(hr));
+	}
+
+	// ----------------------------------------------------
+	// 6. Outline モード用 PSO
+	// ----------------------------------------------------
+	{
+		ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/Outline.PS.hlsl", L"ps_6_0");
+		assert(pixelShaderBlob != nullptr);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC gdesc {};
+		gdesc.pRootSignature = rootSignatureNormal_.Get();
+		gdesc.InputLayout = inputLayOutDesc;
+		gdesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		gdesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
+		gdesc.BlendState = blendDesc;
+		gdesc.RasterizerState = rasterizerDesc;
+		gdesc.DepthStencilState = depthStencilDesc;
+		gdesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		gdesc.NumRenderTargets = 1;
+		gdesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		gdesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gdesc.SampleDesc.Count = 1;
+		gdesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gdesc, IID_PPV_ARGS(&pipelineStateOutline_));
+		assert(SUCCEEDED(hr));
+	}
+
+	// ----------------------------------------------------
+	// 7. Vignetting モード用 PSO
+	// ----------------------------------------------------
+	{
+		ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/Vignetting.PS.hlsl", L"ps_6_0");
+		assert(pixelShaderBlob != nullptr);
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC gdesc {};
+		gdesc.pRootSignature = rootSignatureNormal_.Get();
+		gdesc.InputLayout = inputLayOutDesc;
+		gdesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+		gdesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
+		gdesc.BlendState = blendDesc;
+		gdesc.RasterizerState = rasterizerDesc;
+		gdesc.DepthStencilState = depthStencilDesc;
+		gdesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		gdesc.NumRenderTargets = 1;
+		gdesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		gdesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gdesc.SampleDesc.Count = 1;
+		gdesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+
+		HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gdesc, IID_PPV_ARGS(&pipelineStateVignetting_));
+		assert(SUCCEEDED(hr));
+	}
+
+	// ----------------------------------------------------
 	// 3. Dissolve モード用 PSO
 	// ----------------------------------------------------
 	{
@@ -280,6 +410,41 @@ void PostProcessRenderer::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) {
 	case PostProcessMode::kRadialBlur:
 		cmdList->SetGraphicsRootSignature(rootSignatureNormal_.Get());
 		cmdList->SetPipelineState(pipelineStateRadialBlur_.Get());
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
+		break;
+
+	case PostProcessMode::kBoxFilter:
+		cmdList->SetGraphicsRootSignature(rootSignatureNormal_.Get());
+		cmdList->SetPipelineState(pipelineStateBoxFilter_.Get());
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
+		break;
+
+	case PostProcessMode::kGaussianFilter:
+		cmdList->SetGraphicsRootSignature(rootSignatureNormal_.Get());
+		cmdList->SetPipelineState(pipelineStateGaussianFilter_.Get());
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
+		break;
+
+	case PostProcessMode::kGrayscale:
+		cmdList->SetGraphicsRootSignature(rootSignatureNormal_.Get());
+		cmdList->SetPipelineState(pipelineStateGrayscale_.Get());
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
+		break;
+
+	case PostProcessMode::kOutline:
+		cmdList->SetGraphicsRootSignature(rootSignatureNormal_.Get());
+		cmdList->SetPipelineState(pipelineStateOutline_.Get());
+		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
+		break;
+
+	case PostProcessMode::kVignetting:
+		cmdList->SetGraphicsRootSignature(rootSignatureNormal_.Get());
+		cmdList->SetPipelineState(pipelineStateVignetting_.Get());
 		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
 		break;

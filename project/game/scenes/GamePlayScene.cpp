@@ -113,7 +113,7 @@ void GamePlayScene::Update() {
 	ImGui::SeparatorText("PostProcess Settings");
 	{
 		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
-		const char* modes[] = { "Normal", "RadialBlur", "Dissolve" };
+		const char* modes[] = { "Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve" };
 		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
 			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
 		}

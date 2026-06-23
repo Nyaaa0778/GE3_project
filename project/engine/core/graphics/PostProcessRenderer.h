@@ -17,6 +17,11 @@ public:
 	enum class PostProcessMode {
 		kNormal,
 		kRadialBlur,
+		kBoxFilter,
+		kGaussianFilter,
+		kGrayscale,
+		kOutline,
+		kVignetting,
 		kDissolve,
 	};
 
@@ -118,6 +123,11 @@ private:
 	// パイプラインステート
 	ComPtr<ID3D12PipelineState> pipelineStateNormal_ = nullptr;
 	ComPtr<ID3D12PipelineState> pipelineStateRadialBlur_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateBoxFilter_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateGaussianFilter_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateGrayscale_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateOutline_ = nullptr;
+	ComPtr<ID3D12PipelineState> pipelineStateVignetting_ = nullptr;
 	ComPtr<ID3D12PipelineState> pipelineStateDissolve_ = nullptr;
 
 	// 定数バッファ
