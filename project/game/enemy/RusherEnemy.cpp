@@ -14,7 +14,7 @@ void RusherEnemy::Initialize(Object3d* model, Camera* camera, const Vector3& pos
 
 	// コライダーの初期設定 (AABB, サイズ 1.5)
 	SetShape(ColliderShape::kAABB);
-	SetAABB({ { 2.0f, 2.0f, 2.0f } });
+	SetAABB({ { 1.0f, 1.0f, 1.0f } });
 }
 
 void RusherEnemy::Update() {

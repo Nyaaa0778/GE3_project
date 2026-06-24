@@ -12,6 +12,7 @@
 class Object3d;
 class Camera;
 class Primitive;
+class Sprite;
 
 class PlayerBullet;
 
@@ -77,8 +78,12 @@ private:
 
 	// モデル
 	std::unique_ptr<Object3d> reticle_;
+
+	// スプライト
+	std::unique_ptr<Sprite> reticleSprite_;
+
 	// 描画サイズ
-	static constexpr Vector3 kReticleDrawSize = {0.5f, 0.5f, 0.5f};
+	static constexpr Vector3 kReticleDrawSize = {0.4f, 0.4f, 0.4f};
 
 	// ------------------------------------
 	// カメラ
@@ -93,7 +98,7 @@ private:
 	std::list<std::unique_ptr<PlayerBullet>> bullets_;
 
 	Vector3 bulletVelocity_ = {0.0f, 0.0f, 0.0f};
-	static constexpr float kBulletSpeed = 3.5f;
+	static constexpr float kBulletSpeed = 7.0f;
 
 	static constexpr float kCooldownDuration = 0.1f;
 	float cooldownTimer_ = 0.0f;

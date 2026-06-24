@@ -20,7 +20,6 @@ class Collider;
 class Shockwave;
 class Shake;
 
-
 class GamePlayScene : public IScene {
 public:
 	GamePlayScene();

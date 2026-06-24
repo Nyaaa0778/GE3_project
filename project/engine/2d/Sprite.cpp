@@ -101,7 +101,7 @@ void Sprite::Update() {
 /// </summary>
 void Sprite::Draw() {
 
-	SpriteRenderer::GetInstance()->SetupCommonRenderState();
+	SpriteRenderer::GetInstance()->SetupCommonRenderState(blendMode_);
 
 	// vertexBufferViewを設定
 	DirectXCommon::GetInstance()->GetCommandList()->IASetVertexBuffers(

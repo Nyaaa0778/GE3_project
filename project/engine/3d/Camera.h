@@ -46,6 +46,7 @@ public:
 	// 行列メンバの公開
 	Matrix4x4 matWorld;
 	Matrix4x4 matView;
+	Matrix4x4 matProjection;
 
 private:
 	//================================================================================
@@ -54,7 +55,6 @@ private:
 
 	Transform transform_;
 
-	Matrix4x4 projectionMatrix_;
 	// 水平方向視野角
 	float fovY_ = 0.45f;
 	// アスペクト比
@@ -80,7 +80,7 @@ public:
 	// ビュー行列
 	const Matrix4x4& GetViewMatrix() const { return matView; }
 	// プロジェクション行列
-	const Matrix4x4& GetProjectionMatrix() const { return projectionMatrix_; }
+	const Matrix4x4& GetProjectionMatrix() const { return matProjection; }
 	// ビュープロジェクション行列
 	const Matrix4x4& GetViewProjectionMatrix() const {
 		return viewProjectionMatrix_;

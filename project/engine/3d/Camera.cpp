@@ -17,10 +17,10 @@ Camera::Camera()
 	matWorld(MakeAffineMatrix(transform_.scale, transform_.rotation,
 		transform_.translation)), // ワールド行列
 	matView(MakeInverseMatrix(matWorld)),           // ビュー行列
-	projectionMatrix_(fovY_, aspectRatio_, nearClip_,
+	matProjection(fovY_, aspectRatio_, nearClip_,
 		farClip_), // プロジェクション行列
 	viewProjectionMatrix_(matView*
-		projectionMatrix_) // ビュープロジェクション行列
+		matProjection) // ビュープロジェクション行列
 {
 }
 
@@ -40,8 +40,8 @@ Camera::Camera()
 void Camera::CalculateMatrix() {
 	matWorld = MakeAffineMatrix(transform_.scale, transform_.rotation, transform_.translation);
 	matView = MakeInverseMatrix(matWorld);
-	projectionMatrix_ = MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
-	viewProjectionMatrix_ = matView * projectionMatrix_;
+	matProjection = MakePerspectiveFovMatrix(fovY_, aspectRatio_, nearClip_, farClip_);
+	viewProjectionMatrix_ = matView * matProjection;
 
 	if (cameraData_) {
 		cameraData_->worldPosition = transform_.translation;
@@ -60,7 +60,7 @@ void Camera::CreateConstantBuffer() {
 }
 
 void Camera::UpdateViewProjection() {
-	viewProjectionMatrix_ = matView * projectionMatrix_;
+	viewProjectionMatrix_ = matView * matProjection;
 
 	if (cameraData_) {
 		cameraData_->worldPosition = { matWorld.m[3][0], matWorld.m[3][1], matWorld.m[3][2] };

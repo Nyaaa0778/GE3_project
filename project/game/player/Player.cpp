@@ -20,11 +20,11 @@ Player::Player() = default;
 Player::~Player() = default;
 
 void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* camera) {
-	
+
 	// ------------------------------------
 	// 本体
 	// ------------------------------------
-	
+
 	// nullチェック
 	assert(model);
 	// モデルを借りてくる
@@ -40,7 +40,7 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	worldTransform_.translation = InitialPos;
 
 	// モデルに自身のトランスフォームをセット
-	model_->SetWorldTransform(&worldTransform_);	
+	model_->SetWorldTransform(&worldTransform_);
 
 	// ------------------------------------
 	// カメラ
@@ -62,15 +62,24 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	// 親子関係を設定せず、ワールド空間に直接配置する
 	worldTransformReticle_.parent = nullptr;
 
+	reticleSprite_ = std::make_unique<Sprite>();
+	reticleSprite_->Initialize("reticle.png", {640.0f, 360.0f}, {0.5f, 0.5f});
+	reticleSprite_->SetScale({kReticleDrawSize.x, kReticleDrawSize.y});
+	reticleSprite_->SetColor({0.0f, 0.0f, 0.0f, 1.0f});
+
 	// コライダーの初期設定
 	SetShape(ColliderShape::kSphere);
-	SetSphere({ 1.0f });
+	SetSphere({ 0.5f });
 
 	// 前フレームのワールド座標の初期化
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
 }
 
 void Player::Update() {
+	// ------------------------------------
+	// 本体
+	// ------------------------------------
+	
 	// プレイヤーの回転を常に(0, 0, 0)にする（親であるレールカメラの向きに平行にする）
 	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
 
@@ -80,28 +89,45 @@ void Player::Update() {
 	// トランスフォーム行列の更新と転送
 	worldTransform_.UpdateMatrix();
 
-	// 照準の更新
+	// モデルの更新
+	model_->Update();
+
+	// ------------------------------------
+	// 照準
+	// ------------------------------------
+
 	UpdateReticle();
 
+
+	// ------------------------------------
+	// 弾
+	// ------------------------------------
+	
 	// 攻撃
 	Attack();
 	
 	// 弾の更新
 	UpdateBullet();
 
-	// モデルの更新
-	model_->Update();
-
 	// 前フレームのワールド座標を保存
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
 }
 
 void Player::Draw() {
+	// ------------------------------------
+	// 本体
+	// ------------------------------------
 	model_->Draw();
 
+	// ------------------------------------
+	// 照準
+	// ------------------------------------
 	reticle_->Draw();
+	reticleSprite_->Draw();
 
-	// 弾の描画
+	// ------------------------------------
+	// 弾
+	// ------------------------------------
 	for (const auto& bullet : bullets_) {
 		bullet->Draw();
 	}
@@ -146,8 +172,8 @@ void Player::UpdateMove() {
 /// </summary>
 void Player::UpdateReticle() {
 	const float kDistancePlayerToReticle = 50.0f;
-	const float kReticleScaleX = 2.0f; // 照準の横方向の可動域倍率 (1.0f より大きい値で広がる)
-	const float kReticleScaleY = 2.0f; // 照準の縦方向の可動域倍率 (1.0f より大きい値で広がる)
+	const float kReticleScaleX = 2.5f; // 照準の横方向の可動域倍率 (1.0f より大きい値で広がる)
+	const float kReticleScaleY = 2.5f; // 照準の縦方向の可動域倍率 (1.0f より大きい値で広がる)
 
 	Vector3 reticleWorldPos = {};
 
@@ -178,6 +204,20 @@ void Player::UpdateReticle() {
 
 	reticle_->SetWorldTransform(&worldTransformReticle_);
 	reticle_->Update();
+
+	// 3Dレティクルのワールド座標から2Dレティクルのスクリーン座標を計算
+	{
+		Vector3 positionReticle = worldTransformReticle_.GetWorldPosition();
+		// ビューポート行列
+		Matrix4x4 matViewport = MakeViewportMatrix(0.0f, 0.0f, static_cast<float>(WinApp::kClientWidth), static_cast<float>(WinApp::kClientHeight), 0.0f, 1.0f);
+		// ビュー行列、プロジェクション行列、ビューポート行列を合成する
+		Matrix4x4 matViewProjectionViewport = camera_->matView * camera_->matProjection * matViewport;
+		// ワールド→スクリーン座標変換
+		positionReticle = MathUtility::Transform(positionReticle, matViewProjectionViewport);
+		// スプライトのレティクルに座標設定
+		reticleSprite_->SetPosition(Vector2(positionReticle.x, positionReticle.y));
+	}
+	reticleSprite_->Update();
 }
 
 /// <summary>

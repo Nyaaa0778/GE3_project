@@ -6,6 +6,8 @@
 #include <Vector3.h>
 #include <Vector4.h>
 
+#include "SpriteRenderer.h"
+
 #include <cstdint>
 #include <d3d12.h>
 #include <string>
@@ -46,6 +48,8 @@ public:
 	const Vector4& GetColor() const { return materialData_->color; }
 	// 拡縮
 	const Vector2& GetScale() const { return scale_; }
+	// BlendMode
+	SpriteRenderer::BlendMode GetBlendMode() const { return blendMode_; }
 
 	// アンカーポイント
 	const Vector2& GetAnchorPoint() const { return anchorPoint_; }
@@ -70,6 +74,8 @@ public:
 	void SetColor(const Vector4& color);
 	// 拡縮
 	void SetScale(const Vector2& scale);
+	// BlendMode
+	void SetBlendMode(SpriteRenderer::BlendMode blendMode) { blendMode_ = blendMode; }
 
 	// テクスチャ
 	void SetTexture(const std::string& filePath);
@@ -176,6 +182,8 @@ private:
 	bool isFlipX_ = false;
 	// 上下反転フラグ
 	bool isFlipY_ = false;
+	// BlendMode
+	SpriteRenderer::BlendMode blendMode_ = SpriteRenderer::BlendMode::kNormal;
 
 private:
 	//================================================================================
