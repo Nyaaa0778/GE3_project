@@ -166,6 +166,15 @@ void GamePlayScene::Update() {
 	// DLLの変更監視とホットリロード
 	UpdateDLL();
 
+	// ソケットからリプレイログ自動ロード命令を受信したかチェック
+	std::string loadPath = "";
+	if (isSocketSyncEnabled_ && socketServer_.GetLoadReplayPath(loadPath)) {
+		if (replayManager_.LoadLog(loadPath)) {
+			isPlayback_ = true;
+			playbackFrame_ = 0;
+		}
+	}
+
 	// ソケットからタイムライン同期命令を受信したかチェック
 	int socketFrame = 0;
 	if (isSocketSyncEnabled_ && socketServer_.GetTargetFrame(socketFrame)) {

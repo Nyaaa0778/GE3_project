@@ -11,6 +11,8 @@ SocketServer::SocketServer()
       targetFrame_(0),
       hasTargetFrame_(false),
       hasTakeover_(false),
+      hasTargetReplayPath_(false),
+      targetReplayPath_(""),
       listenSocket_(INVALID_SOCKET) {}
 
 SocketServer::~SocketServer() {
@@ -106,6 +108,15 @@ bool SocketServer::CheckTakeover() {
     return takeover;
 }
 
+bool SocketServer::GetLoadReplayPath(std::string& outPath) {
+    if (hasTargetReplayPath_) {
+        outPath = targetReplayPath_;
+        hasTargetReplayPath_ = false;
+        return true;
+    }
+    return false;
+}
+
 void SocketServer::RunServer() {
     while (isRunning_) {
         // 接続待ち
@@ -170,6 +181,9 @@ void SocketServer::HandleClient(SOCKET clientSocket) {
                 } catch (...) {
                     // 数値変換エラー無視
                 }
+            } else if (msg.rfind("LOAD ", 0) == 0) {
+                targetReplayPath_ = msg.substr(5);
+                hasTargetReplayPath_ = true;
             } else if (msg == "TAKEOVER") {
                 hasTakeover_ = true;
             }
