@@ -1,5 +1,11 @@
 #include "FinalBlit.hlsli"
 
+struct VignetteParams
+{
+    float32_t4 color;
+};
+ConstantBuffer<VignetteParams> gVignetteParams : register(b0);
+
 Texture2D<float32_t4> gTexture : register(t0);
 SamplerState gSampler : register(s0);
 
@@ -20,7 +26,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     // 0.8乗でそれっぽく
     vignette = saturate(pow(vignette, 0.8f));
     // 係数として乗算
-    output.color.rgb *= vignette;
+    output.color.rgb = lerp(gVignetteParams.color.rgb, output.color.rgb, vignette);
     
     return output;
 }

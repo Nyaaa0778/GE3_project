@@ -232,6 +232,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effects\primitive\Primitive.cpp" />
     <ClCompile Include="engine\effects\primitive\PrimitiveRenderer.cpp" />
     <ClCompile Include="engine\core\graphics\PostProcessRenderer.cpp" />
+    <ClCompile Include="engine\core\graphics\PostProcessEffects.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl">
@@ -424,6 +425,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\effects\primitive\Primitive.h" />
     <ClInclude Include="engine\effects\primitive\PrimitiveRenderer.h" />
     <ClInclude Include="engine\core\graphics\PostProcessRenderer.h" />
+    <ClInclude Include="engine\core\graphics\IPostProcessEffect.h" />
+    <ClInclude Include="engine\core\graphics\PostProcessEffects.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

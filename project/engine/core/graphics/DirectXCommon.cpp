@@ -127,7 +127,7 @@ void DirectXCommon::InitializeRenderTexture() {
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
 	// クリアカラー
-	const float kRenderTargetClearValue[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+	const float kRenderTargetClearValue[4] = {0.1f, 0.25f, 0.5f, 1.0f};
 	D3D12_CLEAR_VALUE clearValue {};
 	clearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	clearValue.Color[0] = kRenderTargetClearValue[0];
@@ -187,8 +187,8 @@ void DirectXCommon::BeginDraw() {
 	// OMSetRenderTargets (SwapchainのrtvHandles_からrtvHandleRenderTexture_に変更)
 	commandList_->OMSetRenderTargets(1, &rtvHandleRenderTexture_, false, &dsvHandle);
 
-	// 画面全体の色をクリア (RenderTextureのクリアカラーと同じ赤色を指定)
-	const float clearColor[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+	// 画面全体の色をクリア (RenderTextureのクリアカラーと同じ色を指定)
+	const float clearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
 	commandList_->ClearRenderTargetView(rtvHandleRenderTexture_, clearColor, 0, nullptr);
 
 	// 画面全体の深度をクリア

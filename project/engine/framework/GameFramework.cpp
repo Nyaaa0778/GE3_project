@@ -295,7 +295,6 @@ void GameFramework::EndFrame() {
 	uint32_t rtexSrvIndex = DirectXCommon::GetInstance()->GetRenderTextureSrvIndex();
 	D3D12_GPU_DESCRIPTOR_HANDLE rtexSrvHandle = ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(rtexSrvIndex);
 	PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
-	PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
 
 	// 3. コピーした画像の上に ImGui を重ねて描画する
 	ImGuiManager::GetInstance()->Draw();

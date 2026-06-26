@@ -118,6 +118,14 @@ void GamePlayScene::Update() {
 			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
 		}
 
+		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kVignetting)) {
+			Vector4 color = PostProcessRenderer::GetInstance()->GetVignetteColor();
+			float c[4] = { color.x, color.y, color.z, color.w };
+			if (ImGui::ColorEdit4("Vignette Color", c)) {
+				PostProcessRenderer::GetInstance()->SetVignetteColor({ c[0], c[1], c[2], c[3] });
+			}
+		}
+
 		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
 			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
 			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
