@@ -20,10 +20,15 @@ void PlayerBullet::Initialize(Camera* camera, const Vector3& pos, const Vector3&
 
 	// コライダーの初期設定 (球, 半径 0.2)
 	SetShape(ColliderShape::kSphere);
-	SetSphere({ 0.5f });
+	SetSphere({ 0.2f });
+
+	prevWorldPos_ = pos;
 }
 
 void PlayerBullet::Update() {
+	// 移動前のワールド座標を保存
+	prevWorldPos_ = worldTransform_.GetWorldPosition();
+
 	worldTransform_.translation += velocity_;
 	worldTransform_.UpdateMatrix();
 	model_->Update(&worldTransform_);
@@ -50,4 +55,8 @@ void PlayerBullet::OnCollision() {
 
 Vector3 PlayerBullet::GetWorldPosition() {
 	return worldTransform_.GetWorldPosition();
+}
+
+Vector3 PlayerBullet::GetPrevWorldPosition() {
+	return prevWorldPos_;
 }

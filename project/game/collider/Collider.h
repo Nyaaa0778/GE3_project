@@ -26,6 +26,8 @@ public:
 	virtual void OnCollision() = 0;
 	// ワールド座標を取得
 	virtual Vector3 GetWorldPosition() = 0;
+	// 前フレームのワールド座標を取得
+	virtual Vector3 GetPrevWorldPosition() { return GetWorldPosition(); }
 
 public:
 	// 形状タイプのゲッター・セッター

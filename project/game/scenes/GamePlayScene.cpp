@@ -32,7 +32,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
+	std::unique_ptr<LevelData> levelData(loader.Load("stage"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -48,7 +48,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "stage");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -328,6 +328,7 @@ void GamePlayScene::Finalize() {}
 void GamePlayScene::CheckAllCollisions() {
 	// プレイヤーと敵の衝突判定
 	for (auto& enemy : enemies_) {
+		if (!enemy->IsAlive()) continue; // すでに死亡している敵はスキップ
 		if (Collision::CheckCollision(player_.get(), enemy.get())) {
 			player_->OnCollision();
 			enemy->OnCollision();
@@ -340,7 +341,9 @@ void GamePlayScene::CheckAllCollisions() {
 	// プレイヤーの弾と敵の衝突判定
 	const auto& bullets = player_->GetBullets();
 	for (const auto& bullet : bullets) {
+		if (bullet->IsDead()) continue; // すでに死亡している弾はスキップ
 		for (auto& enemy : enemies_) {
+			if (!enemy->IsAlive()) continue; // すでに死亡している敵はスキップ
 			if (Collision::CheckCollision(bullet.get(), enemy.get())) {
 				bullet->OnCollision();
 				enemy->OnCollision();

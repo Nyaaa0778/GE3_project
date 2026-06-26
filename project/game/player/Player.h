@@ -55,7 +55,7 @@ private:
 	Vector3 reticleWorldPos = {};
 
 	// 速さ
-	float kBaseSpeed = 0.3f;
+	float kBaseSpeed = 0.2f;
 	// 速度
 	Vector3 velocity_ = {0.0f, 0.0f, 0.0f};
 

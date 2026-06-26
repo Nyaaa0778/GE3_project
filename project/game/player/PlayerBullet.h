@@ -15,6 +15,7 @@ public:
 	// コライダーの仮想関数をオーバーライド
 	void OnCollision() override;
 	Vector3 GetWorldPosition() override;
+	Vector3 GetPrevWorldPosition() override;
 public:
 	void Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity);
 
@@ -29,12 +30,12 @@ private:
 	std::unique_ptr<Object3d> model_;
 	WorldTransform worldTransform_;
 	Vector3 velocity_ = {};
+	Vector3 prevWorldPos_ = {};
 
 	// 寿命
-	static constexpr float kLifeTime = 1.0f;
+	static constexpr float kLifeTime = 0.2f;
 	// 消滅タイマー
 	float deathTimer_ = kLifeTime;
 	// 消滅フラグ
 	bool isDead_ = false;
 };
-

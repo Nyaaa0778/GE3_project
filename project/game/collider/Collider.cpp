@@ -1,6 +1,9 @@
 #include "Collider.h"
+
 #include <MathUtility.h>
+
 #include <algorithm>
+#include <cmath>
 
 using namespace MathUtility;
 
@@ -10,19 +13,82 @@ namespace Collision {
 		ColliderShape shape1 = c1->GetShape();
 		ColliderShape shape2 = c2->GetShape();
 
+		// 移動前と移動後の位置を取得
+		Vector3 p1_start = c1->GetPrevWorldPosition();
+		Vector3 p1_end = c1->GetWorldPosition();
+		Vector3 p2_start = c2->GetPrevWorldPosition();
+		Vector3 p2_end = c2->GetWorldPosition();
+
+		Vector3 diff1 = p1_end - p1_start;
+		Vector3 diff2 = p2_end - p2_start;
+
+		float dist1 = Length(diff1);
+		float dist2 = Length(diff2);
+
+		// 各コライダーのサイズを算出
+		float size1 = (shape1 == ColliderShape::kSphere) ? c1->GetSphere().radius : Length(c1->GetAABB().size) * 0.5f;
+		float size2 = (shape2 == ColliderShape::kSphere) ? c2->GetSphere().radius : Length(c2->GetAABB().size) * 0.5f;
+
+		// 移動距離がサイズに対して十分大きい場合、すり抜け対策（CCD）を有効にする
+		bool useCCD1 = dist1 > size1 * 0.5f;
+		bool useCCD2 = dist2 > size2 * 0.5f;
+
+		if (useCCD1 || useCCD2) {
+			// 相対移動ベクトルから必要な分割数を算出
+			Vector3 relDiff = diff1 - diff2;
+			float relDist = Length(relDiff);
+
+			float minSize = (std::min)(size1, size2);
+			float step = minSize * 0.8f;
+			if (step <= 0.0f) step = 0.1f;
+
+			int steps = static_cast<int>(std::ceil(relDist / step));
+			if (steps < 1) steps = 1;
+
+			// 時間 t [0, 1] でそれぞれの位置を線形補間しながら判定
+			for (int i = 0; i <= steps; ++i) {
+				float t = static_cast<float>(i) / static_cast<float>(steps);
+				Vector3 pos1 = p1_start + diff1 * t;
+				Vector3 pos2 = p2_start + diff2 * t;
+
+				bool isHit = false;
+				if (shape1 == ColliderShape::kSphere && shape2 == ColliderShape::kSphere) {
+					isHit = CheckCollision(c1->GetSphere(), pos1, c2->GetSphere(), pos2);
+				}
+				else if (shape1 == ColliderShape::kAABB && shape2 == ColliderShape::kAABB) {
+					isHit = CheckCollision(c1->GetAABB(), pos1, c2->GetAABB(), pos2);
+				}
+				else {
+					Collider* aabb = (shape1 == ColliderShape::kAABB) ? c1 : c2;
+					Vector3 aabbPos = (shape1 == ColliderShape::kAABB) ? pos1 : pos2;
+					Collider* sphere = (shape1 == ColliderShape::kSphere) ? c1 : c2;
+					Vector3 spherePos = (shape1 == ColliderShape::kSphere) ? pos1 : pos2;
+					isHit = CheckCollision(aabb->GetAABB(), aabbPos, sphere->GetSphere(), spherePos);
+				}
+
+				if (isHit) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// どちらも高速移動していない場合は通常の1点判定
 		if (shape1 == ColliderShape::kSphere && shape2 == ColliderShape::kSphere) {
 			// 球と球
-			return CheckCollision(c1->GetSphere(), c1->GetWorldPosition(), c2->GetSphere(), c2->GetWorldPosition());
+			return CheckCollision(c1->GetSphere(), p1_end, c2->GetSphere(), p2_end);
 		}
 		else if (shape1 == ColliderShape::kAABB && shape2 == ColliderShape::kAABB) {
 			// AABBとAABB
-			return CheckCollision(c1->GetAABB(), c1->GetWorldPosition(), c2->GetAABB(), c2->GetWorldPosition());
+			return CheckCollision(c1->GetAABB(), p1_end, c2->GetAABB(), p2_end);
 		}
 		else {
 			// AABBと球
 			Collider* aabb = (shape1 == ColliderShape::kAABB) ? c1 : c2;
+			Vector3 aabbPos = (shape1 == ColliderShape::kAABB) ? p1_end : p2_end;
 			Collider* sphere = (shape1 == ColliderShape::kSphere) ? c1 : c2;
-			return CheckCollision(aabb->GetAABB(), aabb->GetWorldPosition(), sphere->GetSphere(), sphere->GetWorldPosition());
+			Vector3 spherePos = (shape1 == ColliderShape::kSphere) ? p1_end : p2_end;
+			return CheckCollision(aabb->GetAABB(), aabbPos, sphere->GetSphere(), spherePos);
 		}
 	}
 
