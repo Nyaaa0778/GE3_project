@@ -8,6 +8,7 @@
 #include "DebugCamera.h"
 #include "Plane.h"
 #include "PostProcessRenderer.h"
+#include "TextureManager.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -75,6 +76,16 @@ void TitleScene::Initialize() {
 	// 2. エミッタの生成（グループ名、追従するTransformのポインタ、発生間隔、1回の数）
 	// titleTransform_ はタイトルロゴや背景の座標を指す想定
 	emitter_ = std::make_unique<ParticleEmitter>("CircleParticle", &particleTransform_, 0.2f, 3);
+
+	// ノイズテクスチャを事前にロードしてキャッシュしておく
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise0.png");
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise1.png");
+
+	// ポストプロセスの初期設定 (ディゾルブモードを確定し、ロード済みテクスチャを設定)
+	auto postProcess = PostProcessRenderer::GetInstance();
+	postProcess->SetMode(PostProcessRenderer::PostProcessMode::kDissolve);
+	postProcess->SetDissolveNoiseTexture("resources/sprites/noise0.png");
+	postProcess->SetDissolveThreshold(0.0f);
 }
 
 void TitleScene::Update() {
@@ -97,6 +108,26 @@ void TitleScene::Update() {
 	// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
 	if (input->TriggerKey(DIK_SPACE)) {
 		AudioManager::PlayAudio(se_); // 何も書かない、または false で1回だけ再生
+		isDissolving_ = true;
+		isFadingOut_ = !isFadingOut_;
+	}
+
+	// ディゾルブのアニメーション更新
+	if (isDissolving_) {
+		if (isFadingOut_) {
+			dissolveThreshold_ += dissolveSpeed_;
+			if (dissolveThreshold_ >= 1.0f) {
+				dissolveThreshold_ = 1.0f;
+				isDissolving_ = false;
+			}
+		} else {
+			dissolveThreshold_ -= dissolveSpeed_;
+			if (dissolveThreshold_ <= 0.0f) {
+				dissolveThreshold_ = 0.0f;
+				isDissolving_ = false;
+			}
+		}
+		PostProcessRenderer::GetInstance()->SetDissolveThreshold(dissolveThreshold_);
 	}
 
 	// 【停止のテスト】Bキーを押したらBGMだけをピタッと止める

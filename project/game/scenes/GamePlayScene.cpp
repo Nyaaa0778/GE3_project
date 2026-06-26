@@ -3,6 +3,7 @@
 #include <MyEngine.h>
 #include "PostProcessRenderer.h"
 #include "TextureManager.h"
+#include "Input.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;

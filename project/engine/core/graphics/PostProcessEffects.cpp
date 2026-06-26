@@ -362,10 +362,7 @@ void DissolveEffect::Initialize(DirectXCommon* dxCommon) {
 	// 初期パラメータ設定
 	paramsData_->threshold = threshold_;
 	paramsData_->edgeWidth = 0.04f;
-	paramsData_->edgeColor = {1.0f, 0.4f, 0.0f, 1.0f}; // オレンジ色の発光
-
-	// デフォルトノイズテクスチャをロード
-	TextureManager::GetInstance()->LoadTexture(noiseTextureFilePath_);
+	paramsData_->edgeColor = {0.0f, 0.25f, 1.0f, 1.0f}; // 青色の発光
 
 	CreateRootSignature();
 	CreatePipelineState();
@@ -377,7 +374,6 @@ void DissolveEffect::SetThreshold(float threshold) {
 	}
 }
 void DissolveEffect::SetNoiseTexture(const std::string& filePath) {
-	TextureManager::GetInstance()->LoadTexture(filePath);
 	noiseTextureFilePath_ = filePath;
 }
 void DissolveEffect::CreateRootSignature() {
