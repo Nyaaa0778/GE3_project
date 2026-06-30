@@ -461,3 +461,93 @@ void DissolveEffect::Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPT
 
 	cmdList->DrawInstanced(3, 1, 0, 0);
 }
+
+//================================================================================
+// 9. RandomNoiseEffect
+//================================================================================
+void RandomNoiseEffect::Initialize(DirectXCommon* dxCommon) {
+	dxCommon_ = dxCommon;
+
+	// 定数バッファの作成
+	constantBuffer_ = dxCommon_->CreateBufferResource(sizeof(RandomNoiseParams));
+	constantBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&paramsData_));
+	paramsData_->time = 0.0f;
+
+	CreateRootSignature();
+	CreatePipelineState();
+}
+void RandomNoiseEffect::CreateRootSignature() {
+	// テクスチャ t0 (ピクセル) ＋ 定数バッファ b0 (ピクセル)
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature {};
+	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	D3D12_DESCRIPTOR_RANGE descriptorRange[1] = {};
+	descriptorRange[0].BaseShaderRegister = 0; // t0
+	descriptorRange[0].NumDescriptors = 1;
+	descriptorRange[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	descriptorRange[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	// Parameter 0: t0 Table
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[0].DescriptorTable.pDescriptorRanges = descriptorRange;
+	rootParameters[0].DescriptorTable.NumDescriptorRanges = _countof(descriptorRange);
+
+	// Parameter 1: b0 CBV
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[1].Descriptor.ShaderRegister = 0; // b0
+
+	descriptionRootSignature.pParameters = rootParameters;
+	descriptionRootSignature.NumParameters = _countof(rootParameters);
+
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[1] = {};
+	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;
+	staticSamplers[0].ShaderRegister = 0; // s0
+	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	descriptionRootSignature.pStaticSamplers = staticSamplers;
+	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> signatureBlob = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+	assert(SUCCEEDED(hr));
+
+	hr = dxCommon_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
+	assert(SUCCEEDED(hr));
+}
+void RandomNoiseEffect::CreatePipelineState() {
+	auto vsBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/FinalBlit.VS.hlsl", L"vs_6_0");
+	auto psBlob = dxCommon_->CompileShader(L"resources/shaders/finalBlit/RandomNoise.PS.hlsl", L"ps_6_0");
+	assert(vsBlob && psBlob);
+
+	auto gdesc = CreateDefaultPipelineDesc(rootSignature_.Get(), vsBlob.Get(), psBlob.Get());
+	HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(&gdesc, IID_PPV_ARGS(&pipelineState_));
+	assert(SUCCEEDED(hr));
+}
+void RandomNoiseEffect::Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) {
+	// 時間更新 (毎フレーム 1/60 秒を仮定して加算)
+	time_ += 0.016f;
+	if (paramsData_) {
+		paramsData_->time = time_;
+	}
+
+	cmdList->SetGraphicsRootSignature(rootSignature_.Get());
+	cmdList->SetPipelineState(pipelineState_.Get());
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
+	// Parameter 0: t0 Table (メイン画面テクスチャ)
+	cmdList->SetGraphicsRootDescriptorTable(0, srvHandle);
+	
+	// Parameter 1: b0 CBV (時間パラメータ)
+	cmdList->SetGraphicsRootConstantBufferView(1, constantBuffer_->GetGPUVirtualAddress());
+
+	cmdList->DrawInstanced(3, 1, 0, 0);
+}

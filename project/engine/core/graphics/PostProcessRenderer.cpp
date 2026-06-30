@@ -28,6 +28,7 @@ void PostProcessRenderer::Initialize(DirectXCommon* dxCommon) {
 	effects_[PostProcessMode::kOutline] = std::make_unique<OutlineEffect>();
 	effects_[PostProcessMode::kVignetting] = std::make_unique<VignetteEffect>();
 	effects_[PostProcessMode::kDissolve] = std::make_unique<DissolveEffect>();
+	effects_[PostProcessMode::kRandomNoise] = std::make_unique<RandomNoiseEffect>();
 
 	// 一括初期化
 	for (auto& pair : effects_) {

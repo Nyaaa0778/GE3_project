@@ -267,7 +267,7 @@ void TitleScene::UpdateImGui() {
 	// ──────────────────────────────────────────────────
 	if (ImGui::CollapsingHeader("PostProcess Settings")) {
 		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
-		const char* modes[] = {"Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve"};
+		const char* modes[] = {"Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve", "RandomNoise"};
 		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
 			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
 		}

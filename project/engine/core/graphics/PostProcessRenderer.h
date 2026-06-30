@@ -25,6 +25,7 @@ public:
 		kOutline,
 		kVignetting,
 		kDissolve,
+		kRandomNoise,
 	};
 
 public:

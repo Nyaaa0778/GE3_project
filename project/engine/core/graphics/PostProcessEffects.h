@@ -181,3 +181,29 @@ private:
 	void CreateRootSignature();
 	void CreatePipelineState();
 };
+
+//================================================================================
+// 9. ランダムノイズ
+//================================================================================
+class RandomNoiseEffect : public IPostProcessEffect
+{
+public:
+	struct RandomNoiseParams {
+		float time;
+	};
+
+public:
+	void Initialize(DirectXCommon* dxCommon) override;
+	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+
+private:
+	DirectXCommon* dxCommon_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
+	RandomNoiseParams* paramsData_ = nullptr;
+	float time_ = 0.0f;
+
+	void CreateRootSignature();
+	void CreatePipelineState();
+};
