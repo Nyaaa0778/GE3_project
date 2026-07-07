@@ -9,6 +9,7 @@
 #include <WorldTransform.h>
 
 #include "Collider.h"
+#include "Reticle.h"
 
 class Object3d;
 class Camera;
@@ -39,8 +40,8 @@ public:
 	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
 	WorldTransform* GetWorldTransform() { return &worldTransform_; }
 
-	decltype(auto) GetReticleMatWorld() const { return worldTransformReticle_.matWorld; }
-	Vector2 GetReticle2DPosition() const;
+	const Matrix4x4& GetReticleMatWorld() const { return reticle_->GetMatWorld(); }
+	Vector2 GetReticle2DPosition() const { return reticle_->Get2DPosition(); }
 	bool GetIsReticleHit() const { return isReticleHit_; }
 
 	void SetParent(const WorldTransform* parent) { worldTransform_.parent = parent; }
@@ -84,16 +85,7 @@ private:
 	// 照準
 	// ------------------------------------
 
-	WorldTransform worldTransformReticle_;
-
-	// モデル
-	std::unique_ptr<Object3d> reticle_;
-
-	// スプライト
-	std::unique_ptr<Sprite> reticleSprite_;
-
-	// 描画サイズ
-	static constexpr Vector3 kReticleDrawSize = {0.4f, 0.4f, 0.4f};
+	std::unique_ptr<Reticle> reticle_;
 
 	// ------------------------------------
 	// ロックオン

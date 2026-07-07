@@ -217,6 +217,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\level\LevelLoader.cpp" />
     <ClCompile Include="engine\level\Level.cpp" />
     <ClCompile Include="game\player\LockOn.cpp" />
+    <ClCompile Include="game\player\Reticle.cpp" />
     <ClCompile Include="main.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -248,7 +249,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\enemy\RusherEnemy.cpp" />
     <ClCompile Include="game\enemy\Shockwave.cpp" />
     <ClCompile Include="game\goal\Goal.cpp" />
-    <ClCompile Include="Reticle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -403,7 +403,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\enemy\Shockwave.h" />
     <ClInclude Include="game\goal\Goal.h" />
     <ClInclude Include="game\player\LockOn.h" />
-    <ClInclude Include="Reticle.h" />
+    <ClInclude Include="game\player\Reticle.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

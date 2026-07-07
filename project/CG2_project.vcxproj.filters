@@ -297,7 +297,7 @@
     <ClCompile Include="game\player\LockOn.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Reticle.cpp">
+    <ClCompile Include="game\player\Reticle.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -553,7 +553,7 @@
     <ClInclude Include="game\player\LockOn.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Reticle.h">
+    <ClInclude Include="game\player\Reticle.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

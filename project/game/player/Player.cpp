@@ -55,19 +55,8 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	// 照準
 	// ------------------------------------
 
-	reticle_ = std::make_unique<Object3d>();
-	reticle_->Initialize("sphere");
-	reticle_->SetCamera(camera_);
-
-	worldTransformReticle_.Initialize();
-	worldTransformReticle_.scale = kReticleDrawSize;
-	// 親子関係を設定せず、ワールド空間に直接配置する
-	worldTransformReticle_.parent = nullptr;
-
-	reticleSprite_ = std::make_unique<Sprite>();
-	reticleSprite_->Initialize("reticle.png", {640.0f, 360.0f}, {0.5f, 0.5f});
-	reticleSprite_->SetScale({kReticleDrawSize.x, kReticleDrawSize.y});
-	reticleSprite_->SetColor({0.0f, 0.0f, 0.0f, 1.0f});
+	reticle_ = std::make_unique<Reticle>();
+	reticle_->Initialize(camera_);
 
 	// コライダーの初期設定
 	SetShape(ColliderShape::kSphere);
@@ -98,7 +87,7 @@ void Player::Update() {
 	// 照準
 	// ------------------------------------
 
-	UpdateReticle();
+	reticle_->Update(worldTransform_);
 
 
 	// ------------------------------------
@@ -124,8 +113,7 @@ void Player::Draw() {
 	// ------------------------------------
 	// 照準
 	// ------------------------------------
-	/*reticle_->Draw();
-	reticleSprite_->Draw();*/
+	reticle_->Draw();
 
 	// ------------------------------------
 	// 弾
@@ -169,58 +157,7 @@ void Player::UpdateMove() {
 	worldTransform_.translation.y = std::clamp(worldTransform_.translation.y, -kMoveLimitY, kMoveLimitY);
 }
 
-/// <summary>
-/// 照準の描画
-/// </summary>
-void Player::UpdateReticle() {
-	const float kDistancePlayerToReticle = 50.0f;
-	const float kReticleScaleX = 2.5f; // 照準の横方向の可動域倍率 (1.0f より大きい値で広がる)
-	const float kReticleScaleY = 2.5f; // 照準の縦方向の可動域倍率 (1.0f より大きい値で広がる)
 
-	Vector3 reticleWorldPos = {};
-
-	if (worldTransform_.parent) {
-		// 親（レールカメラ）のローカル空間で照準位置を計算（自機の位置に比例してさらに外側へ）
-		Vector3 reticleLocalPos = {};
-		reticleLocalPos.x = worldTransform_.translation.x * kReticleScaleX;
-		reticleLocalPos.y = worldTransform_.translation.y * kReticleScaleY;
-		reticleLocalPos.z = worldTransform_.translation.z + kDistancePlayerToReticle;
-
-		// 親のワールド行列を使ってワールド空間の座標に変換する
-		reticleWorldPos = MathUtility::Transform(reticleLocalPos, worldTransform_.parent->matWorld);
-	} else {
-		// 親がいない場合のフォールバック（従来通り正面方向へ配置）
-		Vector3 forward = { worldTransform_.matWorld.m[2][0], worldTransform_.matWorld.m[2][1], worldTransform_.matWorld.m[2][2] };
-		if (Length(forward) > 0.0001f) {
-			forward = Normalize(forward);
-		} else {
-			forward = { 0.0f, 0.0f, 1.0f };
-		}
-		reticleWorldPos = worldTransform_.GetWorldPosition() + forward * kDistancePlayerToReticle;
-	}
-
-	// この座標を3Dレティクルのワールド座標（translation）として設定
-	worldTransformReticle_.translation = reticleWorldPos;
-
-	worldTransformReticle_.UpdateMatrix();
-
-	reticle_->SetWorldTransform(&worldTransformReticle_);
-	reticle_->Update();
-
-	// 3Dレティクルのワールド座標から2Dレティクルのスクリーン座標を計算
-	{
-		Vector3 positionReticle = worldTransformReticle_.GetWorldPosition();
-		// ビューポート行列
-		Matrix4x4 matViewport = MakeViewportMatrix(0.0f, 0.0f, static_cast<float>(WinApp::kClientWidth), static_cast<float>(WinApp::kClientHeight), 0.0f, 1.0f);
-		// ビュー行列、プロジェクション行列、ビューポート行列を合成する
-		Matrix4x4 matViewProjectionViewport = camera_->matView * camera_->matProjection * matViewport;
-		// ワールド→スクリーン座標変換
-		positionReticle = MathUtility::Transform(positionReticle, matViewProjectionViewport);
-		// スプライトのレティクルに座標設定
-		reticleSprite_->SetPosition(Vector2(positionReticle.x, positionReticle.y));
-	}
-	reticleSprite_->Update();
-}
 
 /// <summary>
 /// 弾の更新
@@ -262,7 +199,7 @@ void Player::Attack() {
 			Vector3 spawnPos = worldTransform_.GetWorldPosition();
 
 			// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
-			Vector3 shootDir = worldTransformReticle_.GetWorldPosition() - spawnPos;
+			Vector3 shootDir = reticle_->Get3DPosition() - spawnPos;
 			shootDir = Normalize(shootDir);
 
 			if (isLockOnMode_ && lockOn_ && lockOn_->GetTarget()) {
@@ -275,7 +212,7 @@ void Player::Attack() {
 				shootDir = Normalize(shootDir);
 			} else {
 				// 通常モード（またはターゲットがいない場合）は従来通り3Dレティクルを狙う
-				shootDir = worldTransformReticle_.GetWorldPosition() - spawnPos;
+				shootDir = reticle_->Get3DPosition() - spawnPos;
 				shootDir = Normalize(shootDir);
 			}
 
@@ -360,9 +297,4 @@ Vector3 Player::GetWorldPosition() {
 	return worldTransform_.GetWorldPosition();
 }
 
-Vector2 Player::GetReticle2DPosition() const {
-	if (reticleSprite_) {
-		return reticleSprite_->GetPosition();
-	}
-	return { 0.0f, 0.0f };
-}
+
