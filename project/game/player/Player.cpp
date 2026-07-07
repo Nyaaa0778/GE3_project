@@ -10,6 +10,7 @@
 #include "Plane.h"
 #include "Primitive.h"
 #include "PlayerBullet.h"
+#include "HomingPlayerBullet.h"
 #include "LockOn.h"
 #include "EnemyBase.h"
 #include "Logger.h"
@@ -66,7 +67,7 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
 }
 
-void Player::Update() {
+void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	// 本体
 	// ------------------------------------
@@ -98,7 +99,7 @@ void Player::Update() {
 	Attack();
 	
 	// 弾の更新
-	UpdateBullet();
+	UpdateBullet(enemies);
 
 	// 前フレームのワールド座標を保存
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
@@ -113,7 +114,10 @@ void Player::Draw() {
 	// ------------------------------------
 	// 照準
 	// ------------------------------------
-	reticle_->Draw();
+	// ロックオンモードではない場合のみ通常レティクルを描画
+	if (!isLockOnMode_) {
+		reticle_->Draw();
+	}
 
 	// ------------------------------------
 	// 弾
@@ -162,7 +166,7 @@ void Player::UpdateMove() {
 /// <summary>
 /// 弾の更新
 /// </summary>
-void Player::UpdateBullet() {
+void Player::UpdateBullet(const std::list<EnemyBase*>& enemies) {
 	// クールダウンタイマーの更新
 	if (cooldownTimer_ > 0.0f) {
 		cooldownTimer_ -= TimeManager::GetInstance()->GetDeltaTime();
@@ -170,6 +174,15 @@ void Player::UpdateBullet() {
 
 	// 弾の更新
 	for (const auto& bullet : bullets_) {
+		EnemyBase* target = bullet->GetTarget();
+		if (target) {
+			// ターゲットがまだ生存している（リストに存在する）か確認
+			auto it = std::find(enemies.begin(), enemies.end(), target);
+			if (it == enemies.end()) {
+				// 存在しない場合はターゲットをクリア
+				bullet->SetTarget(nullptr);
+			}
+		}
 		bullet->Update();
 	}
 
@@ -193,98 +206,162 @@ void Player::Attack() {
 	if (input->PushKey(DIK_SPACE)) {
 		if(cooldownTimer_ <= 0.0f)
 		{
-			auto newBullet = std::make_unique<PlayerBullet>();
-
-			// 自機のワールド座標を取得
+			bool canShoot = false;
+			std::unique_ptr<PlayerBullet> newBullet;
 			Vector3 spawnPos = worldTransform_.GetWorldPosition();
+			Vector3 shootDir = {};
 
-			// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
-			Vector3 shootDir = reticle_->Get3DPosition() - spawnPos;
-			shootDir = Normalize(shootDir);
+			if (isLockOnMode_) {
+				// ロックオンモード時は、ロックオン対象が存在する場合のみ射撃可能
+				if (lockOn_ && !lockOn_->GetTargets().empty()) {
+					const auto& targets = lockOn_->GetTargets();
+					for (EnemyBase* target : targets) {
+						Vector3 targetPos = target->GetWorldPosition();
 
-			if (isLockOnMode_ && lockOn_ && lockOn_->GetTarget()) {
-				// ロックオン対象を取得
-				EnemyBase* target = lockOn_->GetTarget();
-				Vector3 targetPos = target->GetWorldPosition();
+						// ターゲットへの方向ベクトル ＝ 終点(敵) － 始点(自機)
+						Vector3 targetShootDir = targetPos - spawnPos;
+						targetShootDir = Normalize(targetShootDir);
 
-				// ターゲットへの方向ベクトル ＝ 終点(敵) － 始点(自機)
-				shootDir = targetPos - spawnPos;
-				shootDir = Normalize(shootDir);
+						// 自機の1フレームあたりの移動ベクトル（慣性）を計算
+						Vector3 playerFrameVelocity = worldTransform_.GetWorldPosition() - prevWorldPos_;
+						// 弾の速度（自機の速度＋射撃方向の弾速）
+						Vector3 targetBulletVelocity = playerFrameVelocity + targetShootDir * kBulletSpeed;
+
+						// ホーミング弾を生成・初期化
+						auto homingBullet = std::make_unique<HomingPlayerBullet>();
+						homingBullet->Initialize(camera_, spawnPos, targetBulletVelocity, target);
+						bullets_.push_back(std::move(homingBullet));
+
+						// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
+						Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
+						// 球体自機の少し前方から射出する
+						Vector3 effectSpawnPos = spawnPos + targetShootDir * 1.2f;
+
+						// 1. 飛び散る火花 (方向・速度・色の異なるコーン状の広がり)
+						for (uint32_t i = 0; i < 16; ++i) {
+							Vector3 randomSpread = Random::RangeVector3(-0.08f, 0.08f);
+							Vector3 particleVelDir = Normalize(targetShootDir + randomSpread);
+
+							float speed = Random::RangeFloat(35.0f, 75.0f);
+							Vector3 sparkVel = playerVelocity + particleVelDir * speed;
+
+							Vector4 sparkColor;
+							float colorRand = Random::RangeFloat(0.0f, 1.0f);
+							if (colorRand < 0.3f) {
+								sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄
+							} else if (colorRand < 0.7f) {
+								sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ
+							} else {
+								sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ
+							}
+
+							float size = Random::RangeFloat(0.12f, 0.24f);
+							Vector3 sparkScale = { size, size, size };
+							float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
+
+							ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, sparkVel, sparkColor, sparkScale, sparkLifeTime, 1);
+						}
+
+						// 2. 銃口の閃光 (白熱コア)
+						for (uint32_t i = 0; i < 4; ++i) {
+							Vector3 randomSpread = Random::RangeVector3(-0.03f, 0.03f);
+							Vector3 coreVelDir = Normalize(targetShootDir + randomSpread);
+							float speed = Random::RangeFloat(5.0f, 12.0f);
+							Vector3 coreVel = playerVelocity + coreVelDir * speed;
+
+							Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f };
+							float size = Random::RangeFloat(1.0f, 1.4f);
+							Vector3 coreScale = { size, size, size };
+							float coreLifeTime = Random::RangeFloat(0.05f, 0.09f);
+
+							ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);
+						}
+					}
+
+					// 射撃した後は、ロックオンをクリアする
+					lockOn_->ClearTargets();
+
+					// クールダウンを設定
+					cooldownTimer_ = kCooldownDuration;
+				}
 			} else {
-				// 通常モード（またはターゲットがいない場合）は従来通り3Dレティクルを狙う
+				// 通常モード時は常に射撃可能
 				shootDir = reticle_->Get3DPosition() - spawnPos;
 				shootDir = Normalize(shootDir);
+
+				// 自機の1フレームあたりの移動ベクトル（慣性）を計算
+				Vector3 playerFrameVelocity = worldTransform_.GetWorldPosition() - prevWorldPos_;
+				// 弾の速度（自機の速度＋射撃方向の弾速）
+				bulletVelocity_ = playerFrameVelocity + shootDir * kBulletSpeed;
+
+				// 通常の弾を生成・初期化
+				newBullet = std::make_unique<PlayerBullet>();
+				newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
+				canShoot = true;
 			}
 
-			// 自機の1フレームあたりの移動ベクトル（慣性）を計算
-			Vector3 playerFrameVelocity = worldTransform_.GetWorldPosition() - prevWorldPos_;
+			if (canShoot) {
+				// 弾を登録する
+				bullets_.push_back(std::move(newBullet));
 
-			// 弾の速度（自機の速度＋射撃方向の弾速）
-			bulletVelocity_ = playerFrameVelocity + shootDir * kBulletSpeed;
+				// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
+				Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
 
-			// 弾を初期化（親は nullptr でワールド空間上に配置する）
-			newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
+				// 射撃方向の算出
+				shootDir = Normalize(bulletVelocity_);
+				// 球体自機の少し前方から射出する
+				Vector3 effectSpawnPos = spawnPos + shootDir * 1.2f;
 
-			// 弾を登録する
-			bullets_.push_back(std::move(newBullet));
+				// 1. 飛び散る火花 (方向・速度・色の異なるコーン状の広がり)
+				for (uint32_t i = 0; i < 16; ++i) {
+					// 弾道の周りに広がり（スプレッド）を加算
+					// より直線的で鋭い火花にするため、範囲を -0.08f 〜 0.08f に絞る
+					Vector3 randomSpread = Random::RangeVector3(-0.08f, 0.08f);
+					Vector3 particleVelDir = Normalize(shootDir + randomSpread);
 
-			// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
-			Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
+					// 速度をランダムにばらけさせる (秒速35.0〜75.0)
+					float speed = Random::RangeFloat(35.0f, 75.0f);
+					Vector3 sparkVel = playerVelocity + particleVelDir * speed;
 
-			// 射撃方向の算出
-			shootDir = Normalize(bulletVelocity_);
-			// 球体自機の少し前方から射出する
-			Vector3 effectSpawnPos = spawnPos + shootDir * 1.2f;
+					// 色のばらつき（白黄、オレンジ、赤オレンジ）を持たせて熱量を表現
+					Vector4 sparkColor;
+					float colorRand = Random::RangeFloat(0.0f, 1.0f);
+					if (colorRand < 0.3f) {
+						sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄 (最も熱いコア付近)
+					} else if (colorRand < 0.7f) {
+						sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ (一般的な火花)
+					} else {
+						sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ (冷めかけた火花)
+					}
 
-			// 1. 飛び散る火花 (方向・速度・色の異なるコーン状の広がり)
-			for (uint32_t i = 0; i < 16; ++i) {
-				// 弾道の周りに広がり（スプレッド）を加算
-				// より直線的で鋭い火花にするため、範囲を -0.08f 〜 0.08f に絞る
-				Vector3 randomSpread = Random::RangeVector3(-0.08f, 0.08f);
-				Vector3 particleVelDir = Normalize(shootDir + randomSpread);
+					// サイズもランダムに揺らす (直径0.12f〜0.24f)
+					float size = Random::RangeFloat(0.12f, 0.24f);
+					Vector3 sparkScale = { size, size, size };
 
-				// 速度をランダムにばらけさせる (秒速35.0〜75.0)
-				float speed = Random::RangeFloat(35.0f, 75.0f);
-				Vector3 sparkVel = playerVelocity + particleVelDir * speed;
+					// 寿命もランダム (0.10秒〜0.22秒)
+					float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
 
-				// 色のばらつき（白黄、オレンジ、赤オレンジ）を持たせて熱量を表現
-				Vector4 sparkColor;
-				float colorRand = Random::RangeFloat(0.0f, 1.0f);
-				if (colorRand < 0.3f) {
-					sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄 (最も熱いコア付近)
-				} else if (colorRand < 0.7f) {
-					sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ (一般的な火花)
-				} else {
-					sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ (冷めかけた火花)
+					ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, sparkVel, sparkColor, sparkScale, sparkLifeTime, 1);
 				}
 
-				// サイズもランダムに揺らす (直径0.12f〜0.24f)
-				float size = Random::RangeFloat(0.12f, 0.24f);
-				Vector3 sparkScale = { size, size, size };
+				// 2. 銃口の閃光 (白熱コア)
+				for (uint32_t i = 0; i < 4; ++i) {
+					Vector3 randomSpread = Random::RangeVector3(-0.03f, 0.03f);
+					Vector3 coreVelDir = Normalize(shootDir + randomSpread);
+					float speed = Random::RangeFloat(5.0f, 12.0f);
+					Vector3 coreVel = playerVelocity + coreVelDir * speed;
 
-				// 寿命もランダム (0.10秒〜0.22秒)
-				float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
+					Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f }; // 高輝度の白黄
+					float size = Random::RangeFloat(1.0f, 1.4f);
+					Vector3 coreScale = { size, size, size };
+					float coreLifeTime = Random::RangeFloat(0.05f, 0.09f); // 瞬時に消滅
 
-				ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, sparkVel, sparkColor, sparkScale, sparkLifeTime, 1);
+					ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);
+				}
+
+				// クールダウンを設定
+				cooldownTimer_ = kCooldownDuration;
 			}
-
-			// 2. 銃口の閃光 (白熱コア)
-			for (uint32_t i = 0; i < 4; ++i) {
-				Vector3 randomSpread = Random::RangeVector3(-0.03f, 0.03f);
-				Vector3 coreVelDir = Normalize(shootDir + randomSpread);
-				float speed = Random::RangeFloat(5.0f, 12.0f);
-				Vector3 coreVel = playerVelocity + coreVelDir * speed;
-
-				Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f }; // 高輝度の白黄
-				float size = Random::RangeFloat(1.0f, 1.4f);
-				Vector3 coreScale = { size, size, size };
-				float coreLifeTime = Random::RangeFloat(0.05f, 0.09f); // 瞬時に消滅
-
-				ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);
-			}
-
-			// クールダウンを設定
-			cooldownTimer_ = kCooldownDuration;
 		}
 	}
 }

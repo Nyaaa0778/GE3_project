@@ -9,6 +9,7 @@
 
 class Object3d;
 class Camera;
+class EnemyBase;
 
 class PlayerBullet : public Collider {
 public:
@@ -17,16 +18,23 @@ public:
 	Vector3 GetWorldPosition() override;
 	Vector3 GetPrevWorldPosition() override;
 public:
+	virtual ~PlayerBullet() override = default;
+
 	void Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity);
 
-	void Update();
+	virtual void Update();
 
 	void Draw();
 
 	Vector3 GetPosition() const { return worldTransform_.translation; }
 
 	bool IsDead() const { return isDead_; }
-private:
+
+	// ホーミング用の仮想インターフェース
+	virtual void SetTarget(EnemyBase* target) {}
+	virtual EnemyBase* GetTarget() const { return nullptr; }
+
+protected:
 	std::unique_ptr<Object3d> model_;
 	WorldTransform worldTransform_;
 	Vector3 velocity_ = {};

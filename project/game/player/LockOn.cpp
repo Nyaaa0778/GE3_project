@@ -14,23 +14,38 @@ LockOn::LockOn() = default;
 LockOn::~LockOn() = default;
 
 void LockOn::Initialize() {
-	sprite_ = std::make_unique<Sprite>();
-	sprite_->Initialize("reticle.png", {640.0f, 360.0f}, {0.5f, 0.5f});
-	sprite_->SetScale({kReticleDrawSize.x, kReticleDrawSize.y});
-	sprite_->SetColor({1.0f, 1.0f, 1.0f, 1.0f}); // 視認性向上のため白に変更
+	// 複数ロックオン用に動的にスプライトを生成するため、初期化時は何もしない
 }
 
 void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera* camera) {
+	// ロックオンモードではない場合はロックオン対象をクリアして終了
+	if (!player->GetIsLockOnMode()) {
+		targets_.clear();
+		return;
+	}
+
 	// 自機のワールド座標を取得する
 	Vector3 playerPositionWorld = player->GetWorldPosition();
 	// ビュー座標に変換する
 	Vector3 playerPositionView = MathUtility::Transform(playerPositionWorld, camera->matView);
 
-	// ロックオン対象リスト
-	std::list<std::pair<float, EnemyBase*>> targets;
-	
+	// 生存している敵だけに絞り込む（死亡した敵はロックオン対象から外す）
+	targets_.remove_if([&enemies](EnemyBase* enemy) {
+		return std::find(enemies.begin(), enemies.end(), enemy) == enemies.end();
+	});
+
 	// ロックオン判定処理
 	for (EnemyBase* enemy : enemies) {
+		// すでにロックオンされている場合はスキップ
+		if (std::find(targets_.begin(), targets_.end(), enemy) != targets_.end()) {
+			continue;
+		}
+
+		// 最大ロックオン数に達している場合はスキップ
+		if (targets_.size() >= kMaxLockOnTargets) {
+			break;
+		}
+
 		// 敵のワールド座標を取得
 		Vector3 positionWorld = enemy->GetWorldPosition();
 
@@ -52,38 +67,42 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 		float distance = Distance(player->GetReticle2DPosition(), positionScreenV2);
 		// 2Dレティクルからのスクリーン距離が基底範囲内なら
 		if (distance <= kDistanceLockOn) {
-			targets.emplace_back(std::make_pair(distance, enemy));
+			targets_.push_back(enemy);
 		}
 	}
 
-	// 一旦ロックオンを解除
-	target_ = nullptr;
-	// 対象を絞り込んで座標設定する
-	if (!targets.empty()) {
-		// 距離で昇順にソート
-		targets.sort();
-		// 距離が一番小さい敵をロックオン対象とする
-		target_ = targets.front().second;
-		
-		// 1. ロックオン対象（target_）のワールド座標を取得する
-		Vector3 targetWorldPos = target_->GetWorldPosition();
+	// スプライトプールのサイズを調整
+	if (sprites_.size() < targets_.size()) {
+		size_t oldSize = sprites_.size();
+		sprites_.resize(targets_.size());
+		for (size_t i = oldSize; i < sprites_.size(); ++i) {
+			sprites_[i] = std::make_unique<Sprite>();
+			sprites_[i]->Initialize("reticle.png", {640.0f, 360.0f}, {0.5f, 0.5f});
+			sprites_[i]->SetScale({kReticleDrawSize.x, kReticleDrawSize.y});
+			sprites_[i]->SetColor({1.0f, 0.0f, 0.0f, 1.0f}); // 視認性向上のため白に変更
+		}
+	}
 
-		// 2. ワールド座標からスクリーン座標に変換する
+	// 各ターゲットに対してスプライトの位置を更新
+	size_t index = 0;
+	for (EnemyBase* enemy : targets_) {
+		// ロックオン対象のワールド座標を取得する
+		Vector3 targetWorldPos = enemy->GetWorldPosition();
+
+		// ワールド座標からスクリーン座標に変換する
 		Vector3 targetScreenPos = Project(targetWorldPos, 0.0f, 0.0f, WinApp::kClientWidth,
 										  WinApp::kClientHeight, camera->matView, camera->matProjection);
 
-		// 3. ロックオンマーク（スプライト）の座標を設定する
-		// ※ お使いのライブラリの関数名（SetPosition や SetTranslate など）に合わせて調整してください
-		sprite_->SetPosition({targetScreenPos.x, targetScreenPos.y});
+		// ロックオンマーク（スプライト）の座標を設定する
+		sprites_[index]->SetPosition({targetScreenPos.x, targetScreenPos.y});
+		sprites_[index]->Update();
+		index++;
 	}
-
-	// 描画情報をGPUに反映するため、スプライトのUpdateを呼ぶ
-	sprite_->Update();
 }
 
 void LockOn::Draw() {
-	// ロックオン対象が存在するときのみ描画する
-	if (target_) {
-		sprite_->Draw();
+	// 現在のターゲット数分だけスプライトを描画する
+	for (size_t i = 0; i < targets_.size(); ++i) {
+		sprites_[i]->Draw();
 	}
 }

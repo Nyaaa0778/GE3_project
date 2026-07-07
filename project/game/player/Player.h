@@ -19,6 +19,8 @@ class Sprite;
 class LockOn;
 class PlayerBullet;
 
+class EnemyBase;
+
 class Player : public Collider {
 public:
 
@@ -27,7 +29,7 @@ public:
 
 	void Initialize(const Vector3& InitialPos, Object3d* model, Camera* camera);
 	
-	void Update();
+	void Update(const std::list<EnemyBase*>& enemies);
 	
 	void Draw();
 
@@ -48,6 +50,9 @@ public:
 
 	//ロックオンをセット
 	void SetLockOn(LockOn* lockOn) { lockOn_ = lockOn; }
+
+	// ロックオンモードのゲッター
+	bool GetIsLockOnMode() const { return isLockOnMode_; }
 
 	// 弾リストのゲッター
 	const std::list<std::unique_ptr<PlayerBullet>>& GetBullets() const { return bullets_; }
@@ -131,7 +136,7 @@ private:
 	/// <summary>
 	/// 弾の更新
 	/// </summary>
-	void UpdateBullet();
+	void UpdateBullet(const std::list<EnemyBase*>& enemies);
 
 	/// <summary>
 	/// 攻撃処理

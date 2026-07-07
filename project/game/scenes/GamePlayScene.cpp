@@ -234,7 +234,11 @@ void GamePlayScene::Update() {
 	// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
 	// ------------------------------------
 	if (!isGoalReached_) {
-		player_->Update();
+		std::list<EnemyBase*> activeEnemies;
+		for (const auto& enemy : enemies_) {
+			activeEnemies.push_back(enemy.get());
+		}
+		player_->Update(activeEnemies);
 
 		for (auto& enemy : enemies_) {
 			enemy->Update();

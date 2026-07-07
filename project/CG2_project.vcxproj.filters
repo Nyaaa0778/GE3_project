@@ -276,6 +276,9 @@
     <ClCompile Include="game\player\PlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="game\player\HomingPlayerBullet.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="game\enemy\EnemyBase.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -530,6 +533,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\player\PlayerBullet.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\player\HomingPlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\enemy\EnemyBase.h">
