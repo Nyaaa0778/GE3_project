@@ -32,13 +32,24 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 	// 自機のワールド座標を取得する
 	Vector3 playerPositionWorld = player->GetWorldPosition();
 	// ビュー座標に変換する
-	Vector3 playerPositionView = MathUtility::Transform(playerPositionWorld, camera->matView);
+	Vector3 playerPositionView = TransformCoord(playerPositionWorld, camera->matView);
 
-	// 生存している敵だけに絞り込む（死亡した敵はロックオン対象から外す）
+	// 生存している敵、かつプレイヤーより前方にいる敵だけに絞り込む
 	targetInfos_.erase(
 		std::remove_if(targetInfos_.begin(), targetInfos_.end(),
-			[&enemies](const TargetInfo& info) {
-				return std::find(enemies.begin(), enemies.end(), info.enemy) == enemies.end();
+			[&enemies, camera, &playerPositionView](const TargetInfo& info) {
+				// 敵がすでに存在しない場合
+				if (std::find(enemies.begin(), enemies.end(), info.enemy) == enemies.end()) {
+					return true;
+				}
+				// 敵のビュー座標を計算
+				Vector3 positionWorld = info.enemy->GetWorldPosition();
+				Vector3 positionView = TransformCoord(positionWorld, camera->matView);
+				// 自機より手前（ビュー空間でZが自機以下）にいる場合は除外
+				if (positionView.z <= playerPositionView.z) {
+					return true;
+				}
+				return false;
 			}),
 		targetInfos_.end());
 
@@ -66,7 +77,7 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 		Vector3 positionWorld = enemy->GetWorldPosition();
 
 		// ビュー座標系に変換する
-		Vector3 positionView = MathUtility::Transform(positionWorld, camera->matView);
+		Vector3 positionView = TransformCoord(positionWorld, camera->matView);
 
 		// 敵のビュー座標.z が 自機のビュー座標.z 以下なら
 		if (positionView.z <= playerPositionView.z) {

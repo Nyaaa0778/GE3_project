@@ -44,7 +44,7 @@ void Reticle::Update(const WorldTransform& playerWorldTransform) {
 		reticleLocalPos.z = playerWorldTransform.translation.z + kDistancePlayerToReticle;
 
 		// 親のワールド行列を使ってワールド空間の座標に変換する
-		reticleWorldPos = MathUtility::Transform(reticleLocalPos, playerWorldTransform.parent->matWorld);
+		reticleWorldPos = TransformCoord(reticleLocalPos, playerWorldTransform.parent->matWorld);
 	} else {
 		// 親がいない場合のフォールバック（従来通り正面方向へ配置）
 		Vector3 forward = { playerWorldTransform.matWorld.m[2][0], playerWorldTransform.matWorld.m[2][1], playerWorldTransform.matWorld.m[2][2] };
@@ -72,7 +72,7 @@ void Reticle::Update(const WorldTransform& playerWorldTransform) {
 		// ビュー行列、プロジェクション行列、ビューポート行列を合成する
 		Matrix4x4 matViewProjectionViewport = camera_->matView * camera_->matProjection * matViewport;
 		// ワールド→スクリーン座標変換
-		positionReticle = MathUtility::Transform(positionReticle, matViewProjectionViewport);
+		positionReticle = TransformCoord(positionReticle, matViewProjectionViewport);
 		// スプライトのレティクルに座標設定
 		reticleSprite_->SetPosition(Vector2(positionReticle.x, positionReticle.y));
 	}

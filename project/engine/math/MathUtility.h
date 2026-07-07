@@ -43,7 +43,7 @@ namespace MathUtility {
 	// 正規化
 	Vector3 Normalize(const Vector3& v);
 
-	Vector3 Transform(const Vector3& v, const Matrix4x4& m);
+	Vector3 TransformCoord(const Vector3& v, const Matrix4x4& m);
 
 	// ワールドスクリーン座標変換
 	Vector3 Project(const Vector3& worldPosition, float viewportX, float viewportY, float viewportWidth,

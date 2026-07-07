@@ -297,7 +297,7 @@ bool RailCameraController::WorldToScreen(const Vector3& worldPos, Vector2& outSc
 		return false;
 	}
 
-	Vector3 projected = MathUtility::Transform(worldPos, viewProj);
+	Vector3 projected = TransformCoord(worldPos, viewProj);
 	outScreen.x = (projected.x + 1.0f) * 0.5f * clientWidth;
 	outScreen.y = (1.0f - projected.y) * 0.5f * clientHeight;
 	return true;
