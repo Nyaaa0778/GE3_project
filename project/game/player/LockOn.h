@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <Vector3.h>
+#include <Vector4.h>
 
 class Sprite;
 class Camera;
@@ -12,6 +13,20 @@ class EnemyBase;
 class Player;
 
 class LockOn {
+public:
+	// ロックオン対象ごとの演出情報を保持する構造体
+	struct TargetInfo {
+		EnemyBase* enemy = nullptr;
+		std::unique_ptr<Sprite> sprite;
+
+		// 演出用アニメーションパラメータ
+		float lockOnTime = 0.0f; // ロックオン開始からの経過時間（秒）
+
+		// 衝撃波（演出用）スプライトと時間
+		std::unique_ptr<Sprite> effectSprite;
+		float effectTime = 0.0f; // エフェクト開始からの経過時間（秒）
+	};
+
 public:
 	LockOn();
 	~LockOn();
@@ -24,11 +39,9 @@ public:
 
 public:
 	const std::list<EnemyBase*>& GetTargets() const { return targets_; }
-	void ClearTargets() { targets_.clear(); }
+	void ClearTargets();
 
 private:
-	std::vector<std::unique_ptr<Sprite>> sprites_;
-
 	// ロックオンの限界値（スクリーン上のピクセル距離）
 	static constexpr float kDistanceLockOn = 50.0f;
 	// 描画サイズ
@@ -38,5 +51,13 @@ private:
 
 	// ロックオン対象
 	std::list<EnemyBase*> targets_;
+
+	// 演出管理用のターゲットリスト
+	std::vector<TargetInfo> targetInfos_;
+
+	// 音声再生用
+	uint32_t lockOnSeHandle_ = 0;
+	bool isSeLoaded_ = false;
 };
+
 
