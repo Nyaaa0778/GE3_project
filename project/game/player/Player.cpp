@@ -10,6 +10,8 @@
 #include "Plane.h"
 #include "Primitive.h"
 #include "PlayerBullet.h"
+#include "LockOn.h"
+#include "EnemyBase.h"
 #include "Logger.h"
 #include "Random.h"
 
@@ -122,8 +124,8 @@ void Player::Draw() {
 	// ------------------------------------
 	// 照準
 	// ------------------------------------
-	reticle_->Draw();
-	reticleSprite_->Draw();
+	/*reticle_->Draw();
+	reticleSprite_->Draw();*/
 
 	// ------------------------------------
 	// 弾
@@ -246,6 +248,10 @@ void Player::UpdateBullet() {
 void Player::Attack() {
 	auto* input = Input::GetInstance();
 
+	if (input->TriggerKey(DIK_Q)) {
+		isLockOnMode_ = !isLockOnMode_; // trueとfalseを反転させる
+	}
+
 	// クールダウンが終了しており、キーが押されていたら発射
 	if (input->PushKey(DIK_SPACE)) {
 		if(cooldownTimer_ <= 0.0f)
@@ -258,6 +264,20 @@ void Player::Attack() {
 			// 3Dレティクルのワールド座標と自機のワールド座標から速度ベクトルを算出
 			Vector3 shootDir = worldTransformReticle_.GetWorldPosition() - spawnPos;
 			shootDir = Normalize(shootDir);
+
+			if (isLockOnMode_ && lockOn_ && lockOn_->GetTarget()) {
+				// ロックオン対象を取得
+				EnemyBase* target = lockOn_->GetTarget();
+				Vector3 targetPos = target->GetWorldPosition();
+
+				// ターゲットへの方向ベクトル ＝ 終点(敵) － 始点(自機)
+				shootDir = targetPos - spawnPos;
+				shootDir = Normalize(shootDir);
+			} else {
+				// 通常モード（またはターゲットがいない場合）は従来通り3Dレティクルを狙う
+				shootDir = worldTransformReticle_.GetWorldPosition() - spawnPos;
+				shootDir = Normalize(shootDir);
+			}
 
 			// 自機の1フレームあたりの移動ベクトル（慣性）を計算
 			Vector3 playerFrameVelocity = worldTransform_.GetWorldPosition() - prevWorldPos_;
@@ -338,4 +358,11 @@ void Player::OnCollision() {
 
 Vector3 Player::GetWorldPosition() {
 	return worldTransform_.GetWorldPosition();
+}
+
+Vector2 Player::GetReticle2DPosition() const {
+	if (reticleSprite_) {
+		return reticleSprite_->GetPosition();
+	}
+	return { 0.0f, 0.0f };
 }

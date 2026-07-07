@@ -58,6 +58,15 @@ namespace MathUtility {
 		return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
 	}
 
+	// 距離
+	float Distance(const Vector2& a, const Vector2& b) {
+		// 1. AからBに向かう差分ベクトルを作る
+		Vector2 diff = {b.x - a.x, b.y - a.y};
+
+		// 2. そのベクトルの長さを返す
+		return Length(diff);
+	}
+
 	// 正規化
 	Vector3 Normalize(const Vector3& v) {
 		float length = Length(v);
@@ -74,6 +83,61 @@ namespace MathUtility {
 			(v.x * m.m[0][1] + v.y * m.m[1][1] + v.z * m.m[2][1] + m.m[3][1]) / w,
 			(v.x * m.m[0][2] + v.y * m.m[1][2] + v.z * m.m[2][2] + m.m[3][2]) / w,
 		};
+	}
+
+	// ワールドスクリーン座標変換
+	Vector3 Project(
+		const Vector3& positionWorld,
+		float viewportX,
+		float viewportY,
+		float viewportWidth,
+		float viewportHeight,
+		const Matrix4x4& matView,
+		const Matrix4x4& matProjection) {
+		// 1. ワールド座標を同次座標 (w=1.0f) として扱う
+		float x = positionWorld.x;
+		float y = positionWorld.y;
+		float z = positionWorld.z;
+		float w = 1.0f;
+
+		// 2. ビュー行列との乗算 (ワールド座標 → ビュー座標)
+		// ※以下は「行優先(Row-Major)」の計算式です。
+		float vx = x * matView.m[0][0] + y * matView.m[1][0] + z * matView.m[2][0] + w * matView.m[3][0];
+		float vy = x * matView.m[0][1] + y * matView.m[1][1] + z * matView.m[2][1] + w * matView.m[3][1];
+		float vz = x * matView.m[0][2] + y * matView.m[1][2] + z * matView.m[2][2] + w * matView.m[3][2];
+		float vw = x * matView.m[0][3] + y * matView.m[1][3] + z * matView.m[2][3] + w * matView.m[3][3];
+
+		// 3. プロジェクション行列との乗算 (ビュー座標 → クリップ座標)
+		float cx = vx * matProjection.m[0][0] + vy * matProjection.m[1][0] + vz * matProjection.m[2][0] + vw * matProjection.m[3][0];
+		float cy = vx * matProjection.m[0][1] + vy * matProjection.m[1][1] + vz * matProjection.m[2][1] + vw * matProjection.m[3][1];
+		float cz = vx * matProjection.m[0][2] + vy * matProjection.m[1][2] + vz * matProjection.m[2][2] + vw * matProjection.m[3][2];
+		float cw = vx * matProjection.m[0][3] + vy * matProjection.m[1][3] + vz * matProjection.m[2][3] + vw * matProjection.m[3][3];
+
+		// ゼロ除算を防止
+		if (cw == 0.0f) {
+			cw = 1.0f;
+		}
+
+		// 4. 透視投影除算 (クリップ座標 → 正規化デバイス座標(NDC))
+		// -1.0 ～ 1.0 の範囲に変換されます
+		float ndcX = cx / cw;
+		float ndcY = cy / cw;
+		float ndcZ = cz / cw;
+
+		// 5. ビューポート変換 (NDC → スクリーン座標)
+		Vector3 result;
+
+		// X座標: -1~1 を 0~Width にマッピング
+		result.x = (ndcX + 1.0f) * 0.5f * viewportWidth + viewportX;
+
+		// Y座標: -1~1 を 0~Height にマッピング
+		// ※画面のY座標は「下向き」がプラスなので、(1.0f - ndcY) で反転させています
+		result.y = (1.0f - ndcY) * 0.5f * viewportHeight + viewportY;
+
+		// Z座標: 深度値としてそのまま保持 (通常 0.0 ~ 1.0)
+		result.z = ndcZ;
+
+		return result;
 	}
 
 	//================================================================================

@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 
+#include <Vector2.h>
 #include <Vector3.h>
 #include <WorldTransform.h>
 
@@ -14,14 +15,19 @@ class Camera;
 class Primitive;
 class Sprite;
 
+class LockOn;
 class PlayerBullet;
 
 class Player : public Collider {
 public:
+
 	Player();
 	~Player();
+
 	void Initialize(const Vector3& InitialPos, Object3d* model, Camera* camera);
+	
 	void Update();
+	
 	void Draw();
 
 	// コライダーの仮想関数をオーバーライド
@@ -34,9 +40,13 @@ public:
 	WorldTransform* GetWorldTransform() { return &worldTransform_; }
 
 	decltype(auto) GetReticleMatWorld() const { return worldTransformReticle_.matWorld; }
+	Vector2 GetReticle2DPosition() const;
 	bool GetIsReticleHit() const { return isReticleHit_; }
 
 	void SetParent(const WorldTransform* parent) { worldTransform_.parent = parent; }
+
+	//ロックオンをセット
+	void SetLockOn(LockOn* lockOn) { lockOn_ = lockOn; }
 
 	// 弾リストのゲッター
 	const std::list<std::unique_ptr<PlayerBullet>>& GetBullets() const { return bullets_; }
@@ -84,6 +94,15 @@ private:
 
 	// 描画サイズ
 	static constexpr Vector3 kReticleDrawSize = {0.4f, 0.4f, 0.4f};
+
+	// ------------------------------------
+	// ロックオン
+	// ------------------------------------
+
+	LockOn* lockOn_ = nullptr;
+
+	// ロックオンモードかどうかのフラグ（最初は通常モードなのでfalse）
+	bool isLockOnMode_ = true;
 
 	// ------------------------------------
 	// カメラ

@@ -19,6 +19,7 @@ class EnemyBase;
 class Collider;
 class Shockwave;
 class Shake;
+class LockOn;
 
 class GamePlayScene : public IScene {
 public:
@@ -47,6 +48,12 @@ private:
 	std::unique_ptr<Player> player_;
 	// モデル
 	std::unique_ptr<Object3d> playerModel_;
+
+	// ------------------------------------
+	// ロックオン
+	// ------------------------------------
+
+	std::unique_ptr<LockOn> lockOn_;
 
 	// ------------------------------------
 	// カメラ
@@ -95,4 +102,4 @@ private:
 	void CheckAllCollisions();
 
 	void UpdateImGui();
-};
+};

@@ -8,6 +8,7 @@
 #include "MathUtility.h"
 #include "LightManager.h"
 
+#include "LockOn.h"
 #include "Player.h"
 #include "PlayerBullet.h"
 #include "EnemyBase.h"
@@ -18,7 +19,6 @@
 #include "Collider.h"
 #include "Shake.h"
 #include "TimeManager.h"
-
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -90,6 +90,14 @@ void GamePlayScene::Initialize() {
 	player_->GetWorldTransform()->scale = spawner->scaling;
 	player_->SetParent(railCamera_->GetWorldTransform());
 	player_->GetWorldTransform()->translation.z = 20.0f;
+
+	// ------------------------------------
+	// ロックオン
+	// ------------------------------------
+
+	lockOn_ = std::make_unique<LockOn>();
+	lockOn_->Initialize();
+	player_->SetLockOn(lockOn_.get());
 
 	// ------------------------------------
 	// 敵
@@ -253,10 +261,20 @@ void GamePlayScene::Update() {
 		shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
 			return shockwave->IsFinished();
 		});
+
+		if (lockOn_) {
+			// LockOn::Update が求める「生ポインタのリスト」をその場で作成
+			std::list<EnemyBase*> enemyPtrs;
+			for (const auto& enemy : enemies_) {
+				enemyPtrs.push_back(enemy.get());
+			}
+
+			// プレイヤー、作成した生ポインタリスト、カメラを渡して更新
+			lockOn_->Update(player_.get(), enemyPtrs, camera_.get());
+		}
 	}
 
 	// ------------------------------------
-
 	// オブジェクト
 	// ------------------------------------
 
@@ -295,12 +313,6 @@ void GamePlayScene::Draw() {
 	}
 
 	// ------------------------------------
-	// 自機
-	// ------------------------------------
-
-	player_->Draw();
-
-	// ------------------------------------
 	// 敵
 	// ------------------------------------
 
@@ -315,6 +327,18 @@ void GamePlayScene::Draw() {
 	for (auto& shockwave : shockwaves_) {
 		shockwave->Draw();
 	}
+
+	// ------------------------------------
+	// 自機
+	// ------------------------------------
+
+	player_->Draw();
+
+	// ------------------------------------
+	// ロックオン
+	// ------------------------------------
+
+	lockOn_->Draw();
 
 	// ------------------------------------
 	// パーティクル描画

@@ -203,40 +203,6 @@ void RailCameraController::DrawDebugSpline() {
 	}
 #endif
 }
-
-void RailCameraController::SaveToJson() {
-	if (levelFilename_.empty()) return;
-
-	std::string fullpath = "resources/levels/" + levelFilename_ + ".json";
-
-	nlohmann::json deserialized;
-	std::ifstream inFile(fullpath);
-	if (inFile.is_open()) {
-		try {
-			inFile >> deserialized;
-		} catch (const std::exception&) {
-			deserialized["name"] = "scene";
-			deserialized["objects"] = nlohmann::json::array();
-		}
-		inFile.close();
-	} else {
-		deserialized["name"] = "scene";
-		deserialized["objects"] = nlohmann::json::array();
-	}
-
-	nlohmann::json splineArray = nlohmann::json::array();
-	for (const auto& pt : controlPoints_) {
-		splineArray.push_back({ pt.x, pt.y, pt.z });
-	}
-	deserialized["rail_spline"] = splineArray;
-
-	std::ofstream outFile(fullpath);
-	if (outFile.is_open()) {
-		outFile << deserialized.dump(4);
-		outFile.close();
-	}
-}
-
 Vector3 RailCameraController::EvaluateSpline(const std::vector<Vector3>& points, float time) const {
 	size_t n = points.size();
 	if (n == 0) return {0.0f, 0.0f, 0.0f};

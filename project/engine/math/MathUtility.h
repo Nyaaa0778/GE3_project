@@ -37,10 +37,17 @@ namespace MathUtility {
 	float Length(const Vector2& v);
 	float Length(const Vector3& v);
 
+	// 距離
+	float Distance(const Vector2& a, const Vector2& b);
+
 	// 正規化
 	Vector3 Normalize(const Vector3& v);
 
 	Vector3 Transform(const Vector3& v, const Matrix4x4& m);
+
+	// ワールドスクリーン座標変換
+	Vector3 Project(const Vector3& worldPosition, float viewportX, float viewportY, float viewportWidth,
+					float viewportHeight, const Matrix4x4& matView, const Matrix4x4& viewProjection);
 
 	//================================================================================
 	// ベクトル演算子オーバーロード
@@ -155,7 +162,7 @@ namespace MathUtility {
 	/// <param name="translate">各軸方向の移動量</param>
 	/// <returns>scale・rotate・translateを合成したアフィン変換行列</returns>
 	Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate,
-		const Vector3& translate);
+							   const Vector3& translate);
 
 	//================================================================================
 	// 投影行列
@@ -172,7 +179,7 @@ namespace MathUtility {
 	/// <param name="farClip">奥側のクリップ距離</param>
 	/// <returns>指定された範囲を正射影するための行列。奥行きによる縮小が発生しない投影</returns>
 	Matrix4x4 MakeOrthographicMatrix(float left, float top, float right,
-		float bottom, float nearClip, float farClip);
+									 float bottom, float nearClip, float farClip);
 
 	/// <summary>
 	/// 透視投影行列
@@ -183,7 +190,7 @@ namespace MathUtility {
 	/// <param name="farClip">奥側のクリップ距離</param>
 	/// <returns>指定されたパラメータで遠近感を持った透視投影を行う行列。遠ざかるほど小さく見える</returns>
 	Matrix4x4 MakePerspectiveFovMatrix(float fovY, float aspectRatio,
-		float nearClip, float farClip);
+									   float nearClip, float farClip);
 
 	/// <summary>
 	/// ビューポート変換行列の作成

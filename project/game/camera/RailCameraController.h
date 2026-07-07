@@ -20,7 +20,6 @@ public:
 	void Update(bool activeController = true);
 
 	void DrawDebugSpline();
-	void SaveToJson();
 
 public:
 	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
