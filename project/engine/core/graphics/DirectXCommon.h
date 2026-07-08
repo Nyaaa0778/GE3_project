@@ -133,6 +133,9 @@ public:
 
 	uint32_t GetRenderTextureSrvIndex() const { return srvIndexRenderTexture_; }
 	ID3D12Resource* GetRenderTextureResource() const { return renderTextureResource_.Get(); }
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferRtv() const {
+		return rtvHandles_[swapChain_->GetCurrentBackBufferIndex()];
+	}
 
 private:
 	//================================================================================

@@ -6,6 +6,8 @@
 #include <wrl.h>
 #include <Vector4.h>
 #include <unordered_map>
+#include <vector>
+#include <array>
 #include "IPostProcessEffect.h"
 
 class DirectXCommon;
@@ -85,8 +87,16 @@ public:
 	//================================================================================
 	// Getter / Setter
 	//================================================================================
-	void SetMode(PostProcessMode mode) { mode_ = mode; }
+	void SetMode(PostProcessMode mode) {
+		mode_ = mode;
+		activeModes_.clear();
+		activeModes_.push_back(mode);
+	}
 	PostProcessMode GetMode() const { return mode_; }
+
+	void ClearActiveModes() { activeModes_.clear(); }
+	void AddActiveMode(PostProcessMode mode) { activeModes_.push_back(mode); }
+	const std::vector<PostProcessMode>& GetActiveModes() const { return activeModes_; }
 
 	void SetDissolveThreshold(float threshold);
 	float GetDissolveThreshold() const;
@@ -124,4 +134,15 @@ private:
 	// 各エフェクトのインスタンス管理
 	//================================================================================
 	std::unordered_map<PostProcessMode, std::unique_ptr<IPostProcessEffect>> effects_;
+
+	//================================================================================
+	// マルチパス（チェイニング）描画用のメンバ
+	//================================================================================
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap_ = nullptr;
+	std::array<Microsoft::WRL::ComPtr<ID3D12Resource>, 2> intermediateResources_;
+	std::array<D3D12_CPU_DESCRIPTOR_HANDLE, 2> intermediateRtvHandles_;
+	std::array<uint32_t, 2> intermediateSrvIndices_;
+	std::array<D3D12_GPU_DESCRIPTOR_HANDLE, 2> intermediateSrvHandlesGPU_;
+
+	std::vector<PostProcessMode> activeModes_;
 };
