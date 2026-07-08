@@ -300,6 +300,25 @@ void GamePlayScene::Update() {
 	// パーティクルの更新
 	// ------------------------------------
 	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+
+	// HPが20以下の時に Vignetting 赤点滅を適用
+	if (player_->GetHP() <= 20.0f) {
+		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
+
+		// 点滅の計算 (サイン波を用いて明滅)
+		static float vignetteTimer = 0.0f;
+		vignetteTimer += 0.1f; // 点滅スピード
+		
+		float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
+		float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
+		PostProcessRenderer::GetInstance()->SetVignetteColor({ red, 0.0f, 0.0f, 1.0f });
+	}
+	else {
+		// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
+		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		}
+	}
 }
 
 void GamePlayScene::Draw() {
@@ -395,6 +414,13 @@ void GamePlayScene::UpdateImGui() {
 	// ─────────────────────
 
 	ImGui::SeparatorText("Player");
+
+	{
+		float playerHp = player_->GetHP();
+		if (ImGui::SliderFloat("HP", &playerHp, 0.0f, 100.0f, "%.1f")) {
+			player_->SetHP(playerHp);
+		}
+	}
 
 	{
 		Vector3 pos = player_->GetWorldTransform()->translation;

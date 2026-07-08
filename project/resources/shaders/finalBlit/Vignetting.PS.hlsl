@@ -24,7 +24,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     // 中心の最大値を調整
     float vignette = correct.x * correct.y * 16.0f;
     // 0.8乗でそれっぽく
-    vignette = saturate(pow(vignette, 0.8f));
+    vignette = saturate(pow(vignette, 0.4f));
     // 係数として乗算
     output.color.rgb = lerp(gVignetteParams.color.rgb, output.color.rgb, vignette);
     

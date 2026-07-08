@@ -65,6 +65,9 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 
 	// 前フレームのワールド座標の初期化
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
+
+	// HPの初期化
+	hp_ = 100.0f;
 }
 
 void Player::Update(const std::list<EnemyBase*>& enemies) {
@@ -367,7 +370,11 @@ void Player::Attack() {
 }
 
 void Player::OnCollision() {
-	// 被弾処理など（必要に応じて）
+	// 被弾時にHPを減らす
+	hp_ -= 0.5f;
+	if (hp_ < 0.0f) {
+		hp_ = 0.0f;
+	}
 }
 
 Vector3 Player::GetWorldPosition() {

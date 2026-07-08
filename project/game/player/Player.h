@@ -56,6 +56,11 @@ public:
 
 	// 弾リストのゲッター
 	const std::list<std::unique_ptr<PlayerBullet>>& GetBullets() const { return bullets_; }
+
+	// HPのゲッター・セッター
+	float GetHP() const { return hp_; }
+	void SetHP(float hp) { hp_ = hp; }
+
 private:
 	// ------------------------------------
 	// 本体
@@ -78,6 +83,9 @@ private:
 	// 移動制限
 	static constexpr float kMoveLimitX = 7.0f;
 	static constexpr float kMoveLimitY = 3.5f;
+
+	// HP
+	float hp_ = 100.0f;
 
 	// 生存フラグ
 	bool isAlive_ = true;
