@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../externals/DirectXTex/DirectXTex.h"
+#include <Vector4.h>
 
 #include <d3d12.h>
 #include <memory>
@@ -11,7 +12,16 @@
 class DirectXCommon;
 class ShaderResourceViewManager;
 
-class TextureManager {
+class TextureManager
+{
+private:
+	//================================================================================
+	// 型エイリアス
+	//================================================================================
+
+	// namespace
+	template <class InterfaceType>
+	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 public:
 	//================================================================================
 	// シングルトン
@@ -76,6 +86,8 @@ public:
 	/// <returns></returns>
 	void LoadTexture(const std::string& filePath);
 
+	ComPtr<ID3D12Resource> CreateRenderTextureResource(ComPtr<ID3D12Device> device, uint32_t width, uint32_t height, DXGI_FORMAT format, const Vector4& clearColor);
+
 	/// <summary>
 	/// 中間リソースの解放
 	/// </summary>
@@ -114,15 +126,6 @@ public:
 
 private:
 	//================================================================================
-	// 型エイリアス
-	//================================================================================
-
-	// namespace
-	template <class InterfaceType>
-	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
-
-private:
-	//================================================================================
 	// 外部参照
 	//================================================================================
 
@@ -138,7 +141,8 @@ private:
 	//================================================================================
 
 	// テクスチャ一枚分のデータ
-	struct TextureData {
+	struct TextureData
+	{
 		DirectX::TexMetadata metadata;
 		ComPtr<ID3D12Resource> resource;
 		uint32_t srvIndex;

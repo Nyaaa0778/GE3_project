@@ -1,6 +1,9 @@
 #include "GamePlayScene.h"
 
 #include <MyEngine.h>
+#include "PostProcessRenderer.h"
+#include "TextureManager.h"
+#include "Input.h"
 
 #include "LevelLoader.h"
 #include "Level.h"
@@ -134,6 +137,9 @@ void GamePlayScene::Initialize() {
 
 	// 画面シェイク
 	shake_ = std::make_unique<Shake>();
+	// ノイズテクスチャを事前にロードしてキャッシュしておく
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise0.png");
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise1.png");
 
 	// ------------------------------------
 	// ゴール初期化
@@ -483,6 +489,52 @@ void GamePlayScene::UpdateImGui() {
 			ImGui::Text("%s", titleText);
 			ImGui::PopStyleColor();
 			ImGui::SetWindowFontScale(1.0f);
+	//// 回転（ラジアン or 度はお好みで）
+	//{
+	//  Vector3 rot = camera_->GetRotate();
+	//  if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
+	//    camera_->SetRotate(rot);
+	//  }
+	//}
+
+	// ─────────────────────
+	// PostProcess
+	// ─────────────────────
+	ImGui::SeparatorText("PostProcess Settings");
+	{
+		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
+		const char* modes[] = { "Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve" };
+		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
+			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
+		}
+
+		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kVignetting)) {
+			Vector4 color = PostProcessRenderer::GetInstance()->GetVignetteColor();
+			float c[4] = { color.x, color.y, color.z, color.w };
+			if (ImGui::ColorEdit4("Vignette Color", c)) {
+				PostProcessRenderer::GetInstance()->SetVignetteColor({ c[0], c[1], c[2], c[3] });
+			}
+		}
+
+		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
+			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
+			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
+				PostProcessRenderer::GetInstance()->SetDissolveThreshold(threshold);
+			}
+
+			static int noiseIndex = 0;
+			const char* noises[] = { "noise0", "noise1" };
+			if (ImGui::Combo("Dissolve Noise", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
+				if (noiseIndex == 0) {
+					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise0.png");
+				} else {
+					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise1.png");
+				}
+			}
+		}
+	}
+
+	ImGui::End();
 
 			ImGui::Spacing();
 			ImGui::Spacing();

@@ -51,4 +51,10 @@ private:
 
 private:
 	void UpdateImGui();
+
+	// ディゾルブのアニメーション制御用変数
+	float dissolveThreshold_ = 0.0f;
+	bool isDissolving_ = false;
+	bool isFadingOut_ = false;
+	float dissolveSpeed_ = 0.01f;
 };
