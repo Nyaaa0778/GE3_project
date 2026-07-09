@@ -245,7 +245,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\camera\RailCameraController.cpp" />
     <ClCompile Include="game\Shake.cpp" />
     <ClCompile Include="engine\3d\Skydome.cpp" />
-    <ClCompile Include="game\player\PlayerBullet.cpp" />
+    <ClCompile Include="game\player\IPlayerBullet.cpp" />
+    <ClCompile Include="game\player\NormalPlayerBullet.cpp" />
     <ClCompile Include="game\player\HomingPlayerBullet.cpp" />
     <ClCompile Include="game\enemy\RusherEnemy.cpp" />
     <ClCompile Include="game\enemy\Shockwave.cpp" />
@@ -465,7 +466,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\camera\RailCameraController.h" />
     <ClInclude Include="game\Shake.h" />
     <ClInclude Include="engine\3d\Skydome.h" />
-    <ClInclude Include="game\player\PlayerBullet.h" />
+    <ClInclude Include="game\player\IPlayerBullet.h" />
+    <ClInclude Include="game\player\NormalPlayerBullet.h" />
     <ClInclude Include="game\player\HomingPlayerBullet.h" />
     <ClInclude Include="game\enemy\RusherEnemy.h" />
     <ClInclude Include="game\enemy\Shockwave.h" />

@@ -17,7 +17,7 @@ class Primitive;
 class Sprite;
 
 class LockOn;
-class PlayerBullet;
+class IPlayerBullet;
 
 class EnemyBase;
 
@@ -55,7 +55,7 @@ public:
 	bool GetIsLockOnMode() const { return isLockOnMode_; }
 
 	// 弾リストのゲッター
-	const std::list<std::unique_ptr<PlayerBullet>>& GetBullets() const { return bullets_; }
+	const std::list<std::unique_ptr<IPlayerBullet>>& GetBullets() const { return bullets_; }
 
 	// HPのゲッター・セッター
 	float GetHP() const { return hp_; }
@@ -119,7 +119,7 @@ private:
 	// 弾
 	// ------------------------------------
 
-	std::list<std::unique_ptr<PlayerBullet>> bullets_;
+	std::list<std::unique_ptr<IPlayerBullet>> bullets_;
 
 	Vector3 bulletVelocity_ = {0.0f, 0.0f, 0.0f};
 	static constexpr float kBulletSpeed = 7.0f;

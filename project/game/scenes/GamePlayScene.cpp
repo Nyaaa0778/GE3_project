@@ -13,7 +13,7 @@
 
 #include "LockOn.h"
 #include "Player.h"
-#include "PlayerBullet.h"
+#include "IPlayerBullet.h"
 #include "EnemyBase.h"
 #include "RailCameraController.h"
 #include "Skydome.h"

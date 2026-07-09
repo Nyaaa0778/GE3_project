@@ -1,18 +1,20 @@
 #pragma once
 
-#include "PlayerBullet.h"
+#include "IPlayerBullet.h"
 
 class EnemyBase;
 
-class HomingPlayerBullet : public PlayerBullet {
+class HomingPlayerBullet : public IPlayerBullet {
 public:
-	void Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity, EnemyBase* target);
+	HomingPlayerBullet() = default;
+	~HomingPlayerBullet() override = default;
 
-	void Update() override;
+	// 基底クラスの仮想関数のオーバーライド
+	void Initialize(const PlayerBulletParam& param) override;
+	void Update(const std::list<EnemyBase*>& enemies) override;
 
-	// ホーミング用の仮想インターフェースの実装
-	void SetTarget(EnemyBase* target) override { target_ = target; }
-	EnemyBase* GetTarget() const override { return target_; }
+	void SetTarget(EnemyBase* target) { target_ = target; }
+	EnemyBase* GetTarget() const { return target_; }
 
 private:
 	EnemyBase* target_ = nullptr;

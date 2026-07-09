@@ -6,23 +6,44 @@
 
 using namespace MathUtility;
 
-void HomingPlayerBullet::Initialize(Camera* camera, const Vector3& pos, const Vector3& velocity, EnemyBase* target) {
-	PlayerBullet::Initialize(camera, pos, velocity);
-	target_ = target;
+void HomingPlayerBullet::Initialize(const PlayerBulletParam& param) {
+	model_ = std::make_unique<Object3d>();
+	model_->Initialize("sphere");
+	model_->SetCamera(param.camera);
+
+	worldTransform_.Initialize();
+	worldTransform_.translation = param.position;
+	worldTransform_.scale = {0.5f, 0.5f, 0.5f};
+	velocity_ = param.velocity;
+
+	// コライダーの初期設定 (球, 半径 0.2)
+	SetShape(ColliderShape::kSphere);
+	SetSphere({ 0.2f });
+
+	prevWorldPos_ = param.position;
 	
-	// 寿命をホーミング弾用に上書き
+	target_ = param.target;
 	deathTimer_ = kHomingLifeTime;
 }
 
-void HomingPlayerBullet::Update() {
+void HomingPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {
 	// 移動前のワールド座標を保存
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
+
+	// ターゲットの生存確認
+	if (target_) {
+		// ターゲットがまだ生存している（リストに存在する）か確認
+		auto it = std::find(enemies.begin(), enemies.end(), target_);
+		if (it == enemies.end()) {
+			target_ = nullptr;
+		}
+	}
 
 	if (target_) {
 		// ターゲットの位置を取得
 		Vector3 targetPos = target_->GetWorldPosition();
 		
-		// LockOnで行っているのと同様に、ターゲットへの方向ベクトルを算出し、正規化する
+		// ターゲットへの方向ベクトルを算出し、正規化する
 		Vector3 shootDir = targetPos - worldTransform_.translation;
 		float dist = Length(shootDir);
 		if (dist > 0.001f) {

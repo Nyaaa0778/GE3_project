@@ -9,7 +9,8 @@
 
 #include "Plane.h"
 #include "Primitive.h"
-#include "PlayerBullet.h"
+#include "IPlayerBullet.h"
+#include "NormalPlayerBullet.h"
 #include "HomingPlayerBullet.h"
 #include "LockOn.h"
 #include "EnemyBase.h"
@@ -177,19 +178,10 @@ void Player::UpdateBullet(const std::list<EnemyBase*>& enemies) {
 
 	// 弾の更新
 	for (const auto& bullet : bullets_) {
-		EnemyBase* target = bullet->GetTarget();
-		if (target) {
-			// ターゲットがまだ生存している（リストに存在する）か確認
-			auto it = std::find(enemies.begin(), enemies.end(), target);
-			if (it == enemies.end()) {
-				// 存在しない場合はターゲットをクリア
-				bullet->SetTarget(nullptr);
-			}
-		}
-		bullet->Update();
+		bullet->Update(enemies);
 	}
 
-	bullets_.remove_if([](const std::unique_ptr<PlayerBullet>& bullet) {
+	bullets_.remove_if([](const std::unique_ptr<IPlayerBullet>& bullet) {
 		// 条件に一致すれば true を返すだけで、自動的に delete される
 		return bullet->IsDead();
 	});
@@ -210,7 +202,7 @@ void Player::Attack() {
 		if(cooldownTimer_ <= 0.0f)
 		{
 			bool canShoot = false;
-			std::unique_ptr<PlayerBullet> newBullet;
+			std::unique_ptr<IPlayerBullet> newBullet;
 			Vector3 spawnPos = worldTransform_.GetWorldPosition();
 			Vector3 shootDir = {};
 
@@ -232,7 +224,12 @@ void Player::Attack() {
 
 						// ホーミング弾を生成・初期化
 						auto homingBullet = std::make_unique<HomingPlayerBullet>();
-						homingBullet->Initialize(camera_, spawnPos, targetBulletVelocity, target);
+						PlayerBulletParam param;
+						param.camera = camera_;
+						param.position = spawnPos;
+						param.velocity = targetBulletVelocity;
+						param.target = target;
+						homingBullet->Initialize(param);
 						bullets_.push_back(std::move(homingBullet));
 
 						// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
@@ -298,8 +295,12 @@ void Player::Attack() {
 				bulletVelocity_ = playerFrameVelocity + shootDir * kBulletSpeed;
 
 				// 通常の弾を生成・初期化
-				newBullet = std::make_unique<PlayerBullet>();
-				newBullet->Initialize(camera_, spawnPos, bulletVelocity_);
+				newBullet = std::make_unique<NormalPlayerBullet>();
+				PlayerBulletParam param;
+				param.camera = camera_;
+				param.position = spawnPos;
+				param.velocity = bulletVelocity_;
+				newBullet->Initialize(param);
 				canShoot = true;
 			}
 
