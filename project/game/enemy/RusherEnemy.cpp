@@ -43,8 +43,8 @@ void RusherEnemy::UpdateIdle() {
 	Vector3 playerPos = player_->GetWorldTransform()->GetWorldPosition();
 	Vector3 myPos = worldTransform_.GetWorldPosition();
 
-	// XZ平面上でプレイヤーとの距離を計算（Y軸の影響を排除）
-	Vector3 toPlayer = { playerPos.x - myPos.x, 0.0f, playerPos.z - myPos.z };
+	// 3次元空間でプレイヤーとの距離を計算
+	Vector3 toPlayer = playerPos - myPos;
 	float length = Length(toPlayer);
 
 	// 一定の索敵範囲に入ったら接近状態（Approach）へ
@@ -57,21 +57,20 @@ void RusherEnemy::UpdateApproach() {
 	Vector3 playerPos = player_->GetWorldTransform()->GetWorldPosition();
 	Vector3 myPos = worldTransform_.GetWorldPosition();
 
-	// XZ平面上でプレイヤーに向かう方向ベクトル（Y軸の影響を排除）
-	Vector3 toPlayer = { playerPos.x - myPos.x, 0.0f, playerPos.z - myPos.z };
+	// プレイヤーに向かう方向ベクトル
+	Vector3 toPlayer = playerPos - myPos;
 	float length = Length(toPlayer);
 
 	if (length > 0.0f) {
-		// XZ平面上で正規化した速度でゆっくり接近
+		// 正規化した速度でゆっくり接近
 		Vector3 move = Normalize(toPlayer) * kSpeed;
-		worldTransform_.translation.x += move.x;
-		worldTransform_.translation.z += move.z;
+		worldTransform_.translation += move;
 	}
 
 	// 突撃範囲に入ったら突進状態（Rush）へ
 	if (length <= kRushRange) {
 		phase_ = Phase::kRush;
-		// XZ平面上で突進する方向をロック
+		// 突進する方向をロック
 		if (length > 0.0f) {
 			rushDirection_ = Normalize(toPlayer);
 		} else {
@@ -82,9 +81,8 @@ void RusherEnemy::UpdateApproach() {
 }
 
 void RusherEnemy::UpdateRush() {
-	// XZ平面上の突進方向に高速移動
-	worldTransform_.translation.x += rushDirection_.x * kRushSpeed;
-	worldTransform_.translation.z += rushDirection_.z * kRushSpeed;
+	// 突進方向に高速移動
+	worldTransform_.translation += rushDirection_ * kRushSpeed;
 
 	// タイマー更新
 	rushTimer_ -= TimeManager::GetInstance()->GetDeltaTime();
