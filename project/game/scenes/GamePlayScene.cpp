@@ -488,7 +488,44 @@ void GamePlayScene::UpdateImGui() {
 		railCamera_->DrawDebugSpline();
 	}
 
-	ImGui::End();
+	// ─────────────────────
+	// PostProcess
+	// ─────────────────────
+	ImGui::SeparatorText("PostProcess Settings");
+	{
+		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
+		const char* modes[] = {"Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve"};
+		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
+			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
+		}
+
+		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kVignetting)) {
+			Vector4 color = PostProcessRenderer::GetInstance()->GetVignetteColor();
+			float c[4] = {color.x, color.y, color.z, color.w};
+			if (ImGui::ColorEdit4("Vignette Color", c)) {
+				PostProcessRenderer::GetInstance()->SetVignetteColor({c[0], c[1], c[2], c[3]});
+			}
+		}
+
+		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
+			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
+			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
+				PostProcessRenderer::GetInstance()->SetDissolveThreshold(threshold);
+			}
+
+			static int noiseIndex = 0;
+			const char* noises[] = {"noise0", "noise1"};
+			if (ImGui::Combo("Dissolve Noise", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
+				if (noiseIndex == 0) {
+					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise0.png");
+				} else {
+					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise1.png");
+				}
+			}
+		}
+	}
+
+	ImGui::End(); 
 
 	if (goal_) {
 		goal_->DrawImGui("Goal Settings");
@@ -505,7 +542,7 @@ void GamePlayScene::UpdateImGui() {
 		if (ImGui::Begin("Game Clear Overlay", nullptr, clearFlags)) {
 			ImGui::Spacing();
 			ImGui::Spacing();
-			
+
 			// Gold colored text
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.0f, 1.0f));
 			ImGui::SetWindowFontScale(2.5f);
@@ -515,52 +552,14 @@ void GamePlayScene::UpdateImGui() {
 			ImGui::Text("%s", titleText);
 			ImGui::PopStyleColor();
 			ImGui::SetWindowFontScale(1.0f);
-	//// 回転（ラジアン or 度はお好みで）
-	//{
-	//  Vector3 rot = camera_->GetRotate();
-	//  if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
-	//    camera_->SetRotate(rot);
-	//  }
-	//}
 
-	// ─────────────────────
-	// PostProcess
-	// ─────────────────────
-	ImGui::SeparatorText("PostProcess Settings");
-	{
-		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
-		const char* modes[] = { "Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve" };
-		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
-			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
-		}
-
-		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kVignetting)) {
-			Vector4 color = PostProcessRenderer::GetInstance()->GetVignetteColor();
-			float c[4] = { color.x, color.y, color.z, color.w };
-			if (ImGui::ColorEdit4("Vignette Color", c)) {
-				PostProcessRenderer::GetInstance()->SetVignetteColor({ c[0], c[1], c[2], c[3] });
-			}
-		}
-
-		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
-			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
-			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
-				PostProcessRenderer::GetInstance()->SetDissolveThreshold(threshold);
-			}
-
-			static int noiseIndex = 0;
-			const char* noises[] = { "noise0", "noise1" };
-			if (ImGui::Combo("Dissolve Noise", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
-				if (noiseIndex == 0) {
-					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise0.png");
-				} else {
-					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise1.png");
-				}
-			}
-		}
-	}
-
-	ImGui::End();
+			//// 回転（ラジアン or 度はお好みで）
+			//{
+			//  Vector3 rot = camera_->GetRotate();
+			//  if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
+			//    camera_->SetRotate(rot);
+			//  }
+			//}
 
 			ImGui::Spacing();
 			ImGui::Spacing();
@@ -574,7 +573,7 @@ void GamePlayScene::UpdateImGui() {
 
 			ImGui::Spacing();
 			ImGui::Spacing();
-			
+
 			// Center button
 			float btnWidth = 150.0f;
 			ImGui::SetCursorPosX((450.0f - btnWidth) * 0.5f);
@@ -582,7 +581,8 @@ void GamePlayScene::UpdateImGui() {
 				SceneManager::GetInstance()->ChangeScene("TITLE");
 			}
 		}
-		ImGui::End();
+		ImGui::End(); 
+
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor();
 	}
