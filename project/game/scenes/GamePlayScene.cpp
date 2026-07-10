@@ -35,7 +35,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("stage"));
+	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -51,7 +51,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "stage");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -167,12 +167,10 @@ void GamePlayScene::Update() {
 	// ------------------------------------
 	// ImGui
 	// ------------------------------------
-
 #ifdef USE_IMGUI
-
 	UpdateImGui();
-
 #endif
+
 
 	// ------------------------------------
 	// カメラ
@@ -184,6 +182,12 @@ void GamePlayScene::Update() {
 	if (useDebugCamera_) {
 		debugCamera_->Update(camera_.get());
 	}
+
+#ifdef USE_IMGUI
+	if (railCamera_) {
+		railCamera_->DrawDebugSpline();
+	}
+#endif
 
 	// 画面シェイクの更新と適用
 	if (shake_) {
@@ -482,10 +486,6 @@ void GamePlayScene::UpdateImGui() {
 		if (ImGui::DragFloat3("Camera Rotation", &rot.x, 0.01f)) {
 			camera_->SetRotate(rot);
 		}
-	}
-
-	if (railCamera_) {
-		railCamera_->DrawDebugSpline();
 	}
 
 	// ─────────────────────

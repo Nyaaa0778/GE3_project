@@ -61,7 +61,7 @@ private:
 	std::vector<Vector3> controlPoints_;
 	float splineTime_ = 0.0f;
 	bool isPlaying_ = true;
-	float speed_ = 0.002f;
+	float speed_ = 0.08f;
 	bool isLoop_ = true;
 
 	std::string levelFilename_;

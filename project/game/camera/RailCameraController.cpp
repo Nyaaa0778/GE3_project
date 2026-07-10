@@ -38,7 +38,7 @@ void RailCameraController::Initialize(Camera* camera, const std::vector<Vector3>
 	splineTime_ = 0.0f;
 	isPlaying_ = true;
 	isLoop_ = false;
-	speed_ = 0.002f;
+	speed_ = 0.08f;
 
 	worldTransform_.Initialize();
 	
@@ -57,7 +57,19 @@ void RailCameraController::Update(bool activeController) {
 	// ------------------------------------
 	size_t n = controlPoints_.size();
 	if (isPlaying_ && n >= 2) {
-		splineTime_ += speed_;
+		// 接線の長さを基に進むべき媒介変数のステップ幅(dt)を決定する (物理速度を一定に保つための円弧長パラメータ化の近似)
+		Vector3 tangentForSpeed = EvaluateSplineTangent(controlPoints_, splineTime_);
+		float tangentLength = Length(tangentForSpeed);
+		float timeStep = speed_;
+		if (tangentLength > 0.0001f) {
+			timeStep = speed_ / tangentLength;
+			// 急激なワープを防ぐため、1フレームあたりの最大ステップを0.1にクランプ
+			if (timeStep > 0.1f) {
+				timeStep = 0.1f;
+			}
+		}
+		splineTime_ += timeStep;
+
 		float maxTime = static_cast<float>(n - 1);
 		if (splineTime_ >= maxTime) {
 			if (isLoop_) {
@@ -101,7 +113,7 @@ void RailCameraController::Update(bool activeController) {
 	ImGui::SeparatorText("Playback Controls");
 	ImGui::Checkbox("Play Path", &isPlaying_);
 	ImGui::Checkbox("Loop Path", &isLoop_);
-	ImGui::SliderFloat("Speed", &speed_, 0.0001f, 0.02f, "%.5f");
+	ImGui::SliderFloat("Speed", &speed_, 0.001f, 0.5f, "%.4f");
 	
 	float maxT = (std::max)(0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
 	if (ImGui::SliderFloat("Position Time", &splineTime_, 0.0f, maxT, "%.3f")) {
@@ -151,29 +163,29 @@ void RailCameraController::DrawDebugSpline() {
 	// 1. スプライン軌跡の描画
 	if (controlPoints_.size() >= 2) {
 		const int segments = 150;
-	float totalTime = static_cast<float>(controlPoints_.size() - 1);
-	Vector2 prevScreen = { 0.0f, 0.0f };
-	bool hasPrev = false;
+		float totalTime = static_cast<float>(controlPoints_.size() - 1);
+		Vector2 prevScreen = { 0.0f, 0.0f };
+		bool hasPrev = false;
 
-	for (int i = 0; i <= segments; ++i) {
-		float t = (static_cast<float>(i) / static_cast<float>(segments)) * totalTime;
-		Vector3 worldPt = EvaluateSpline(controlPoints_, t);
-		Vector2 screenPt;
-		if (WorldToScreen(worldPt, screenPt)) {
-			if (hasPrev) {
-				drawList->AddLine(
-					ImVec2(prevScreen.x, prevScreen.y),
-					ImVec2(screenPt.x, screenPt.y),
-					IM_COL32(0, 255, 255, 255), // 水色
-					3.0f
-				);
+		for (int i = 0; i <= segments; ++i) {
+			float t = (static_cast<float>(i) / static_cast<float>(segments)) * totalTime;
+			Vector3 worldPt = EvaluateSpline(controlPoints_, t);
+			Vector2 screenPt;
+			if (WorldToScreen(worldPt, screenPt)) {
+				if (hasPrev) {
+					drawList->AddLine(
+						ImVec2(prevScreen.x, prevScreen.y),
+						ImVec2(screenPt.x, screenPt.y),
+						IM_COL32(0, 255, 255, 255), // 水色
+						2.0f
+					);
+				}
+				prevScreen = screenPt;
+				hasPrev = true;
+			} else {
+				hasPrev = false;
 			}
-			prevScreen = screenPt;
-			hasPrev = true;
-		} else {
-			hasPrev = false;
 		}
-	}
 	} // if (controlPoints_.size() >= 2)
 
 	// 2. 制御点（丸ノード）の描画
@@ -184,21 +196,21 @@ void RailCameraController::DrawDebugSpline() {
 			bool isDragged = (static_cast<int>(i) == draggedPointIndex_);
 
 			ImU32 color = IM_COL32(255, 165, 0, 255); // オレンジ
-			float radius = 7.0f;
+			float radius = 4.0f;
 
 			if (isDragged) {
 				color = IM_COL32(255, 0, 0, 255); // 赤
-				radius = 11.0f;
+				radius = 8.0f;
 			} else if (isSelected) {
 				color = IM_COL32(255, 255, 0, 255); // 黄色
-				radius = 9.0f;
+				radius = 6.0f;
 			}
 
 			drawList->AddCircleFilled(ImVec2(screenPos.x, screenPos.y), radius, color);
-			drawList->AddCircle(ImVec2(screenPos.x, screenPos.y), radius + 1.5f, IM_COL32(0, 0, 0, 255), 0, 1.5f);
+			drawList->AddCircle(ImVec2(screenPos.x, screenPos.y), radius + 1.0f, IM_COL32(0, 0, 0, 255), 0, 1.0f);
 
 			std::string label = "P" + std::to_string(i);
-			drawList->AddText(ImVec2(screenPos.x + 10.0f, screenPos.y - 10.0f), IM_COL32(255, 255, 255, 255), label.c_str());
+			drawList->AddText(ImVec2(screenPos.x + 8.0f, screenPos.y - 8.0f), IM_COL32(255, 255, 255, 255), label.c_str());
 		}
 	}
 #endif
@@ -289,6 +301,7 @@ Vector3 RailCameraController::CatmullRomTangent(const std::vector<Vector3>& poin
 
 bool RailCameraController::WorldToScreen(const Vector3& worldPos, Vector2& outScreen) const {
 	Matrix4x4 viewProj = camera_->GetViewProjectionMatrix();
+
 	float clientWidth = static_cast<float>(DirectXCommon::GetInstance()->GetClientWidth());
 	float clientHeight = static_cast<float>(DirectXCommon::GetInstance()->GetClientHeight());
 
