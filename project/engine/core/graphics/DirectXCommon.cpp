@@ -4,6 +4,7 @@
 #include "StringUtility.h"
 #include "TimeManager.h"
 #include "WinApp.h"
+#include "DevEditor.h"
 
 #include <cassert>
 #include <format>
@@ -269,7 +270,15 @@ void DirectXCommon::PreDrawImGui() {
 	commandList_->OMSetRenderTargets(1, &rtvHandles_[backBufferIndex], false, nullptr);
 
 	// Swapchainの色をクリア (ImGuiの背景となる色)
-	const float clearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
+	float clearColor[4] = {0.1f, 0.25f, 0.5f, 1.0f};
+#ifdef USE_IMGUI
+	if (DevEditor::GetInstance()->IsEditorMode()) {
+		clearColor[0] = 0.15f;
+		clearColor[1] = 0.15f;
+		clearColor[2] = 0.15f;
+		clearColor[3] = 1.0f;
+	}
+#endif
 	commandList_->ClearRenderTargetView(rtvHandles_[backBufferIndex], clearColor, 0, nullptr);
 
 	// ※DepthStencilのクリアは行わない 

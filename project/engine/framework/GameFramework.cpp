@@ -3,6 +3,9 @@
 #include "Camera.h"
 #include "DirectXCommon.h"
 #include "ImGuiManager.h"
+#include "DevEditor.h"
+#include "SceneManager.h"
+#include "IScene.h"
 #include "Input.h"
 #include "ModelCommon.h"
 #include "ModelManager.h"
@@ -166,6 +169,8 @@ void GameFramework::Initialize() {
 	// ImGuiManager の初期化
 	ImGuiManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
+	// DevEditor の初期化
+	DevEditor::GetInstance()->Initialize();
 #endif
 }
 
@@ -183,6 +188,19 @@ void GameFramework::Update() {
 
 	// 入力の更新
 	Input::GetInstance()->Update();
+
+#ifdef USE_IMGUI
+	// エディタの更新
+	DevEditor::GetInstance()->Update();
+
+	// 現在のシーンのヒエラルキーとインスペクター項目を登録させる
+	if (SceneManager::GetInstance()->GetCurrentScene()) {
+		SceneManager::GetInstance()->GetCurrentScene()->DrawEditorHierarchyAndInspector();
+	}
+
+	// エディタのUI描画処理
+	DevEditor::GetInstance()->Draw();
+#endif
 }
 
 /// <summary>
@@ -195,6 +213,7 @@ void GameFramework::Finalize() {
 
 #ifdef USE_IMGUI
 
+	DevEditor::Finalize();
 	ImGuiManager::GetInstance()->Finalize();
 
 #endif
@@ -291,10 +310,16 @@ void GameFramework::EndFrame() {
 
 	DirectXCommon::GetInstance()->GetCommandList()->ResourceBarrier(1, &barrier);
 
-	// 2. RenderTextureの画像を Swapchain にコピーして描画する
-	uint32_t rtexSrvIndex = DirectXCommon::GetInstance()->GetRenderTextureSrvIndex();
-	D3D12_GPU_DESCRIPTOR_HANDLE rtexSrvHandle = ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(rtexSrvIndex);
-	PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
+	// 2. RenderTextureの画像を Swapchain にコピーして描画する（エディタ表示中はスキップ）
+	bool isEditor = false;
+#ifdef USE_IMGUI
+	isEditor = DevEditor::GetInstance()->IsEditorMode();
+#endif
+	if (!isEditor) {
+		uint32_t rtexSrvIndex = DirectXCommon::GetInstance()->GetRenderTextureSrvIndex();
+		D3D12_GPU_DESCRIPTOR_HANDLE rtexSrvHandle = ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(rtexSrvIndex);
+		PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
+	}
 
 	// 3. コピーした画像の上に ImGui を重ねて描画する
 	ImGuiManager::GetInstance()->Draw();

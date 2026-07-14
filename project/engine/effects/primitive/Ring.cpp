@@ -250,29 +250,29 @@ void Ring::DrawImGui(const char* windowName) {
 #ifdef USE_IMGUI
 	ImGui::Begin(windowName);
 
-	ImGui::DragFloat3("Position", &position_.x, 0.1f);
-	ImGui::DragFloat3("Rotation", &rotation_.x, 0.01f);
-	ImGui::DragFloat3("Scale", &scale_.x, 0.1f);
+	ImGui::DragFloat3("座標", &position_.x, 0.1f);
+	ImGui::DragFloat3("回転", &rotation_.x, 0.01f);
+	ImGui::DragFloat3("スケール", &scale_.x, 0.1f);
 
 	static int currentBlendMode = static_cast<int>(blendMode_);
-	const char* blendModeNames[] = {"None", "Normal", "Add", "Subtract", "Multiply", "Screen"};
-	if (ImGui::Combo("Blend Mode", &currentBlendMode, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
+	const char* blendModeNames[] = {"なし", "通常", "加算", "減算", "乗算", "スクリーン"};
+	if (ImGui::Combo("ブレンドモード", &currentBlendMode, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
 		blendMode_ = static_cast<PrimitiveRenderer::BlendMode>(currentBlendMode);
 	}
 
 	ImGui::Separator();
-	ImGui::Text("Ring Extensions");
+	ImGui::Text("リング詳細設定");
 
 	// パラメータが変更されたらフラグを立てる
-	if (ImGui::DragFloat2("Angle (Start/End)", &startAngle_, 0.05f)) { isMeshDirty_ = true; }
-	if (ImGui::DragFloat("Start Outer Radius", &startOuterRadius_, 0.01f)) { isMeshDirty_ = true; }
-	if (ImGui::DragFloat("Mid Outer Radius", &midOuterRadius_, 0.01f)) { isMeshDirty_ = true; }
-	if (ImGui::DragFloat("End Outer Radius", &endOuterRadius_, 0.01f)) { isMeshDirty_ = true; }
-	if (ImGui::DragFloat("Inner Radius", &innerRadius_, 0.01f)) { isMeshDirty_ = true; }
+	if (ImGui::DragFloat2("角度 (開始/終了)", &startAngle_, 0.05f)) { isMeshDirty_ = true; }
+	if (ImGui::DragFloat("開始外径", &startOuterRadius_, 0.01f)) { isMeshDirty_ = true; }
+	if (ImGui::DragFloat("中間外径", &midOuterRadius_, 0.01f)) { isMeshDirty_ = true; }
+	if (ImGui::DragFloat("終了外径", &endOuterRadius_, 0.01f)) { isMeshDirty_ = true; }
+	if (ImGui::DragFloat("内径", &innerRadius_, 0.01f)) { isMeshDirty_ = true; }
 
 	static int currentUV = static_cast<int>(uvDirection_);
-	const char* uvNames[] = {"Horizon", "Vertical"};
-	if (ImGui::Combo("UV Direction", &currentUV, uvNames, IM_ARRAYSIZE(uvNames))) {
+	const char* uvNames[] = {"水平", "垂直"};
+	if (ImGui::Combo("UV方向", &currentUV, uvNames, IM_ARRAYSIZE(uvNames))) {
 		uvDirection_ = static_cast<RingUVDirection>(currentUV);
 		isMeshDirty_ = true;
 	}

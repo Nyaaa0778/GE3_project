@@ -34,6 +34,10 @@ public:
 
 	void Finalize() override;
 
+	void DrawEditorHierarchyAndInspector() override;
+
+	void DrawEditorOverlay() override;
+
 private:
 	// ------------------------------------
 	// レベル
@@ -102,4 +106,6 @@ private:
 	void CheckAllCollisions();
 
 	void UpdateImGui();
+	void DrawSceneInspector();
+	void DrawGoalReachedOverlay();
 };

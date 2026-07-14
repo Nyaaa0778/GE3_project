@@ -192,13 +192,13 @@ void Plane::DrawImGui(const char* windowName) {
 #ifdef USE_IMGUI
 	ImGui::Begin(windowName);
 
-	ImGui::DragFloat3("Position", &worldTransform_.translation.x, 0.1f);
-	ImGui::DragFloat3("Rotation", &worldTransform_.rotation.x, 0.01f);
-	ImGui::DragFloat3("Scale", &worldTransform_.scale.x, 0.1f);
+	ImGui::DragFloat3("座標", &worldTransform_.translation.x, 0.1f);
+	ImGui::DragFloat3("回転", &worldTransform_.rotation.x, 0.01f);
+	ImGui::DragFloat3("スケール", &worldTransform_.scale.x, 0.1f);
 
 	static int currentBlendMode = static_cast<int>(blendMode_);
-	const char* blendModeNames[] = { "None", "Normal", "Add", "Subtract", "Multiply", "Screen" };
-	if (ImGui::Combo("Blend Mode", &currentBlendMode, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
+	const char* blendModeNames[] = { "なし", "通常", "加算", "減算", "乗算", "スクリーン" };
+	if (ImGui::Combo("ブレンドモード", &currentBlendMode, blendModeNames, IM_ARRAYSIZE(blendModeNames))) {
 		blendMode_ = static_cast<PrimitiveRenderer::BlendMode>(currentBlendMode);
 	}
 

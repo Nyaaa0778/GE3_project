@@ -59,6 +59,9 @@ public:
 	// 次のシーンを予約
 	void ChangeScene(const std::string& sceneName);
 
+	// 現在のシーンを取得
+	IScene* GetCurrentScene() const { return scene_.get(); }
+
 private:
 	// 今のシーン (unique_ptr で管理)
 	std::unique_ptr<IScene> scene_ = nullptr;

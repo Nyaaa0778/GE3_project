@@ -189,6 +189,9 @@
     <ClCompile Include="engine\debug\ImGuiManager.cpp">
       <Filter>ソース ファイル\engine\debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DevEditor.cpp">
+      <Filter>ソース ファイル\engine\debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\graphics\TextureManager.cpp">
       <Filter>ソース ファイル\engine\graphics</Filter>
     </ClCompile>
@@ -466,6 +469,9 @@
       <Filter>ヘッダー ファイル\engine\framework</Filter>
     </ClInclude>
     <ClInclude Include="engine\debug\ImGuiManager.h">
+      <Filter>ヘッダー ファイル\engine\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\debug\DevEditor.h">
       <Filter>ヘッダー ファイル\engine\debug</Filter>
     </ClInclude>
     <ClInclude Include="engine\framework\scene\IScene.h">

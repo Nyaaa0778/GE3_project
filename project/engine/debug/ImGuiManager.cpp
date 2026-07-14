@@ -61,10 +61,26 @@ void ImGuiManager::Initialize(
 
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		// デフォルトフォントを登録
-		if (io.Fonts->Fonts.empty()) {
+
+		// FiraMonoを英語・数字用の主要フォントとして読み込む
+		ImFont* font = io.Fonts->AddFontFromFileTTF("resources/fonts/FiraMono-Regular.ttf", 15.0f);
+		if (font == nullptr) {
+			// 読み込み失敗時はデフォルトフォントを使用
 			io.Fonts->AddFontDefault();
+		} else {
+			// 日本語表示用にWindowsのシステムフォントをマージする
+			ImFontConfig config;
+			config.MergeMode = true;
+			config.PixelSnapH = true;
+			const ImWchar* glyphRanges = io.Fonts->GetGlyphRangesJapanese();
+
+			// メイリオの読み込みを試みる
+			if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\meiryo.ttc", 15.0f, &config, glyphRanges) == nullptr) {
+				// メイリオがない場合はMSゴシックを読み込む
+				io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msgothic.ttc", 15.0f, &config, glyphRanges);
+			}
 		}
+
 		// フォントアトラスを明示的にビルド
 		io.Fonts->Build();
 	}

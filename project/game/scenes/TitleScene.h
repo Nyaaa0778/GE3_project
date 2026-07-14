@@ -26,6 +26,8 @@ public:
 
 	void Finalize() override;
 
+	void DrawEditorHierarchyAndInspector() override;
+
 private:
 	// モデル
 	std::unique_ptr<Object3d> sphere_;
@@ -51,6 +53,7 @@ private:
 
 private:
 	void UpdateImGui();
+	void DrawSceneInspector();
 
 	// ディゾルブのアニメーション制御用変数
 	float dissolveThreshold_ = 0.0f;

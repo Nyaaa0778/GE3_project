@@ -21,6 +21,8 @@ public:
 
 	void DrawDebugSpline();
 
+	void DrawInspector();
+
 public:
 	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
 	WorldTransform* GetWorldTransform() { return &worldTransform_; }

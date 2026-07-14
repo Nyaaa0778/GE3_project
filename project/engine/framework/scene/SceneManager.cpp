@@ -2,6 +2,7 @@
 
 #include "IScene.h"
 #include "ISceneFactory.h"
+#include "DevEditor.h"
 
 #include <cassert>
 
@@ -65,6 +66,9 @@ void SceneManager::ChangeScene(const std::string& sceneName) {
 
 	//次のシーンを予約
 	nextScene_ = sceneFactory_->CreateScene(sceneName);
+
+	// シーン切り替え時にエディタの選択状態をクリア
+	DevEditor::GetInstance()->ClearSelection();
 }
 
 void SceneManager::ChangeSceneInternal() {

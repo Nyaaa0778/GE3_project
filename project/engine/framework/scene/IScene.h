@@ -14,6 +14,10 @@ public:
 
 	virtual void Finalize() = 0;
 
+	virtual void DrawEditorHierarchyAndInspector() {}
+
+	virtual void DrawEditorOverlay() {}
+
 public:
 	virtual void SetSceneManager(SceneManager* sceneManager) {
 		sceneManager_ = sceneManager;

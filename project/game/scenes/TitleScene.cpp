@@ -1,4 +1,5 @@
 #include "TitleScene.h"
+#include "DevEditor.h"
 
 #include <MyEngine.h>
 #include "LightManager.h"
@@ -91,88 +92,94 @@ void TitleScene::Initialize() {
 void TitleScene::Update() {
 	auto input = Input::GetInstance();
 
+#ifdef USE_IMGUI
+	UpdateImGui();
+
+	// エディタモード状態をデバッグカメラのデフォルト状態と連携
+	bool isEditor = DevEditor::GetInstance()->IsEditorMode();
+	if (isEditor) {
+		useDebugCamera_ = true;
+	}
+
+	bool isPaused = DevEditor::GetInstance()->IsPaused();
+	if (DevEditor::GetInstance()->IsStepRequested()) {
+		isPaused = false;
+		DevEditor::GetInstance()->ClearStepRequest();
+	}
+#else
+	bool isPaused = false;
+#endif
+
 	if (useDebugCamera_) {
 		// ★ debugCameraController_ に camera_ を「操作してくれ」と頼む
 		debugCamera_->Update(camera_.get());
 	} else {
 		// 通常時のカメラ挙動（固定やパス移動など）
-	camera_->CalculateMatrix();
+		camera_->CalculateMatrix();
 	}
 
-	if (emitter_) {
-		emitter_->Update();
-	}
-
-	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
-
-	// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
-	if (input->TriggerKey(DIK_SPACE)) {
-		AudioManager::PlayAudio(se_); // 何も書かない、または false で1回だけ再生
-		isDissolving_ = true;
-		isFadingOut_ = !isFadingOut_;
-	}
-
-	// ディゾルブのアニメーション更新
-	if (isDissolving_) {
-		if (isFadingOut_) {
-			dissolveThreshold_ += dissolveSpeed_;
-			if (dissolveThreshold_ >= 1.0f) {
-				dissolveThreshold_ = 1.0f;
-				isDissolving_ = false;
-			}
-		} else {
-			dissolveThreshold_ -= dissolveSpeed_;
-			if (dissolveThreshold_ <= 0.0f) {
-				dissolveThreshold_ = 0.0f;
-				isDissolving_ = false;
-			}
+	if (!isPaused) {
+		if (emitter_) {
+			emitter_->Update();
 		}
-		PostProcessRenderer::GetInstance()->SetDissolveThreshold(dissolveThreshold_);
+
+		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+
+		// 【効果音のテスト】スペースキーを押したら「決定音」を鳴らす
+		if (input->TriggerKey(DIK_SPACE)) {
+			AudioManager::PlayAudio(se_); // 何も書かない、または false で1回だけ再生
+			isDissolving_ = true;
+			isFadingOut_ = !isFadingOut_;
+		}
+
+		// ディゾルブのアニメーション更新
+		if (isDissolving_) {
+			if (isFadingOut_) {
+				dissolveThreshold_ += dissolveSpeed_;
+				if (dissolveThreshold_ >= 1.0f) {
+					dissolveThreshold_ = 1.0f;
+					isDissolving_ = false;
+				}
+			} else {
+				dissolveThreshold_ -= dissolveSpeed_;
+				if (dissolveThreshold_ <= 0.0f) {
+					dissolveThreshold_ = 0.0f;
+					isDissolving_ = false;
+				}
+			}
+			PostProcessRenderer::GetInstance()->SetDissolveThreshold(dissolveThreshold_);
+		}
+
+		// 【停止のテスト】Bキーを押したらBGMだけをピタッと止める
+		if (input->TriggerKey(DIK_B)) {
+			AudioManager::StopAudio(bgm_);
+		}
+
+		// --- 1. シーン遷移判定 ---
+		if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
+			// 遷移時に振動を止める（重要）
+			input->SetShake(0.0f, 0.0f);
+			SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
+			return;
+		}
+
+		// --- 2. 押し込み判定と振動の処理 ---
+		if (input->PushButton(XINPUT_GAMEPAD_LEFT_THUMB)) {
+			// 振動させる
+			input->SetShake(0.3f, 0.7f);
+		} else {
+			// 離していたら振動を止める
+			input->SetShake(0.0f, 0.0f);
+		}
+
+		if (input->TriggerButton(XINPUT_GAMEPAD_RIGHT_THUMB)) {
+			input->SetShake(1.0f, 1.0f, 3.0f); // 1秒間ドカン！と震えて勝手に止まる
+		}
 	}
 
-	// 【停止のテスト】Bキーを押したらBGMだけをピタッと止める
-	if (input->TriggerKey(DIK_B)) {
-		AudioManager::StopAudio(bgm_);
-	}
-
-	// --- 1. シーン遷移判定 ---
-	if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
-		// 遷移時に振動を止める（重要）
-		input->SetShake(0.0f, 0.0f);
-		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
-		return;
-	}
-
-	// --- 2. 押し込み判定と振動の処理 ---
-	float speed = 0.1f; // 通常速度
-
-	// 左スティック押し込み (L3) を判定
-	if (input->PushButton(XINPUT_GAMEPAD_LEFT_THUMB)) {
-		speed = 0.3f; // ダッシュ速度
-		// 振動させる（左モーター：低周波でガタガタ、右モーター：高周波で細かく）
-		input->SetShake(0.3f, 0.7f);
-	} else {
-		// 離していたら振動を止める
-		input->SetShake(0.0f, 0.0f);
-	}
-
-	if (input->TriggerButton(XINPUT_GAMEPAD_RIGHT_THUMB)) {
-		input->SetShake(1.0f, 1.0f, 3.0f); // 1秒間ドカン！と震えて勝手に止まる
-	}
-	// --- 3. スティック移動処理 ---
-	/*Input::Stick lStick = input->GetLeftStick();
-	Vector3 pos = sphere_->GetPosition();
-	pos.x += lStick.x * speed;
-	pos.y += lStick.y * speed;
-	sphere_->SetPosition(pos);*/
-
+	// 常にオブジェクトの行列更新は行ってGPUに送る（一時停止中にインスペクターで編集可能にするため）
 	sphere_->Update();
-	//terrain_->Update();
-
 	primitive_->Update();
-
-	UpdateImGui();
-
 	sprite_->Update();
 }
 
@@ -196,21 +203,31 @@ void TitleScene::Finalize() {
 
 void TitleScene::UpdateImGui() {
 #ifdef USE_IMGUI
+	if (DevEditor::GetInstance()->IsEditorMode()) {
+		return;
+	}
 
 	// 1つの大きなウィンドウとしてサイズを設定（初回のみ適用、リサイズ可能）
 	ImGui::SetNextWindowSize(ImVec2(450.0f, 600.0f), ImGuiCond_Once);
 
 	// すべてを内包する1つのウィンドウを開始
-	ImGui::Begin("Debug Menu");
+	if (ImGui::Begin("デバッグメニュー")) {
+		DrawSceneInspector();
+	}
+	ImGui::End(); // メインウィンドウの終了
+#endif
+}
 
+void TitleScene::DrawSceneInspector() {
+#ifdef USE_IMGUI
 	// ──────────────────────────────────────────────────
 	// 1. Sprite Object
 	// ──────────────────────────────────────────────────
-	if (ImGui::CollapsingHeader("Sprite Object")) {
+	if (ImGui::CollapsingHeader("スプライトオブジェクト")) {
 		// 位置
 		{
 			Vector2 pos = sprite_->GetPosition();
-			if (ImGui::DragFloat2("Position", &pos.x, 1.0f, 0.0f, 0.0f, "%.1f")) {
+			if (ImGui::DragFloat2("座標", &pos.x, 1.0f, 0.0f, 0.0f, "%.1f")) {
 				sprite_->SetPosition(pos);
 			}
 		}
@@ -218,7 +235,7 @@ void TitleScene::UpdateImGui() {
 		// スケール
 		{
 			Vector2 scale = sprite_->GetScale();
-			if (ImGui::DragFloat2("Scale", &scale.x, 0.1f, -10.0f, 10.0f, "%.1f")) {
+			if (ImGui::DragFloat2("スケール", &scale.x, 0.1f, -10.0f, 10.0f, "%.1f")) {
 				sprite_->SetScale(scale);
 			}
 		}
@@ -226,7 +243,7 @@ void TitleScene::UpdateImGui() {
 		// 回転
 		{
 			float rot = sprite_->GetRotate();
-			if (ImGui::DragFloat("Rotation", &rot, 0.1f, -6.28f, 6.28f, "%.1f")) {
+			if (ImGui::DragFloat("回転", &rot, 0.1f, -6.28f, 6.28f, "%.1f")) {
 				sprite_->SetRotation(rot);
 			}
 		}
@@ -235,7 +252,7 @@ void TitleScene::UpdateImGui() {
 		{
 			Vector4 color = sprite_->GetColor();
 			float col[4] = {color.x, color.y, color.z, color.w};
-			if (ImGui::ColorEdit4("Color", col)) {
+			if (ImGui::ColorEdit4("色", col)) {
 				Vector4 newColor(col[0], col[1], col[2], col[3]);
 				sprite_->SetColor(newColor);
 			}
@@ -245,18 +262,18 @@ void TitleScene::UpdateImGui() {
 	// ──────────────────────────────────────────────────
 	// 2. Camera Control
 	// ──────────────────────────────────────────────────
-	if (ImGui::CollapsingHeader("Camera Control")) {
+	if (ImGui::CollapsingHeader("カメラコントロール")) {
 		Vector3 camPos = camera_->GetTranslate();
-		if (ImGui::DragFloat3("Position", &camPos.x, 0.1f)) {
+		if (ImGui::DragFloat3("座標", &camPos.x, 0.1f)) {
 			camera_->SetTranslate(camPos);
 		}
 
 		Vector3 camRot = camera_->GetRotate();
-		if (ImGui::DragFloat3("Rotation", &camRot.x, 0.01f)) {
+		if (ImGui::DragFloat3("回転", &camRot.x, 0.01f)) {
 			camera_->SetRotate(camRot);
 		}
 
-		if (ImGui::Button("Reset Camera")) {
+		if (ImGui::Button("カメラリセット")) {
 			camera_->SetTranslate({0.0f, 0.0f, -10.0f});
 			camera_->SetRotate({0.0f, 0.0f, 0.0f});
 		}
@@ -265,30 +282,30 @@ void TitleScene::UpdateImGui() {
 	// ──────────────────────────────────────────────────
 	// 3. PostProcess Settings (★追加分)
 	// ──────────────────────────────────────────────────
-	if (ImGui::CollapsingHeader("PostProcess Settings")) {
+	if (ImGui::CollapsingHeader("ポストプロセス設定")) {
 		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
-		const char* modes[] = {"Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve", "RandomNoise"};
-		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
+		const char* modes[] = {"通常", "ラジアルブラー", "ボックスフィルタ", "ガウシアンフィルタ", "グレースケール", "アウトライン", "ビネット", "ディゾルブ", "ランダムノイズ"};
+		if (ImGui::Combo("描画モード", &currentMode, modes, IM_ARRAYSIZE(modes))) {
 			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
 		}
 
 		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kVignetting)) {
 			Vector4 color = PostProcessRenderer::GetInstance()->GetVignetteColor();
 			float c[4] = {color.x, color.y, color.z, color.w};
-			if (ImGui::ColorEdit4("Vignette Color", c)) {
+			if (ImGui::ColorEdit4("ビネットカラー", c)) {
 				PostProcessRenderer::GetInstance()->SetVignetteColor({c[0], c[1], c[2], c[3]});
 			}
 		}
 
 		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
 			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
-			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
+			if (ImGui::SliderFloat("ディゾルブしきい値", &threshold, 0.0f, 1.0f)) {
 				PostProcessRenderer::GetInstance()->SetDissolveThreshold(threshold);
 			}
 
 			static int noiseIndex = 0;
-			const char* noises[] = {"noise0", "noise1"};
-			if (ImGui::Combo("Dissolve Noise", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
+			const char* noises[] = {"ノイズ0", "ノイズ1"};
+			if (ImGui::Combo("ディゾルブノイズ", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
 				if (noiseIndex == 0) {
 					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise0.png");
 				} else {
@@ -301,31 +318,29 @@ void TitleScene::UpdateImGui() {
 	// ──────────────────────────────────────────────────
 	// 4. Particle Debug
 	// ──────────────────────────────────────────────────
-	if (ImGui::CollapsingHeader("Particle Debug")) {
+	if (ImGui::CollapsingHeader("パーティクルデバッグ")) {
 		auto& groups = ParticleManager::GetInstance()->GetGroups();
 		for (auto& [name, group] : groups) {
-			ImGui::Checkbox((name + " Billboard").c_str(), &group.useBillboard);
+			ImGui::Checkbox((name + " ビルボード").c_str(), &group.useBillboard);
 		}
 	}
 
 	// ──────────────────────────────────────────────────
 	// 5. Primitive Settings
 	// ──────────────────────────────────────────────────
-	// ※ primitive_->DrawImGui 内部で ImGui::Begin() が呼ばれている場合、
-	//   この項目だけ別ウィンドウとして分離して表示されます。
-	primitive_->DrawImGui("Primitive Settings");
+	primitive_->DrawImGui("プリミティブ設定");
 
 	// ──────────────────────────────────────────────────
 	// 6. Object Settings
 	// ──────────────────────────────────────────────────
-	if (ImGui::CollapsingHeader("Object Settings")) {
+	if (ImGui::CollapsingHeader("オブジェクト設定")) {
 		Vector3 rotate = sphere_->GetRotate();
-		if (ImGui::DragFloat3("Sphere rotate", &rotate.x, 0.01f, 0.1f, 100.0f)) {
+		if (ImGui::DragFloat3("球体回転", &rotate.x, 0.01f, 0.1f, 100.0f)) {
 			sphere_->SetRotation(rotate);
 		}
 
 		float envCoeff = sphere_->GetEnvironmentCoefficient();
-		if (ImGui::SliderFloat("Reflection Power", &envCoeff, 0.0f, 1.0f)) {
+		if (ImGui::SliderFloat("反射強度", &envCoeff, 0.0f, 1.0f)) {
 			sphere_->SetEnvironmentCoefficient(envCoeff);
 		}
 	}
@@ -333,8 +348,8 @@ void TitleScene::UpdateImGui() {
 	// ──────────────────────────────────────────────────
 	// 7. Debug Console
 	// ──────────────────────────────────────────────────
-	if (ImGui::CollapsingHeader("Debug Console")) {
-		if (ImGui::Checkbox("Use Debug Camera", &useDebugCamera_)) {
+	if (ImGui::CollapsingHeader("デバッグコンソール")) {
+		if (ImGui::Checkbox("デバッグカメラを使用", &useDebugCamera_)) {
 			if (useDebugCamera_) {
 				debugCamera_->SetRotate(camera_->GetRotate());
 				debugCamera_->SetTranslate(camera_->GetTranslate());
@@ -431,7 +446,78 @@ void TitleScene::UpdateImGui() {
 		}
 	}
 	*/
+#endif
+}
 
-	ImGui::End(); // メインウィンドウの終了
+void TitleScene::DrawEditorHierarchyAndInspector() {
+#ifdef USE_IMGUI
+	// DevEditorのヒエラルキーとインスペクター登録
+	DevEditor::GetInstance()->DrawHierarchy("タイトルシーン ヒエラルキー", [this]() {
+		
+		// Title Stage Scene Settings
+		if (DevEditor::GetInstance()->HierarchyNode("タイトルステージ (グローバル)", this)) {
+			DevEditor::GetInstance()->SetInspectorDrawer([this]() {
+				DrawSceneInspector();
+			});
+		}
+		// 1. Sphere
+		if (sphere_) {
+			if (DevEditor::GetInstance()->HierarchyNode("球体オブジェクト", sphere_.get())) {
+				DevEditor::GetInstance()->SetInspectorDrawer([this]() {
+					WorldTransform* wt = const_cast<WorldTransform*>(sphere_->GetWorldTransform());
+					DevEditor::GetInstance()->DrawTransformEdit(wt);
+					
+					Vector4 color = sphere_->GetColor();
+					float col[4] = {color.x, color.y, color.z, color.w};
+					if (ImGui::ColorEdit4("色", col)) {
+						sphere_->SetColor({col[0], col[1], col[2], col[3]});
+					}
+					
+					float envCoeff = sphere_->GetEnvironmentCoefficient();
+					if (ImGui::SliderFloat("反射強度", &envCoeff, 0.0f, 1.0f)) {
+						sphere_->SetEnvironmentCoefficient(envCoeff);
+					}
+				});
+			}
+		}
+
+		// 2. Primitive
+		if (primitive_) {
+			if (DevEditor::GetInstance()->HierarchyNode("プリミティブオブジェクト", primitive_.get())) {
+				DevEditor::GetInstance()->SetInspectorDrawer([this]() {
+					ImGui::Text("プリミティブ設定");
+				});
+			}
+		}
+
+		// 3. Sprite
+		if (sprite_) {
+			if (DevEditor::GetInstance()->HierarchyNode("スプライトオブジェクト", sprite_.get())) {
+				DevEditor::GetInstance()->SetInspectorDrawer([this]() {
+					ImGui::Text("スプライト設定");
+				});
+			}
+		}
+
+		// 4. Camera
+		if (camera_) {
+			if (DevEditor::GetInstance()->HierarchyNode("タイトルカメラ", camera_.get())) {
+				DevEditor::GetInstance()->SetInspectorDrawer([this]() {
+					ImGui::Checkbox("デバッグカメラを使用", &useDebugCamera_);
+					ImGui::Separator();
+					Vector3 pos = camera_->GetTranslate();
+					if (ImGui::DragFloat3("座標", &pos.x, 0.1f)) {
+						camera_->SetTranslate(pos);
+						camera_->CalculateMatrix();
+					}
+					Vector3 rot = camera_->GetRotate();
+					if (ImGui::DragFloat3("回転", &rot.x, 0.01f)) {
+						camera_->SetRotate(rot);
+						camera_->CalculateMatrix();
+					}
+				});
+			}
+		}
+	});
 #endif
 }

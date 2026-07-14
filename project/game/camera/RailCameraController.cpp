@@ -9,9 +9,12 @@
 #include <json.hpp>
 #include <imgui.h>
 
-#include "Camera.h"
+#include "ImGuiManager.h"
+#include "DevEditor.h"
 #include "DirectXCommon.h"
 #include "Input.h"
+
+#include "Camera.h"
 
 using namespace MathUtility;
 
@@ -104,53 +107,55 @@ void RailCameraController::Update(bool activeController) {
 	}
 
 #ifdef USE_IMGUI
+	// エディタモードのときはフローティングのスタンドアロンウインドウを表示しない
+	if (!DevEditor::GetInstance()->IsEditorMode()) {
+		// ------------------------------------
+		// 4. ImGui コントロール表示
+		// ------------------------------------
+		ImGui::Begin("Spline Editor");
 
-	// ------------------------------------
-	// 4. ImGui コントロール表示
-	// ------------------------------------
-	ImGui::Begin("Spline Editor");
+		ImGui::SeparatorText("Playback Controls");
+		ImGui::Checkbox("Play Path", &isPlaying_);
+		ImGui::Checkbox("Loop Path", &isLoop_);
+		ImGui::SliderFloat("Speed", &speed_, 0.001f, 0.5f, "%.4f");
+		
+		float maxT = (std::max)(0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
+		if (ImGui::SliderFloat("Position Time", &splineTime_, 0.0f, maxT, "%.3f")) {
+			if (!isPlaying_ && controlPoints_.size() >= 2) {
+				Vector3 position = EvaluateSpline(controlPoints_, splineTime_);
+				worldTransform_.translation = position;
 
-	ImGui::SeparatorText("Playback Controls");
-	ImGui::Checkbox("Play Path", &isPlaying_);
-	ImGui::Checkbox("Loop Path", &isLoop_);
-	ImGui::SliderFloat("Speed", &speed_, 0.001f, 0.5f, "%.4f");
-	
-	float maxT = (std::max)(0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
-	if (ImGui::SliderFloat("Position Time", &splineTime_, 0.0f, maxT, "%.3f")) {
-		if (!isPlaying_ && controlPoints_.size() >= 2) {
-			Vector3 position = EvaluateSpline(controlPoints_, splineTime_);
-			worldTransform_.translation = position;
-
-			Vector3 tangent = EvaluateSplineTangent(controlPoints_, splineTime_);
-			if (Length(tangent) > 0.0001f) {
-				tangent = Normalize(tangent);
-				float yaw = atan2f(tangent.x, tangent.z);
-				float pitch = atan2f(-tangent.y, sqrtf(tangent.x * tangent.x + tangent.z * tangent.z));
-				worldTransform_.rotation = { pitch, yaw, 0.0f };
-			}
-			worldTransform_.UpdateMatrix();
-			if (activeController) {
-				camera_->matWorld = worldTransform_.matWorld;
-				camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
-				camera_->UpdateViewProjection();
-			}
-		}
-	}
-
-	if (ImGui::Button("Reset to Start")) {
-		splineTime_ = 0.0f;
-		if (controlPoints_.size() >= 2) {
-			worldTransform_.translation = controlPoints_[0];
-			worldTransform_.UpdateMatrix();
-			if (activeController) {
-				camera_->matWorld = worldTransform_.matWorld;
-				camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
-				camera_->UpdateViewProjection();
+				Vector3 tangent = EvaluateSplineTangent(controlPoints_, splineTime_);
+				if (Length(tangent) > 0.0001f) {
+					tangent = Normalize(tangent);
+					float yaw = atan2f(tangent.x, tangent.z);
+					float pitch = atan2f(-tangent.y, sqrtf(tangent.x * tangent.x + tangent.z * tangent.z));
+					worldTransform_.rotation = { pitch, yaw, 0.0f };
+				}
+				worldTransform_.UpdateMatrix();
+				if (activeController) {
+					camera_->matWorld = worldTransform_.matWorld;
+					camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
+					camera_->UpdateViewProjection();
+				}
 			}
 		}
-	}
 
-	ImGui::End();
+		if (ImGui::Button("Reset to Start")) {
+			splineTime_ = 0.0f;
+			if (controlPoints_.size() >= 2) {
+				worldTransform_.translation = controlPoints_[0];
+				worldTransform_.UpdateMatrix();
+				if (activeController) {
+					camera_->matWorld = worldTransform_.matWorld;
+					camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
+					camera_->UpdateViewProjection();
+				}
+			}
+		}
+
+		ImGui::End();
+	}
 #endif
 }
 
@@ -158,7 +163,25 @@ void RailCameraController::DrawDebugSpline() {
 #ifdef USE_IMGUI
 	if (controlPoints_.empty()) return;
 
-	ImDrawList* drawList = ImGui::GetForegroundDrawList();
+	// エディタモードのときは Game View ウインドウのドローリストを使用し、座標をスケーリングする
+	bool isEditor = DevEditor::GetInstance()->IsEditorMode();
+	ImDrawList* drawList = isEditor ? ImGui::GetWindowDrawList() : ImGui::GetForegroundDrawList();
+
+	ImVec2 imgPos = {0.0f, 0.0f};
+	ImVec2 imgSize = {1280.0f, 720.0f};
+	if (isEditor) {
+		imgPos = ImGui::GetItemRectMin();
+		imgSize = ImGui::GetItemRectSize();
+	}
+
+	auto MapToViewport = [&](const Vector2& screenPt) -> ImVec2 {
+		if (!isEditor) {
+			return ImVec2(screenPt.x, screenPt.y);
+		}
+		float normX = screenPt.x / 1280.0f;
+		float normY = screenPt.y / 720.0f;
+		return ImVec2(imgPos.x + normX * imgSize.x, imgPos.y + normY * imgSize.y);
+	};
 
 	// 1. スプライン軌跡の描画
 	if (controlPoints_.size() >= 2) {
@@ -174,8 +197,8 @@ void RailCameraController::DrawDebugSpline() {
 			if (WorldToScreen(worldPt, screenPt)) {
 				if (hasPrev) {
 					drawList->AddLine(
-						ImVec2(prevScreen.x, prevScreen.y),
-						ImVec2(screenPt.x, screenPt.y),
+						MapToViewport(prevScreen),
+						MapToViewport(screenPt),
 						IM_COL32(0, 255, 255, 255), // 水色
 						2.0f
 					);
@@ -206,12 +229,78 @@ void RailCameraController::DrawDebugSpline() {
 				radius = 6.0f;
 			}
 
-			drawList->AddCircleFilled(ImVec2(screenPos.x, screenPos.y), radius, color);
-			drawList->AddCircle(ImVec2(screenPos.x, screenPos.y), radius + 1.0f, IM_COL32(0, 0, 0, 255), 0, 1.0f);
+			ImVec2 p = MapToViewport(screenPos);
+			drawList->AddCircleFilled(p, radius, color);
+			drawList->AddCircle(p, radius + 1.0f, IM_COL32(0, 0, 0, 255), 0, 1.0f);
 
 			std::string label = "P" + std::to_string(i);
-			drawList->AddText(ImVec2(screenPos.x + 8.0f, screenPos.y - 8.0f), IM_COL32(255, 255, 255, 255), label.c_str());
+			drawList->AddText(ImVec2(p.x + 8.0f, p.y - 8.0f), IM_COL32(255, 255, 255, 255), label.c_str());
 		}
+	}
+#endif
+}
+
+void RailCameraController::DrawInspector() {
+#ifdef USE_IMGUI
+	ImGui::SeparatorText("再生コントロール");
+	ImGui::Checkbox("パス再生", &isPlaying_);
+	ImGui::Checkbox("ループ再生", &isLoop_);
+	ImGui::SliderFloat("速度", &speed_, 0.001f, 0.5f, "%.4f");
+	
+	float maxT = (std::max)(0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
+	if (ImGui::SliderFloat("再生位置 (時間)", &splineTime_, 0.0f, maxT, "%.3f")) {
+		if (!isPlaying_ && controlPoints_.size() >= 2) {
+			Vector3 position = EvaluateSpline(controlPoints_, splineTime_);
+			worldTransform_.translation = position;
+
+			Vector3 tangent = EvaluateSplineTangent(controlPoints_, splineTime_);
+			if (Length(tangent) > 0.0001f) {
+				tangent = Normalize(tangent);
+				float yaw = atan2f(tangent.x, tangent.z);
+				float pitch = atan2f(-tangent.y, sqrtf(tangent.x * tangent.x + tangent.z * tangent.z));
+				worldTransform_.rotation = { pitch, yaw, 0.0f };
+			}
+			worldTransform_.UpdateMatrix();
+			camera_->matWorld = worldTransform_.matWorld;
+			camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
+			camera_->UpdateViewProjection();
+		}
+	}
+
+	if (ImGui::Button("スタート位置に戻す")) {
+		splineTime_ = 0.0f;
+		if (controlPoints_.size() >= 2) {
+			worldTransform_.translation = controlPoints_[0];
+			worldTransform_.UpdateMatrix();
+			camera_->matWorld = worldTransform_.matWorld;
+			camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
+			camera_->UpdateViewProjection();
+		}
+	}
+
+	ImGui::SeparatorText("制御点");
+	bool pointsChanged = false;
+	for (size_t i = 0; i < controlPoints_.size(); ++i) {
+		std::string label = "P" + std::to_string(i);
+		if (ImGui::DragFloat3(label.c_str(), &controlPoints_[i].x, 0.1f)) {
+			pointsChanged = true;
+		}
+	}
+
+	if (pointsChanged && !isPlaying_ && controlPoints_.size() >= 2) {
+		Vector3 position = EvaluateSpline(controlPoints_, splineTime_);
+		worldTransform_.translation = position;
+		Vector3 tangent = EvaluateSplineTangent(controlPoints_, splineTime_);
+		if (Length(tangent) > 0.0001f) {
+			tangent = Normalize(tangent);
+			float yaw = atan2f(tangent.x, tangent.z);
+			float pitch = atan2f(-tangent.y, sqrtf(tangent.x * tangent.x + tangent.z * tangent.z));
+			worldTransform_.rotation = { pitch, yaw, 0.0f };
+		}
+		worldTransform_.UpdateMatrix();
+		camera_->matWorld = worldTransform_.matWorld;
+		camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
+		camera_->UpdateViewProjection();
 	}
 #endif
 }
