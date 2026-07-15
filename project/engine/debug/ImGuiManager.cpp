@@ -61,10 +61,25 @@ void ImGuiManager::Initialize(
 
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		// デフォルトフォントを登録
-		if (io.Fonts->Fonts.empty()) {
+
+		// Fira Mono フォント（英数字用）をロード
+		ImFont* font = io.Fonts->AddFontFromFileTTF("resources/fonts/FiraMono-Regular.ttf", 16.0f);
+
+		// Fira Mono がロードできなかった場合のフォールバック
+		if (font == nullptr) {
 			io.Fonts->AddFontDefault();
 		}
+
+		// 日本語フォントをマージしてロードするための設定
+		ImFontConfig config;
+		config.MergeMode = true; // 既存のフォント（FiraMono）にマージする
+
+		// Windows 標準の日本語フォント（例: ＭＳ ゴシック）
+		const char* jpFontPath = "resources/fonts/msgothic.ttc";
+
+		// 日本語のグリフレンジを指定してロード
+		io.Fonts->AddFontFromFileTTF(jpFontPath, 16.0f, &config, io.Fonts->GetGlyphRangesJapanese());
+
 		// フォントアトラスを明示的にビルド
 		io.Fonts->Build();
 	}

@@ -145,7 +145,7 @@ void GamePlayScene::Initialize() {
 	// ゴール初期化
 	// ------------------------------------
 	goal_ = std::make_unique<Goal>();
-	Vector3 goalPos = { 0.0f, 0.0f, 150.0f };
+	Vector3 goalPos = {0.0f, 0.0f, 150.0f};
 	if (railCamera_) {
 		const auto& controlPoints = railCamera_->GetControlPoints();
 		if (!controlPoints.empty()) {
@@ -232,7 +232,7 @@ void GamePlayScene::Update() {
 
 		// カメラがレール末尾に到達したことによるゴール到達チェック
 		if (railCamera_ && !railCamera_->GetIsLoop()) {
-			float maxTime = static_cast<float>((std::max)(0ULL, railCamera_->GetControlPoints().size()) - 1);
+			float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
 			if (railCamera_->GetSplineTime() >= maxTime) {
 				isGoalReached_ = true;
 				railCamera_->SetIsPlaying(false);
@@ -274,7 +274,7 @@ void GamePlayScene::Update() {
 		}
 		shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
 			return shockwave->IsFinished();
-		});
+							  });
 
 		if (lockOn_) {
 			// LockOn::Update が求める「生ポインタのリスト」をその場で作成
@@ -312,12 +312,11 @@ void GamePlayScene::Update() {
 		// 点滅の計算 (サイン波を用いて明滅)
 		static float vignetteTimer = 0.0f;
 		vignetteTimer += 0.1f; // 点滅スピード
-		
+
 		float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
 		float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
-		PostProcessRenderer::GetInstance()->SetVignetteColor({ red, 0.0f, 0.0f, 1.0f });
-	}
-	else {
+		PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
+	} else {
 		// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
 		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
 			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
@@ -411,180 +410,9 @@ void GamePlayScene::CheckAllCollisions() {
 
 void GamePlayScene::UpdateImGui() {
 #ifdef USE_IMGUI
-	ImGui::Begin("Window");
+	ImGui::Begin("デバッグウィンドウ");
 
-	// ─────────────────────
-	// Player Object
-	// ─────────────────────
 
-	ImGui::SeparatorText("Player");
-
-	{
-		float playerHp = player_->GetHP();
-		if (ImGui::SliderFloat("HP", &playerHp, 0.0f, 100.0f, "%.1f")) {
-			player_->SetHP(playerHp);
-		}
-	}
-
-	{
-		Vector3 pos = player_->GetWorldTransform()->translation;
-		if (ImGui::DragFloat3("Position", &pos.x, 0.1f)) {
-			player_->GetWorldTransform()->translation = pos;
-		}
-	}
-
-	{
-		Vector3 scale = player_->GetWorldTransform()->scale;
-		if (ImGui::DragFloat3("Scale", &scale.x, 0.1f, -10.0f, 10.0f)) {
-			player_->GetWorldTransform()->scale = scale;
-		}
-	}
-
-	{
-		Vector3 rot = player_->GetWorldTransform()->rotation;
-		if (ImGui::DragFloat3("Rotation", &rot.x, 0.1f, -6.28f, 6.28f)) {
-			player_->GetWorldTransform()->rotation = rot;
-		}
-	}
-
-	{
-		Vector4 color = playerModel_->GetColor();
-		float col[4] = {color.x, color.y, color.z, color.w};
-
-		// ImGui カラーピッカー
-		if (ImGui::ColorEdit4("Color", col)) {
-			Vector4 newColor(col[0], col[1], col[2], col[3]);
-			playerModel_->SetColor(newColor);
-		}
-	}
-
-	// ─────────────────────
-	// カメラ
-	// ─────────────────────
-
-	ImGui::SeparatorText("Camera");
-
-	if (ImGui::Checkbox("Use Debug Camera", &useDebugCamera_)) {
-		if (useDebugCamera_) {
-			debugCamera_->SetRotate(camera_->GetRotate());
-			debugCamera_->SetTranslate(camera_->GetTranslate());
-			debugCamera_->CalculateMatrix();
-		}
-	}
-
-	// 位置
-	{
-		Vector3 pos = camera_->GetTranslate();
-		if (ImGui::DragFloat3("Camera Position", &pos.x, 0.1f)) {
-			camera_->SetTranslate(pos);
-		}
-	}
-
-	// 回転
-	{
-		Vector3 rot = camera_->GetRotate();
-		if (ImGui::DragFloat3("Camera Rotation", &rot.x, 0.01f)) {
-			camera_->SetRotate(rot);
-		}
-	}
-
-	// ─────────────────────
-	// PostProcess
-	// ─────────────────────
-	ImGui::SeparatorText("PostProcess Settings");
-	{
-		static int currentMode = static_cast<int>(PostProcessRenderer::GetInstance()->GetMode());
-		const char* modes[] = {"Normal", "RadialBlur", "BoxFilter", "GaussianFilter", "Grayscale", "Outline", "Vignetting", "Dissolve"};
-		if (ImGui::Combo("Draw Mode", &currentMode, modes, IM_ARRAYSIZE(modes))) {
-			PostProcessRenderer::GetInstance()->SetMode(static_cast<PostProcessRenderer::PostProcessMode>(currentMode));
-		}
-
-		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kVignetting)) {
-			Vector4 color = PostProcessRenderer::GetInstance()->GetVignetteColor();
-			float c[4] = {color.x, color.y, color.z, color.w};
-			if (ImGui::ColorEdit4("Vignette Color", c)) {
-				PostProcessRenderer::GetInstance()->SetVignetteColor({c[0], c[1], c[2], c[3]});
-			}
-		}
-
-		if (currentMode == static_cast<int>(PostProcessRenderer::PostProcessMode::kDissolve)) {
-			float threshold = PostProcessRenderer::GetInstance()->GetDissolveThreshold();
-			if (ImGui::SliderFloat("Dissolve Threshold", &threshold, 0.0f, 1.0f)) {
-				PostProcessRenderer::GetInstance()->SetDissolveThreshold(threshold);
-			}
-
-			static int noiseIndex = 0;
-			const char* noises[] = {"noise0", "noise1"};
-			if (ImGui::Combo("Dissolve Noise", &noiseIndex, noises, IM_ARRAYSIZE(noises))) {
-				if (noiseIndex == 0) {
-					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise0.png");
-				} else {
-					PostProcessRenderer::GetInstance()->SetDissolveNoiseTexture("resources/sprites/noise1.png");
-				}
-			}
-		}
-	}
-
-	ImGui::End(); 
-
-	if (goal_) {
-		goal_->DrawImGui("Goal Settings");
-	}
-
-	if (isGoalReached_) {
-		ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(450.0f, 220.0f));
-		ImGuiWindowFlags clearFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings;
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.05f, 0.05f, 0.05f, 0.85f)); // Dark glassmorphism-like background
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
-
-		if (ImGui::Begin("Game Clear Overlay", nullptr, clearFlags)) {
-			ImGui::Spacing();
-			ImGui::Spacing();
-
-			// Gold colored text
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.8f, 0.0f, 1.0f));
-			ImGui::SetWindowFontScale(2.5f);
-			const char* titleText = "STAGE CLEAR!";
-			float textWidth = ImGui::CalcTextSize(titleText).x * 2.5f;
-			ImGui::SetCursorPosX((450.0f - textWidth) * 0.5f);
-			ImGui::Text("%s", titleText);
-			ImGui::PopStyleColor();
-			ImGui::SetWindowFontScale(1.0f);
-
-			//// 回転（ラジアン or 度はお好みで）
-			//{
-			//  Vector3 rot = camera_->GetRotate();
-			//  if (ImGui::DragFloat3(" Camera Rotation", &rot.x, 0.01f)) {
-			//    camera_->SetRotate(rot);
-			//  }
-			//}
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			const char* subText = "Press ENTER or Button [A] to Return to Title";
-			float subTextWidth = ImGui::CalcTextSize(subText).x;
-			ImGui::SetCursorPosX((450.0f - subTextWidth) * 0.5f);
-			ImGui::Text("%s", subText);
-
-			ImGui::Spacing();
-			ImGui::Spacing();
-
-			// Center button
-			float btnWidth = 150.0f;
-			ImGui::SetCursorPosX((450.0f - btnWidth) * 0.5f);
-			if (ImGui::Button("Return to Title", ImVec2(btnWidth, 35.0f))) {
-				SceneManager::GetInstance()->ChangeScene("TITLE");
-			}
-		}
-		ImGui::End(); 
-
-		ImGui::PopStyleVar(2);
-		ImGui::PopStyleColor();
-	}
+	ImGui::End();
 #endif
 }

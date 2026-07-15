@@ -615,4 +615,7 @@
     </None>
     <None Include="resources\levels\TL1Sample.json" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="resources\fonts\FiraMono-Medium.ttf" />
+  </ItemGroup>
 </Project>

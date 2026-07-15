@@ -1,5 +1,5 @@
 [*.{cpp,h,hlsl,hlsli}]
-charset=utf-8
+charset = utf-8
 charset = utf-8
 # スペルミスをintellisense上でのエラーとして扱う
 spelling_error_severity = error

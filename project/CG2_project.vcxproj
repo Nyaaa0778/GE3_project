@@ -501,6 +501,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <None Include="resources\shaders\sprite\Sprite.hlsli" />
     <None Include="resources\shaders\skybox\Skybox.hlsli" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="resources\fonts\FiraMono-Medium.ttf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
