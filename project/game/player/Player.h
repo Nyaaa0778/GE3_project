@@ -61,6 +61,8 @@ public:
 	float GetHP() const { return hp_; }
 	void SetHP(float hp) { hp_ = hp; }
 
+	bool IsAlive()const { return isAlive_; }
+
 private:
 	// ------------------------------------
 	// 本体

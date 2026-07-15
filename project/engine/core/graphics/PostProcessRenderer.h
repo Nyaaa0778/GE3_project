@@ -107,6 +107,9 @@ public:
 	void SetVignetteColor(const Vector4& color);
 	Vector4 GetVignetteColor() const;
 
+	void SetGrayscaleFactor(float factor);
+	float GetGrayscaleFactor() const;
+
 	/// <summary>
 	/// 各種エフェクトを型安全に取得するテンプレートメソッド
 	/// </summary>

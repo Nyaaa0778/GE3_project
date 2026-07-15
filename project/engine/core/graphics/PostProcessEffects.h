@@ -85,13 +85,26 @@ private:
 class GrayscaleEffect : public IPostProcessEffect
 {
 public:
+	struct GrayscaleParams {
+		float factor;
+		float padding[3];
+	};
+
+public:
 	void Initialize(DirectXCommon* dxCommon) override;
 	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+
+	void SetFactor(float factor);
+	float GetFactor() const { return factor_; }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
+	GrayscaleParams* paramsData_ = nullptr;
+
+	float factor_ = 0.0f;
 
 	void CreateRootSignature();
 	void CreatePipelineState();

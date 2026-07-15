@@ -305,21 +305,52 @@ void GamePlayScene::Update() {
 	// ------------------------------------
 	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
-	// HPが20以下の時に Vignetting 赤点滅を適用
-	if (player_->GetHP() <= 20.0f) {
-		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
+	{
+		auto* postEffect = PostProcessRenderer::GetInstance();
 
-		// 点滅の計算 (サイン波を用いて明滅)
-		static float vignetteTimer = 0.0f;
-		vignetteTimer += 0.1f; // 点滅スピード
+		// HPが20以下の時に Vignetting 赤点滅を適用
+		if (player_->IsAlive()) {
 
-		float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
-		float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
-		PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
-	} else {
-		// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
-		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
-			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+
+			if (player_->GetHP() <= 20.0f) {
+				postEffect->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
+
+				// 点滅の計算 (サイン波を用いて明滅)
+				static float vignetteTimer = 0.0f;
+				vignetteTimer += 0.1f; // 点滅スピード
+
+				float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
+				float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
+				postEffect->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
+			} else {
+				// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
+				if (postEffect->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
+					postEffect->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+				}
+			}
+		} else {
+			// グレースケールモードが含まれていなければ設定 
+			bool hasGrayscale = false;
+
+			for (auto mode : postEffect->GetActiveModes()) {
+				if (mode == PostProcessRenderer::PostProcessMode::kGrayscale) {
+					hasGrayscale = true;
+					break;
+				}
+			}
+
+			if (!hasGrayscale) {
+				postEffect->ClearActiveModes();
+				postEffect->AddActiveMode(PostProcessRenderer::PostProcessMode::kGrayscale);
+			}
+
+			// 毎フレーム 1% ずつグレースケール率を高める
+			float factor = postEffect->GetGrayscaleFactor();
+			factor += 0.01f;
+			if (factor >= 1.0f) {
+				factor = 1.0f;
+			}
+			postEffect->SetGrayscaleFactor(factor);
 		}
 	}
 }
@@ -415,6 +446,22 @@ void GamePlayScene::UpdateImGui() {
 	// FPSを表示
 	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
+	ImGui::SeparatorText("プレイヤー");
+	float playerHp = player_->GetHP();
+	if (ImGui::SliderFloat("HP", &playerHp, 0.0f, 100.0f, "%.1f")) {
+		// 3. スライダーが動かされたら、新しい値をプレイヤー本体にセットする
+		player_->SetHP(playerHp); // ※ご自身の環境のセッター関数名に合わせてください
+	}
+
+	bool isAlive = player_->IsAlive(); // 例：生存フラグを取得
+
+	// isAlive が true なら "True"、false なら "False" と表示される
+	ImGui::Text("isAlive: %s", isAlive ? "True" : "False");
+
 	ImGui::End();
+
+	railCamera_->UpdateImGui();
+
+	
 #endif
 }

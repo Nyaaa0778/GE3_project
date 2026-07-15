@@ -223,4 +223,18 @@ Vector4 PostProcessRenderer::GetVignetteColor() const {
 		return vignette->GetColor();
 	}
 	return {0.0f, 0.0f, 0.0f, 1.0f};
+}
+
+void PostProcessRenderer::SetGrayscaleFactor(float factor) {
+	if (auto grayscale = GetEffect<GrayscaleEffect>(PostProcessMode::kGrayscale)) {
+		grayscale->SetFactor(factor);
+	}
+}
+
+float PostProcessRenderer::GetGrayscaleFactor() const {
+	auto self = const_cast<PostProcessRenderer*>(this);
+	if (auto grayscale = self->GetEffect<GrayscaleEffect>(PostProcessMode::kGrayscale)) {
+		return grayscale->GetFactor();
+	}
+	return 0.0f;
 }

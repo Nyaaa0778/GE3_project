@@ -21,6 +21,8 @@ public:
 
 	void DrawDebugSpline();
 
+	void UpdateImGui();
+
 public:
 	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
 	WorldTransform* GetWorldTransform() { return &worldTransform_; }
@@ -71,5 +73,7 @@ private:
 	int draggedPointIndex_ = -1;
 	bool isRightMouseDown_ = false;
 	Vector2 rightMouseClickPos_;
+
+	bool activeController_ = true;
 };
 

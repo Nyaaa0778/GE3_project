@@ -62,7 +62,7 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 
 	// コライダーの初期設定
 	SetShape(ColliderShape::kSphere);
-	SetSphere({ 0.5f });
+	SetSphere({0.5f});
 
 	// 前フレームのワールド座標の初期化
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
@@ -75,9 +75,9 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	// 本体
 	// ------------------------------------
-	
+
 	// プレイヤーの回転を常に(0, 0, 0)にする（親であるレールカメラの向きに平行にする）
-	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
+	worldTransform_.rotation = {0.0f, 0.0f, 0.0f};
 
 	// 移動処理
 	UpdateMove();
@@ -87,6 +87,12 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 
 	// モデルの更新
 	model_->Update();
+
+	if (isAlive_) {
+		if (hp_ <= 0.0f) {
+			isAlive_ = false;
+		}
+	}
 
 	// ------------------------------------
 	// 照準
@@ -98,10 +104,10 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	// 弾
 	// ------------------------------------
-	
+
 	// 攻撃
 	Attack();
-	
+
 	// 弾の更新
 	UpdateBullet(enemies);
 
@@ -184,7 +190,7 @@ void Player::UpdateBullet(const std::list<EnemyBase*>& enemies) {
 	bullets_.remove_if([](const std::unique_ptr<IPlayerBullet>& bullet) {
 		// 条件に一致すれば true を返すだけで、自動的に delete される
 		return bullet->IsDead();
-	});
+					   });
 }
 
 /// <summary>
@@ -199,8 +205,7 @@ void Player::Attack() {
 
 	// クールダウンが終了しており、キーが押されていたら発射
 	if (input->PushKey(DIK_SPACE)) {
-		if(cooldownTimer_ <= 0.0f)
-		{
+		if (cooldownTimer_ <= 0.0f) {
 			bool canShoot = false;
 			std::unique_ptr<IPlayerBullet> newBullet;
 			Vector3 spawnPos = worldTransform_.GetWorldPosition();
@@ -248,15 +253,15 @@ void Player::Attack() {
 							Vector4 sparkColor;
 							float colorRand = Random::RangeFloat(0.0f, 1.0f);
 							if (colorRand < 0.3f) {
-								sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄
+								sparkColor = {1.0f, 1.0f, 0.7f, 1.0f}; // 白黄
 							} else if (colorRand < 0.7f) {
-								sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ
+								sparkColor = {1.0f, 0.6f, 0.1f, 1.0f}; // オレンジ
 							} else {
-								sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ
+								sparkColor = {0.9f, 0.3f, 0.05f, 1.0f}; // 赤オレンジ
 							}
 
 							float size = Random::RangeFloat(0.12f, 0.24f);
-							Vector3 sparkScale = { size, size, size };
+							Vector3 sparkScale = {size, size, size};
 							float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
 
 							ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, sparkVel, sparkColor, sparkScale, sparkLifeTime, 1);
@@ -269,9 +274,9 @@ void Player::Attack() {
 							float speed = Random::RangeFloat(5.0f, 12.0f);
 							Vector3 coreVel = playerVelocity + coreVelDir * speed;
 
-							Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f };
+							Vector4 coreColor = {1.0f, 1.0f, 0.8f, 1.0f};
 							float size = Random::RangeFloat(1.0f, 1.4f);
-							Vector3 coreScale = { size, size, size };
+							Vector3 coreScale = {size, size, size};
 							float coreLifeTime = Random::RangeFloat(0.05f, 0.09f);
 
 							ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);
@@ -331,16 +336,16 @@ void Player::Attack() {
 					Vector4 sparkColor;
 					float colorRand = Random::RangeFloat(0.0f, 1.0f);
 					if (colorRand < 0.3f) {
-						sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄 (最も熱いコア付近)
+						sparkColor = {1.0f, 1.0f, 0.7f, 1.0f}; // 白黄 (最も熱いコア付近)
 					} else if (colorRand < 0.7f) {
-						sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ (一般的な火花)
+						sparkColor = {1.0f, 0.6f, 0.1f, 1.0f}; // オレンジ (一般的な火花)
 					} else {
-						sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ (冷めかけた火花)
+						sparkColor = {0.9f, 0.3f, 0.05f, 1.0f}; // 赤オレンジ (冷めかけた火花)
 					}
 
 					// サイズもランダムに揺らす (直径0.12f〜0.24f)
 					float size = Random::RangeFloat(0.12f, 0.24f);
-					Vector3 sparkScale = { size, size, size };
+					Vector3 sparkScale = {size, size, size};
 
 					// 寿命もランダム (0.10秒〜0.22秒)
 					float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
@@ -355,9 +360,9 @@ void Player::Attack() {
 					float speed = Random::RangeFloat(5.0f, 12.0f);
 					Vector3 coreVel = playerVelocity + coreVelDir * speed;
 
-					Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f }; // 高輝度の白黄
+					Vector4 coreColor = {1.0f, 1.0f, 0.8f, 1.0f}; // 高輝度の白黄
 					float size = Random::RangeFloat(1.0f, 1.4f);
-					Vector3 coreScale = { size, size, size };
+					Vector3 coreScale = {size, size, size};
 					float coreLifeTime = Random::RangeFloat(0.05f, 0.09f); // 瞬時に消滅
 
 					ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);

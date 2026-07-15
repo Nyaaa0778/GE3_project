@@ -28,10 +28,10 @@ void RailCameraController::Initialize(Camera* camera, const std::vector<Vector3>
 	if (controlPoints_.empty()) {
 		// 初期軌道がない場合はデフォルトのZ軸パスを作成
 		controlPoints_ = {
-			{ 0.0f, 0.0f, 0.0f },
-			{ 0.0f, 0.0f, 50.0f },
-			{ 0.0f, 0.0f, 100.0f },
-			{ 0.0f, 0.0f, 150.0f }
+			{0.0f, 0.0f, 0.0f},
+			{0.0f, 0.0f, 50.0f},
+			{0.0f, 0.0f, 100.0f},
+			{0.0f, 0.0f, 150.0f}
 		};
 	}
 
@@ -41,7 +41,7 @@ void RailCameraController::Initialize(Camera* camera, const std::vector<Vector3>
 	speed_ = 0.08f;
 
 	worldTransform_.Initialize();
-	
+
 	// 初期位置をスプライン開始点に合わせる
 	if (!controlPoints_.empty()) {
 		worldTransform_.translation = controlPoints_[0];
@@ -88,7 +88,7 @@ void RailCameraController::Update(bool activeController) {
 			tangent = Normalize(tangent);
 			float yaw = atan2f(tangent.x, tangent.z);
 			float pitch = atan2f(-tangent.y, sqrtf(tangent.x * tangent.x + tangent.z * tangent.z));
-			worldTransform_.rotation = { pitch, yaw, 0.0f };
+			worldTransform_.rotation = {pitch, yaw, 0.0f};
 		}
 	}
 
@@ -102,20 +102,22 @@ void RailCameraController::Update(bool activeController) {
 		camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
 		camera_->UpdateViewProjection();
 	}
+}
 
+void RailCameraController::UpdateImGui() {
 #ifdef USE_IMGUI
 
 	// ------------------------------------
 	// 4. ImGui コントロール表示
 	// ------------------------------------
-	ImGui::Begin("Spline Editor");
+	ImGui::Begin("デバッグウィンドウ");
 
 	ImGui::SeparatorText("Playback Controls");
 	ImGui::Checkbox("Play Path", &isPlaying_);
 	ImGui::Checkbox("Loop Path", &isLoop_);
 	ImGui::SliderFloat("Speed", &speed_, 0.001f, 0.5f, "%.4f");
-	
-	float maxT = (std::max)(0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
+
+	float maxT = (std::max) (0.0f, static_cast<float>(controlPoints_.size()) - 1.0f);
 	if (ImGui::SliderFloat("Position Time", &splineTime_, 0.0f, maxT, "%.3f")) {
 		if (!isPlaying_ && controlPoints_.size() >= 2) {
 			Vector3 position = EvaluateSpline(controlPoints_, splineTime_);
@@ -126,10 +128,10 @@ void RailCameraController::Update(bool activeController) {
 				tangent = Normalize(tangent);
 				float yaw = atan2f(tangent.x, tangent.z);
 				float pitch = atan2f(-tangent.y, sqrtf(tangent.x * tangent.x + tangent.z * tangent.z));
-				worldTransform_.rotation = { pitch, yaw, 0.0f };
+				worldTransform_.rotation = {pitch, yaw, 0.0f};
 			}
 			worldTransform_.UpdateMatrix();
-			if (activeController) {
+			if (activeController_) {
 				camera_->matWorld = worldTransform_.matWorld;
 				camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
 				camera_->UpdateViewProjection();
@@ -142,7 +144,7 @@ void RailCameraController::Update(bool activeController) {
 		if (controlPoints_.size() >= 2) {
 			worldTransform_.translation = controlPoints_[0];
 			worldTransform_.UpdateMatrix();
-			if (activeController) {
+			if (activeController_) {
 				camera_->matWorld = worldTransform_.matWorld;
 				camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
 				camera_->UpdateViewProjection();
@@ -164,7 +166,7 @@ void RailCameraController::DrawDebugSpline() {
 	if (controlPoints_.size() >= 2) {
 		const int segments = 150;
 		float totalTime = static_cast<float>(controlPoints_.size() - 1);
-		Vector2 prevScreen = { 0.0f, 0.0f };
+		Vector2 prevScreen = {0.0f, 0.0f};
 		bool hasPrev = false;
 
 		for (int i = 0; i <= segments; ++i) {
