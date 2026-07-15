@@ -85,7 +85,58 @@ void ImGuiManager::Initialize(
 		io.Fonts->Build();
 	}
 
-	ImGui::StyleColorsClassic();
+	ImGui::StyleColorsDark();
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	// 1. シャープすぎず丸すぎない、メカニカルなエッジにする
+	style.WindowRounding = 3.0f;
+	style.FrameRounding = 3.0f;
+	style.PopupRounding = 3.0f;
+	style.ScrollbarRounding = 3.0f;
+	style.GrabRounding = 3.0f;
+	style.TabRounding = 3.0f;
+
+	// 2. ウィンドウのアウトラインだけ残し、中身はフラットに
+	style.WindowBorderSize = 1.0f;
+	style.FrameBorderSize = 0.0f;
+	style.PopupBorderSize = 1.0f;
+
+	// 3. カラーパレット：ステルスブラック × クリムゾンレッド
+	ImVec4* colors = style.Colors;
+
+	// 背景（光を吸収するような深い漆黒）
+	colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 0.96f);
+	colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.98f);
+	colors[ImGuiCol_FrameBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+	colors[ImGuiCol_FrameBgActive] = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+
+	// 枠線（目立ちすぎないダークグレー）
+	colors[ImGuiCol_Border] = ImVec4(0.20f, 0.20f, 0.20f, 0.80f);
+
+	// アクセントカラー（攻撃的でスタイリッシュな深紅）
+	colors[ImGuiCol_TitleBg] = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+	colors[ImGuiCol_TitleBgActive] = ImVec4(0.45f, 0.05f, 0.10f, 1.00f);
+	colors[ImGuiCol_Tab] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
+	colors[ImGuiCol_TabHovered] = ImVec4(0.60f, 0.10f, 0.15f, 1.00f);
+	colors[ImGuiCol_TabActive] = ImVec4(0.45f, 0.05f, 0.10f, 1.00f);
+
+	colors[ImGuiCol_Button] = ImVec4(0.45f, 0.05f, 0.10f, 0.80f);
+	colors[ImGuiCol_ButtonHovered] = ImVec4(0.60f, 0.10f, 0.15f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = ImVec4(0.35f, 0.02f, 0.05f, 1.00f);
+
+	colors[ImGuiCol_Header] = ImVec4(0.45f, 0.05f, 0.10f, 0.80f);
+	colors[ImGuiCol_HeaderHovered] = ImVec4(0.60f, 0.10f, 0.15f, 1.00f);
+	colors[ImGuiCol_HeaderActive] = ImVec4(0.35f, 0.02f, 0.05f, 1.00f);
+
+	// チェックマークやスライダー（発光感のある鮮やかな赤）
+	colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 0.20f, 0.25f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = ImVec4(0.80f, 0.10f, 0.15f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive] = ImVec4(1.00f, 0.20f, 0.25f, 1.00f);
+
+	// テキスト（コントラストを効かせたクリアな白）
+	colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+
 	ImGui_ImplWin32_Init(WinApp::GetInstance()->GetHwnd());
 	ImGui_ImplDX12_Init(
 		DirectXCommon::GetInstance()->GetDevice(),
