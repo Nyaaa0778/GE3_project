@@ -412,6 +412,8 @@ void GamePlayScene::UpdateImGui() {
 #ifdef USE_IMGUI
 	ImGui::Begin("デバッグウィンドウ");
 
+	// FPSを表示
+	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
 	ImGui::End();
 #endif
