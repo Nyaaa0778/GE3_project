@@ -10,6 +10,7 @@
 #include "WorldTransform.h"
 
 class Camera;
+struct ImDrawList;
 
 class RailCameraController {
 public:
@@ -19,7 +20,7 @@ public:
 
 	void Update(bool activeController = true);
 
-	void DrawDebugSpline();
+	void DrawDebugSpline(ImDrawList* drawList = nullptr, const Vector2& imageScreenPos = {0.0f, 0.0f}, const Vector2& imageSize = {0.0f, 0.0f});
 
 public:
 	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
@@ -48,7 +49,7 @@ private:
 	Vector3 CatmullRomTangent(const std::vector<Vector3>& points, size_t index, float t) const;
 
 	// スクリーン投影ヘルパー
-	bool WorldToScreen(const Vector3& worldPos, Vector2& outScreen) const;
+	bool WorldToScreen(const Vector3& worldPos, Vector2& outScreen, const Vector2& imageScreenPos = {0.0f, 0.0f}, const Vector2& imageSize = {0.0f, 0.0f}) const;
 
 private:
 	// ワールド変換データ

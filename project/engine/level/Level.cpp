@@ -1,6 +1,7 @@
 #include "Level.h"
 #include "Camera.h"
 #include "LightManager.h"
+#include "Sprite.h"
 #include <algorithm>
 
 void Level::Initialize(LevelData* levelData, Camera* camera) {
@@ -28,17 +29,44 @@ void Level::Initialize(LevelData* levelData, Camera* camera) {
 
 		objects_.push_back(std::move(newObj));
 	}
+
+	// スプライトの生成
+	for (const auto& spriteData : levelData->sprites) {
+		if (spriteData.filename.empty()) {
+			continue;
+		}
+
+		auto newSprite = std::make_unique<Sprite>();
+		newSprite->Initialize(spriteData.filename);
+		newSprite->SetPosition(spriteData.translation);
+		newSprite->SetRotation(spriteData.rotation);
+		newSprite->SetScale(spriteData.scaling);
+		newSprite->SetColor(spriteData.color);
+
+		newSprite->GetWorldTransform()->translation = { spriteData.translation.x, spriteData.translation.y, 0.0f };
+		newSprite->GetWorldTransform()->rotation = { 0.0f, 0.0f, spriteData.rotation };
+		newSprite->GetWorldTransform()->scale = { spriteData.scaling.x, spriteData.scaling.y, 1.0f };
+		newSprite->GetWorldTransform()->UpdateMatrix();
+
+		sprites_.push_back(std::move(newSprite));
+	}
 }
 
 void Level::Update() {
 	for (auto& obj : objects_) {
 		obj->Update();
 	}
+	for (auto& sprite : sprites_) {
+		sprite->Update();
+	}
 }
 
 void Level::Draw() {
 	for (auto& obj : objects_) {
 		obj->Draw();
+	}
+	for (auto& sprite : sprites_) {
+		sprite->Draw();
 	}
 }
 

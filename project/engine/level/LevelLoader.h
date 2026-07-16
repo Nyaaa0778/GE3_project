@@ -12,6 +12,7 @@ public:
 	~LevelLoader() = default;
 
 	std::unique_ptr<LevelData> Load(const std::string& filename);
+	bool Save(const std::string& filename, const LevelData* levelData);
 
 private:
 	const std::string kDefaultBaseDirectory = "resources/levels/";

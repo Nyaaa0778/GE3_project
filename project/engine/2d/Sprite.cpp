@@ -39,6 +39,20 @@ void Sprite::Initialize(std::string filePath, const Vector2& position, const Vec
 /// 更新
 /// </summary>
 void Sprite::Update() {
+	if (worldTransform_.translation.x != position_.x || worldTransform_.translation.y != position_.y) {
+		position_ = { worldTransform_.translation.x, worldTransform_.translation.y };
+	}
+	if (worldTransform_.rotation.z != rotation_) {
+		rotation_ = worldTransform_.rotation.z;
+	}
+	Vector2 displaySize = GetDisplaySize();
+	if (worldTransform_.scale.x != displaySize.x || worldTransform_.scale.y != displaySize.y) {
+		if (size_.x != 0.0f && size_.y != 0.0f) {
+			scale_.x = worldTransform_.scale.x / size_.x;
+			scale_.y = worldTransform_.scale.y / size_.y;
+		}
+	}
+
 	// アンカーポイント
 	float left = 0.0f - anchorPoint_.x;
 	float right = 1.0f - anchorPoint_.x;

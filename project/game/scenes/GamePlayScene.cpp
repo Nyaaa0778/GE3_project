@@ -45,12 +45,19 @@ void GamePlayScene::Initialize() {
 	// レベルデータのロード
 	// ------------------------------------
 
+	levelFilename_ = "TL1Sample";
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
+	levelData_ = loader.Load(levelFilename_);
+
+	// ファイル更新日時を初期記録
+	std::string fullpath = "resources/levels/" + levelFilename_ + ".json";
+	if (std::filesystem::exists(fullpath)) {
+		lastLevelWriteTime_ = std::filesystem::last_write_time(fullpath);
+	}
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
-	level_->Initialize(levelData.get(), camera_.get());
+	level_->Initialize(levelData_.get(), camera_.get());
 
 	// ------------------------------------
 	// カメラ
@@ -62,7 +69,19 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
+	railCamera_->Initialize(camera_.get(), levelData_->railSpline, levelFilename_);
+
+	// エディタからの配置・保存コールバックを登録
+	DevelopEditor* editor = DevelopEditor::GetInstance();
+	editor->SetOnPlaceObjectCallback([this](const std::string& assetName) {
+		PlaceNewObject(assetName);
+	});
+	editor->SetOnSaveCallback([this]() {
+		SaveLevel();
+	});
+	editor->SetOnPlaceSpriteCallback([this](const std::string& assetName) {
+		PlaceNewSprite(assetName);
+	});
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -71,6 +90,11 @@ void GamePlayScene::Initialize() {
 	debugCamera_->SetTranslate(camera_->GetTranslate());
 	debugCamera_->CalculateMatrix();
 	debugCamera_->CreateConstantBuffer();
+
+#ifdef USE_IMGUI
+	prevIsEditorMode_ = DevelopEditor::GetInstance()->IsEditorMode();
+	useDebugCamera_ = prevIsEditorMode_;
+#endif
 
 	// ------------------------------------
 	// ライト
@@ -175,6 +199,31 @@ void GamePlayScene::Initialize() {
 }
 
 void GamePlayScene::Update() {
+#ifdef USE_IMGUI
+	// エディタモードの切り替えを検知してDebugCameraを自動オン/オフ
+	bool isEditorMode = DevelopEditor::GetInstance()->IsEditorMode();
+	if (isEditorMode != prevIsEditorMode_) {
+		if (isEditorMode) {
+			useDebugCamera_ = true;
+		} else {
+			useDebugCamera_ = false;
+		}
+		prevIsEditorMode_ = isEditorMode;
+	}
+#endif
+
+#ifdef USE_IMGUI
+	// ホットリロードの監視
+	std::string levelPath = "resources/levels/" + levelFilename_ + ".json";
+	if (std::filesystem::exists(levelPath)) {
+		auto currentWriteTime = std::filesystem::last_write_time(levelPath);
+		if (currentWriteTime != lastLevelWriteTime_) {
+			ReloadLevel();
+			lastLevelWriteTime_ = currentWriteTime;
+		}
+	}
+#endif
+
 	// ------------------------------------
 	// ImGui
 	// ------------------------------------
@@ -197,7 +246,7 @@ void GamePlayScene::Update() {
 	}
 
 #ifdef USE_IMGUI
-	if (railCamera_) {
+	if (railCamera_ && !DevelopEditor::GetInstance()->IsEditorMode()) {
 		railCamera_->DrawDebugSpline();
 	}
 #endif
@@ -428,7 +477,9 @@ void GamePlayScene::UpdateImGui() {
 	// 毎フレームエンティティを登録し直すことで、動的な増減に対応（ dangling pointer 防止 ）
 	DevelopEditor* editor = DevelopEditor::GetInstance();
 	editor->ClearEntities();
-	editor->RegisterCamera("Main Camera", camera_.get());
+	editor->RegisterCamera("Main Camera", camera_.get(), [this]() {
+		ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
+	});
 	if (railCamera_) {
 		editor->RegisterEntity("Rail Camera", railCamera_->GetWorldTransform(), [this]() {
 			bool isLoop = railCamera_->GetIsLoop();
@@ -438,6 +489,12 @@ void GamePlayScene::UpdateImGui() {
 			float speed = railCamera_->GetSpeed();
 			if (ImGui::DragFloat("Speed", &speed, 0.001f, 0.0f, 1.0f)) {
 				railCamera_->SetSpeed(speed);
+			}
+		});
+
+		editor->RegisterGameViewOverlay([this](ImDrawList* drawList, const Vector2& imageScreenPos, const Vector2& imageSize) {
+			if (railCamera_) {
+				railCamera_->DrawDebugSpline(drawList, imageScreenPos, imageSize);
 			}
 		});
 	}
@@ -464,7 +521,187 @@ void GamePlayScene::UpdateImGui() {
 		});
 	}
 
+	// 静的オブジェクトの登録
+	int objIdx = 0;
+	auto& levelObjs = level_->GetObjects();
+	for (size_t i = 0; i < levelObjs.size(); ++i) {
+		std::string name = std::format("Obj_{}", objIdx++);
+		editor->RegisterEntity(name, levelObjs[i]->GetWorldTransform(), [this, i]() {
+			if (ImGui::Button("Delete Object")) {
+				DeleteObject(i);
+			}
+		});
+	}
+
+	// スプライトの登録
+	int spriteIdx = 0;
+	auto& levelSprites = level_->GetSprites();
+	for (size_t i = 0; i < levelSprites.size(); ++i) {
+		std::string name = std::format("Sprite_{}", spriteIdx++);
+		editor->RegisterEntity(name, levelSprites[i]->GetWorldTransform(), [this, i]() {
+			auto& levelSprites = level_->GetSprites();
+			if (i < levelSprites.size()) {
+				Vector4 color = levelSprites[i]->GetColor();
+				if (ImGui::ColorEdit4("Color", &color.x)) {
+					levelSprites[i]->SetColor(color);
+				}
+				if (ImGui::Button("Delete Sprite")) {
+					DeleteSprite(i);
+				}
+			}
+		});
+	}
+
 	// DevelopEditor全体の更新・描画
 	editor->Update();
 #endif
+}
+
+void GamePlayScene::PlaceNewObject(const std::string& assetName) {
+	if (!levelData_) return;
+
+	LevelData::ObjectData newObj;
+	newObj.filename = assetName;
+	
+	Vector3 camPos = camera_->GetTranslate();
+	Vector3 camRot = camera_->GetRotate();
+	
+	float cosPitch = cosf(camRot.x);
+	Vector3 forward = {
+		sinf(camRot.y) * cosPitch,
+		-sinf(camRot.x),
+		cosf(camRot.y) * cosPitch
+	};
+	newObj.translation = {
+		camPos.x + forward.x * 20.0f,
+		camPos.y + forward.y * 20.0f,
+		camPos.z + forward.z * 20.0f
+	};
+	newObj.rotation = { 0, 0, 0 };
+	newObj.scaling = { 1, 1, 1 };
+
+	levelData_->objects.push_back(newObj);
+
+	SaveLevel();
+}
+
+void GamePlayScene::DeleteObject(size_t index) {
+	if (!levelData_) return;
+
+	if (index < levelData_->objects.size()) {
+		auto& levelObjs = level_->GetObjects();
+		if (levelObjs.size() == levelData_->objects.size()) {
+			for (size_t i = 0; i < levelObjs.size(); ++i) {
+				levelData_->objects[i].translation = levelObjs[i]->GetPosition();
+				levelData_->objects[i].rotation = levelObjs[i]->GetRotate();
+				levelData_->objects[i].scaling = levelObjs[i]->GetScale();
+			}
+		}
+
+		auto& levelSprites = level_->GetSprites();
+		if (levelSprites.size() == levelData_->sprites.size()) {
+			for (size_t i = 0; i < levelSprites.size(); ++i) {
+				levelData_->sprites[i].translation = levelSprites[i]->GetPosition();
+				levelData_->sprites[i].rotation = levelSprites[i]->GetRotate();
+				levelData_->sprites[i].scaling = levelSprites[i]->GetScale();
+				levelData_->sprites[i].color = levelSprites[i]->GetColor();
+			}
+		}
+
+		levelData_->objects.erase(levelData_->objects.begin() + index);
+
+		SaveLevel();
+	}
+}
+
+void GamePlayScene::SaveLevel() {
+	if (!levelData_) return;
+
+	auto& levelObjs = level_->GetObjects();
+	if (levelObjs.size() == levelData_->objects.size()) {
+		for (size_t i = 0; i < levelObjs.size(); ++i) {
+			levelData_->objects[i].translation = levelObjs[i]->GetPosition();
+			levelData_->objects[i].rotation = levelObjs[i]->GetRotate();
+			levelData_->objects[i].scaling = levelObjs[i]->GetScale();
+		}
+	}
+
+	auto& levelSprites = level_->GetSprites();
+	if (levelSprites.size() == levelData_->sprites.size()) {
+		for (size_t i = 0; i < levelSprites.size(); ++i) {
+			// 同期を強制的に行い最新情報を書き出す
+			levelSprites[i]->Update();
+			levelData_->sprites[i].translation = levelSprites[i]->GetPosition();
+			levelData_->sprites[i].rotation = levelSprites[i]->GetRotate();
+			levelData_->sprites[i].scaling = levelSprites[i]->GetScale();
+			levelData_->sprites[i].color = levelSprites[i]->GetColor();
+		}
+	}
+
+	LevelLoader loader;
+	if (loader.Save(levelFilename_, levelData_.get())) {
+		std::string fullpath = "resources/levels/" + levelFilename_ + ".json";
+		if (std::filesystem::exists(fullpath)) {
+			lastLevelWriteTime_ = std::filesystem::last_write_time(fullpath);
+		}
+		ReloadLevel();
+	}
+}
+
+void GamePlayScene::ReloadLevel() {
+	LevelLoader loader;
+	levelData_ = loader.Load(levelFilename_);
+
+	level_ = std::make_unique<Level>();
+	level_->Initialize(levelData_.get(), camera_.get());
+
+	level_->ApplyLightParameters();
+
+	if (railCamera_) {
+		railCamera_->SetControlPoints(levelData_->railSpline);
+	}
+}
+
+void GamePlayScene::PlaceNewSprite(const std::string& assetName) {
+	if (!levelData_) return;
+
+	LevelData::SpriteData newSprite;
+	newSprite.filename = assetName;
+	newSprite.translation = { 640.0f, 360.0f };
+	newSprite.rotation = 0.0f;
+	newSprite.scaling = { 1.0f, 1.0f };
+	newSprite.color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	levelData_->sprites.push_back(newSprite);
+
+	SaveLevel();
+}
+
+void GamePlayScene::DeleteSprite(size_t index) {
+	if (!levelData_) return;
+
+	if (index < levelData_->sprites.size()) {
+		auto& levelObjs = level_->GetObjects();
+		if (levelObjs.size() == levelData_->objects.size()) {
+			for (size_t i = 0; i < levelObjs.size(); ++i) {
+				levelData_->objects[i].translation = levelObjs[i]->GetPosition();
+				levelData_->objects[i].rotation = levelObjs[i]->GetRotate();
+				levelData_->objects[i].scaling = levelObjs[i]->GetScale();
+			}
+		}
+
+		auto& levelSprites = level_->GetSprites();
+		if (levelSprites.size() == levelData_->sprites.size()) {
+			for (size_t i = 0; i < levelSprites.size(); ++i) {
+				levelData_->sprites[i].translation = levelSprites[i]->GetPosition();
+				levelData_->sprites[i].rotation = levelSprites[i]->GetRotate();
+				levelData_->sprites[i].scaling = levelSprites[i]->GetScale();
+				levelData_->sprites[i].color = levelSprites[i]->GetColor();
+			}
+		}
+
+		levelData_->sprites.erase(levelData_->sprites.begin() + index);
+
+		SaveLevel();
+	}
 }

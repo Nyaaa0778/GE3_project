@@ -154,11 +154,13 @@ void RailCameraController::Update(bool activeController) {
 #endif
 }
 
-void RailCameraController::DrawDebugSpline() {
+void RailCameraController::DrawDebugSpline(ImDrawList* drawList, const Vector2& imageScreenPos, const Vector2& imageSize) {
 #ifdef USE_IMGUI
 	if (controlPoints_.empty()) return;
 
-	ImDrawList* drawList = ImGui::GetForegroundDrawList();
+	if (!drawList) {
+		drawList = ImGui::GetForegroundDrawList();
+	}
 
 	// 1. スプライン軌跡の描画
 	if (controlPoints_.size() >= 2) {
@@ -171,7 +173,7 @@ void RailCameraController::DrawDebugSpline() {
 			float t = (static_cast<float>(i) / static_cast<float>(segments)) * totalTime;
 			Vector3 worldPt = EvaluateSpline(controlPoints_, t);
 			Vector2 screenPt;
-			if (WorldToScreen(worldPt, screenPt)) {
+			if (WorldToScreen(worldPt, screenPt, imageScreenPos, imageSize)) {
 				if (hasPrev) {
 					drawList->AddLine(
 						ImVec2(prevScreen.x, prevScreen.y),
@@ -191,7 +193,7 @@ void RailCameraController::DrawDebugSpline() {
 	// 2. 制御点（丸ノード）の描画
 	for (size_t i = 0; i < controlPoints_.size(); ++i) {
 		Vector2 screenPos;
-		if (WorldToScreen(controlPoints_[i], screenPos)) {
+		if (WorldToScreen(controlPoints_[i], screenPos, imageScreenPos, imageSize)) {
 			bool isSelected = (static_cast<int>(i) == selectedPointIndex_);
 			bool isDragged = (static_cast<int>(i) == draggedPointIndex_);
 
@@ -299,7 +301,7 @@ Vector3 RailCameraController::CatmullRomTangent(const std::vector<Vector3>& poin
 	return (a + b + c) * 0.5f;
 }
 
-bool RailCameraController::WorldToScreen(const Vector3& worldPos, Vector2& outScreen) const {
+bool RailCameraController::WorldToScreen(const Vector3& worldPos, Vector2& outScreen, const Vector2& imageScreenPos, const Vector2& imageSize) const {
 	Matrix4x4 viewProj = camera_->GetViewProjectionMatrix();
 
 	float clientWidth = static_cast<float>(DirectXCommon::GetInstance()->GetClientWidth());
@@ -311,7 +313,17 @@ bool RailCameraController::WorldToScreen(const Vector3& worldPos, Vector2& outSc
 	}
 
 	Vector3 projected = TransformCoord(worldPos, viewProj);
-	outScreen.x = (projected.x + 1.0f) * 0.5f * clientWidth;
-	outScreen.y = (1.0f - projected.y) * 0.5f * clientHeight;
+	float rawX = (projected.x + 1.0f) * 0.5f * clientWidth;
+	float rawY = (1.0f - projected.y) * 0.5f * clientHeight;
+
+	if (imageSize.x > 0.0f && imageSize.y > 0.0f) {
+		float tX = rawX / clientWidth;
+		float tY = rawY / clientHeight;
+		outScreen.x = imageScreenPos.x + tX * imageSize.x;
+		outScreen.y = imageScreenPos.y + tY * imageSize.y;
+	} else {
+		outScreen.x = rawX;
+		outScreen.y = rawY;
+	}
 	return true;
 }

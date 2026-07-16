@@ -6,6 +6,7 @@
 #include "MathUtility.h"
 #include "Object3dRenderer.h"
 #include "ImGuiManager.h"
+#include "DevelopEditor.h"
 #include <cmath>
 
 #ifndef M_PI
@@ -62,6 +63,11 @@ void Cylinder::Update()
 
 void Cylinder::Draw()
 {
+	// 一時停止中で、かつエディタモードのときは、カメラ移動に合わせて描画情報を更新する
+	if (DevelopEditor::GetInstance()->IsPaused() && DevelopEditor::GetInstance()->IsEditorMode()) {
+		Update();
+	}
+
 	auto primitiveRenderer = PrimitiveRenderer::GetInstance();
 	auto commandList = primitiveRenderer->GetDxCommon()->GetCommandList();
 

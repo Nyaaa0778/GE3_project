@@ -6,6 +6,7 @@
 #include "MathUtility.h"
 #include "Object3dRenderer.h" // GetDefaultCamera()を取得するための一時的な対応
 #include "ImGuiManager.h"
+#include "DevelopEditor.h"
 
 using namespace MathUtility;
 
@@ -48,6 +49,11 @@ void Box::Update()
 
 void Box::Draw()
 {
+	// 一時停止中で、かつエディタモードのときは、カメラ移動に合わせて描画情報を更新する
+	if (DevelopEditor::GetInstance()->IsPaused() && DevelopEditor::GetInstance()->IsEditorMode()) {
+		Update();
+	}
+
 	auto primitiveRenderer = PrimitiveRenderer::GetInstance();
 	auto commandList = primitiveRenderer->GetDxCommon()->GetCommandList();
 

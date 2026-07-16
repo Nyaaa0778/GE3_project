@@ -8,6 +8,7 @@
 #include "Object3d.h"
 
 class Camera;
+class Sprite;
 
 class Level {
 public:
@@ -43,6 +44,12 @@ public:
 	/// </summary>
 	std::vector<LevelData::SpawnerData> GetSpawners(const std::string& entityType) const;
 
+	const std::vector<std::unique_ptr<Object3d>>& GetObjects() const { return objects_; }
+	std::vector<std::unique_ptr<Object3d>>& GetObjects() { return objects_; }
+
+	const std::vector<std::unique_ptr<Sprite>>& GetSprites() const { return sprites_; }
+	std::vector<std::unique_ptr<Sprite>>& GetSprites() { return sprites_; }
+
 
 private:
 	// 静的配置モデル
@@ -56,4 +63,7 @@ private:
 
 	// ライトデータ
 	std::vector<LevelData::LightData> lights_;
+
+	// スプライト
+	std::vector<std::unique_ptr<Sprite>> sprites_;
 };

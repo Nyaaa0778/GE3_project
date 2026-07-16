@@ -3,10 +3,12 @@
 #include "IScene.h"
 #include "WorldTransform.h"
 #include "../goal/Goal.h"
+#include "LevelData.h"
 
 #include <memory>
 #include <vector>
 #include <list>
+#include <filesystem>
 
 class Object3d;
 class Camera;
@@ -67,6 +69,7 @@ private:
 	// デバッグカメラ
 	std::unique_ptr<DebugCamera> debugCamera_;
 	bool useDebugCamera_ = false;
+	bool prevIsEditorMode_ = false;
 
 	// ------------------------------------
 	// 天球
@@ -102,4 +105,16 @@ private:
 	void CheckAllCollisions();
 
 	void UpdateImGui();
+
+	void PlaceNewObject(const std::string& assetName);
+	void DeleteObject(size_t index);
+	void SaveLevel();
+	void ReloadLevel();
+	void PlaceNewSprite(const std::string& assetName);
+	void DeleteSprite(size_t index);
+
+private:
+	std::unique_ptr<LevelData> levelData_;
+	std::filesystem::file_time_type lastLevelWriteTime_;
+	std::string levelFilename_;
 };

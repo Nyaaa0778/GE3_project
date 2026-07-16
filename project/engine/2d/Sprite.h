@@ -91,6 +91,9 @@ public:
 	// テクスチャの切り抜きサイズ
 	void SetTextureSize(const Vector2& textureSize);
 
+	WorldTransform* GetWorldTransform() { return &worldTransform_; }
+	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
+
 private:
 	//================================================================================
 	// 内部構造体

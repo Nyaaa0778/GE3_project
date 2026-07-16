@@ -1,5 +1,137 @@
 {
     "name": "scene",
+    "objects": [
+        {
+            "entity_type": "PlayerSpawn",
+            "name": "PlayerSpawn",
+            "transform": {
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "type": "PlayerSpawn"
+        },
+        {
+            "entity_type": "Enemy_Rusher_1",
+            "name": "Enemy_Rusher_1",
+            "transform": {
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    50.0
+                ]
+            },
+            "type": "PlayerSpawn"
+        },
+        {
+            "entity_type": "Enemy_Rusher_2",
+            "name": "Enemy_Rusher_2",
+            "transform": {
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    5.0,
+                    0.0,
+                    80.0
+                ]
+            },
+            "type": "PlayerSpawn"
+        },
+        {
+            "entity_type": "Enemy_Rusher_3",
+            "name": "Enemy_Rusher_3",
+            "transform": {
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.2000000476837158,
+                    1.2000000476837158,
+                    1.2000000476837158
+                ],
+                "translation": [
+                    -5.0,
+                    2.0,
+                    110.0
+                ]
+            },
+            "type": "PlayerSpawn"
+        },
+        {
+            "name": "Camera",
+            "transform": {
+                "rotation": [
+                    -1.5707966089248657,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    -20.0
+                ]
+            },
+            "type": "CAMERA"
+        },
+        {
+            "name": "Light",
+            "transform": {
+                "rotation": [
+                    -0.6503280401229858,
+                    -1.8663909435272217,
+                    -0.05521724745631218
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    4.076245307922363,
+                    5.903861999511719,
+                    1.0054539442062378
+                ]
+            },
+            "type": "LIGHT"
+        }
+    ],
     "rail_spline": [
         [
             0.0,
@@ -26,133 +158,5 @@
             -6.0620503425598145,
             187.80055236816406
         ]
-    ],
-    "objects": [
-        {
-            "type": "LIGHT",
-            "name": "Light",
-            "transform": {
-                "translation": [
-                    4.076245307922363,
-                    5.903861999511719,
-                    1.0054539442062378
-                ],
-                "rotation": [
-                    -0.6503280401229858,
-                    -1.8663909435272217,
-                    -0.05521724745631218
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    0.9999998211860657
-                ]
-            }
-        },
-        {
-            "type": "CAMERA",
-            "name": "Camera",
-            "transform": {
-                "translation": [
-                    0.0,
-                    0.0,
-                    -20.0
-                ],
-                "rotation": [
-                    -1.5707966089248657,
-                    -0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "type": "PlayerSpawn",
-            "name": "PlayerSpawn",
-            "transform": {
-                "translation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "rotation": [
-                    -0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "type": "PlayerSpawn",
-            "name": "Enemy_Rusher_1",
-            "transform": {
-                "translation": [
-                    0.0,
-                    0.0,
-                    50.0
-                ],
-                "rotation": [
-                    -0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "type": "PlayerSpawn",
-            "name": "Enemy_Rusher_2",
-            "transform": {
-                "translation": [
-                    5.0,
-                    0.0,
-                    80.0
-                ],
-                "rotation": [
-                    -0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "type": "PlayerSpawn",
-            "name": "Enemy_Rusher_3",
-            "transform": {
-                "translation": [
-                    -5.0,
-                    2.0,
-                    110.0
-                ],
-                "rotation": [
-                    -0.0,
-                    -0.0,
-                    0.0
-                ],
-                "scaling": [
-                    1.2000000476837158,
-                    1.2000000476837158,
-                    1.2000000476837158
-                ]
-            }
-        }
     ]
 }

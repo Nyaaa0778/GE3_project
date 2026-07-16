@@ -122,6 +122,33 @@ void DevelopEditor::RegisterCamera(const std::string& name, Camera* camera, std:
 
 void DevelopEditor::ClearEntities() {
 	entities_.clear();
+#ifdef USE_IMGUI
+	gameViewOverlays_.clear();
+#endif
+}
+
+void DevelopEditor::RegisterGameViewOverlay(const std::function<void(ImDrawList* drawList, const Vector2& imageScreenPos, const Vector2& imageSize)>& callback) {
+#ifdef USE_IMGUI
+	gameViewOverlays_.push_back(callback);
+#endif
+}
+
+void DevelopEditor::SetOnPlaceObjectCallback(const std::function<void(const std::string& assetName)>& callback) {
+#ifdef USE_IMGUI
+	onPlaceObjectCallback_ = callback;
+#endif
+}
+
+void DevelopEditor::SetOnSaveCallback(const std::function<void()>& callback) {
+#ifdef USE_IMGUI
+	onSaveCallback_ = callback;
+#endif
+}
+
+void DevelopEditor::SetOnPlaceSpriteCallback(const std::function<void(const std::string& assetName)>& callback) {
+#ifdef USE_IMGUI
+	onPlaceSpriteCallback_ = callback;
+#endif
 }
 
 void DevelopEditor::Update() {
@@ -129,6 +156,13 @@ void DevelopEditor::Update() {
 	// F1キーでエディタモードのトグル
 	if (Input::GetInstance()->TriggerKey(DIK_F1)) {
 		isEditorMode_ = !isEditorMode_;
+	}
+
+	// Ctrl+S でのレベル保存
+	if (isEditorMode_ && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S)) {
+		if (onSaveCallback_) {
+			onSaveCallback_();
+		}
 	}
 
 	// エディタモードでない場合は、画面左上に簡易的な切り替えオーバーレイを表示
@@ -149,6 +183,12 @@ void DevelopEditor::Update() {
 	// 1. トップメニューバーの描画
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("Save Level", "Ctrl+S")) {
+				if (onSaveCallback_) {
+					onSaveCallback_();
+				}
+			}
+			ImGui::Separator();
 			if (ImGui::MenuItem("Exit", "Alt+F4")) {
 				PostQuitMessage(0);
 			}
@@ -226,6 +266,22 @@ void DevelopEditor::Update() {
 
 	ImGui::Image((ImTextureID)rtexSrvHandle.ptr, ImVec2(imgWidth, imgHeight));
 
+	// ゲームビューへのオーバーレイ描画
+	ImVec2 imgMin = ImGui::GetItemRectMin();
+	ImVec2 imgSize = ImGui::GetItemRectSize();
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+	// 実際のゲーム画面の矩形内にクリッピングを制限する
+	drawList->PushClipRect(imgMin, ImVec2(imgMin.x + imgSize.x, imgMin.y + imgSize.y), true);
+
+	for (const auto& overlay : gameViewOverlays_) {
+		if (overlay) {
+			overlay(drawList, Vector2(imgMin.x, imgMin.y), Vector2(imgSize.x, imgSize.y));
+		}
+	}
+
+	drawList->PopClipRect();
+
 	ImGui::End();
 
 	// 4. Inspector Window (Pos: 980, 20 / Size: 300, 700)
@@ -237,17 +293,42 @@ void DevelopEditor::Update() {
 		ImGui::Text("Hierarchy または Project から\nオブジェクトを選択してください。");
 	}
 	else if (!sSelectedAssetPath.empty()) {
-		ImGui::Text("Name: %s", sSelectedAssetPath.substr(sSelectedAssetPath.find_last_of("\\/") + 1).c_str());
+		std::string filename = sSelectedAssetPath.substr(sSelectedAssetPath.find_last_of("\\/") + 1);
+		ImGui::Text("Name: %s", filename.c_str());
 		ImGui::Separator();
 		ImGui::Text("Type: Asset File");
 		ImGui::Text("Relative Path: %s", sSelectedAssetPath.c_str());
 		ImGui::Text("Size: %s", sSelectedAssetSize.c_str());
+
+		if (sSelectedAssetPath.find("models") != std::string::npos && 
+			(sSelectedAssetPath.find(".obj") != std::string::npos || sSelectedAssetPath.find(".gltf") != std::string::npos)) {
+			ImGui::Separator();
+			if (ImGui::Button("Place Object to Scene")) {
+				if (onPlaceObjectCallback_) {
+					std::string assetName = filename;
+					size_t dotPos = assetName.find_last_of('.');
+					if (dotPos != std::string::npos) {
+						assetName = assetName.substr(0, dotPos);
+					}
+					onPlaceObjectCallback_(assetName);
+				}
+			}
+		}
+		else if (sSelectedAssetPath.find(".png") != std::string::npos) {
+			ImGui::Separator();
+			if (ImGui::Button("Place Sprite to Scene")) {
+				if (onPlaceSpriteCallback_) {
+					onPlaceSpriteCallback_(filename);
+				}
+			}
+		}
 	}
 	else {
 		// 選択されたエンティティの詳細表示
-		EditorEntity& entity = entities_[sSelectedEntityIndex];
-		ImGui::Text("Name: %s", entity.name.c_str());
-		ImGui::Separator();
+		if (sSelectedEntityIndex >= 0 && sSelectedEntityIndex < static_cast<int>(entities_.size())) {
+			EditorEntity& entity = entities_[sSelectedEntityIndex];
+			ImGui::Text("Name: %s", entity.name.c_str());
+			ImGui::Separator();
 
 		if (entity.transform) {
 			DrawInspectorWorldTransform(*entity.transform);
@@ -287,8 +368,12 @@ void DevelopEditor::Update() {
 			ImGui::Separator();
 			entity.onInspect();
 		}
+	} else {
+		sSelectedEntityIndex = -1;
+		ImGui::Text("オブジェクトが存在しないか、\n削除されました。");
 	}
-	ImGui::End();
+}
+ImGui::End();
 
 	// 5. Console Window (Pos: 0, 420 / Size: 550, 300)
 	ImGui::SetNextWindowPos(ImVec2(0, 420), ImGuiCond_Always);

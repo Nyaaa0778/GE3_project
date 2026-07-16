@@ -6,6 +6,7 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "LightManager.h"
+#include "DevelopEditor.h"
 
 using namespace MathUtility;
 
@@ -69,6 +70,11 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 	WorldTransform* wt = worldTransform;
 	if (!wt) {
 		wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+	}
+
+	// 一時停止中で、かつエディタモードのときは、カメラ移動に合わせて描画情報を更新する
+	if (DevelopEditor::GetInstance()->IsPaused() && DevelopEditor::GetInstance()->IsEditorMode()) {
+		Update(worldTransform);
 	}
 
 	// 座標変換行列のCBufferの場所を設定

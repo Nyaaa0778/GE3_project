@@ -71,6 +71,7 @@ public:
 
 	// 親子関係の設定
 	const WorldTransform* GetWorldTransform() const { return externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_; }
+	WorldTransform* GetWorldTransform() { return externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_; }
 	void SetParent(const WorldTransform* parent) {
 		if (externalWorldTransform_) {
 			const_cast<WorldTransform*>(externalWorldTransform_)->parent = parent;
@@ -140,6 +141,8 @@ public:
 		environmentTextureSrvHandleGPU_ = handle;
 	}
 	void SetEnvironmentCoefficient(float coeff);
+
+	Model* GetModel() const { return model_; }
 
 private:
 	//================================================================================

@@ -186,6 +186,42 @@ void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData
             (float) transform["rotation"][1],
             (float) transform["rotation"][2]
         };
+    } else if (type.compare("SPRITE") == 0) {
+        // スプライト
+        levelData->sprites.emplace_back(LevelData::SpriteData{});
+        LevelData::SpriteData& spriteData = levelData->sprites.back();
+
+        if (object.contains("file_name")) {
+            spriteData.filename = object["file_name"].get<std::string>();
+        } else if (object.contains("name")) {
+            spriteData.filename = object["name"].get<std::string>();
+        }
+
+        const nlohmann::json& transform = object["transform"];
+        spriteData.translation = {(float) transform["translation"][0], (float) transform["translation"][1]};
+        
+        if (transform.contains("rotation")) {
+            spriteData.rotation = (float) transform["rotation"][2];
+        } else {
+            spriteData.rotation = 0.0f;
+        }
+
+        if (transform.contains("scaling")) {
+            spriteData.scaling = {(float) transform["scaling"][0], (float) transform["scaling"][1]};
+        } else {
+            spriteData.scaling = {1.0f, 1.0f};
+        }
+
+        if (object.contains("color")) {
+            spriteData.color = {
+                (float) object["color"][0],
+                (float) object["color"][1],
+                (float) object["color"][2],
+                (float) object["color"][3]
+            };
+        } else {
+            spriteData.color = {1.0f, 1.0f, 1.0f, 1.0f};
+        }
     }
 
     // オブジェクト走査を再帰関数にまとめて、再帰呼出で枝を走査
@@ -195,4 +231,111 @@ void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData
             ParseObject(child, levelData);
         }
     }
+}
+
+bool LevelLoader::Save(const std::string& filename, const LevelData* levelData) {
+    if (!levelData) return false;
+
+    const std::string fullpath = kDefaultBaseDirectory + filename + kExtension;
+
+    nlohmann::json root;
+    root["name"] = "scene";
+
+    // rail_spline
+    nlohmann::json splineJson = nlohmann::json::array();
+    for (const auto& pt : levelData->railSpline) {
+        splineJson.push_back({pt.x, pt.y, pt.z});
+    }
+    root["rail_spline"] = splineJson;
+
+    // objects
+    nlohmann::json objectsJson = nlohmann::json::array();
+    for (const auto& obj : levelData->objects) {
+        nlohmann::json objJson;
+        objJson["name"] = obj.filename;
+        objJson["type"] = "MESH";
+        objJson["file_name"] = obj.filename;
+
+        nlohmann::json transform;
+        transform["translation"] = {obj.translation.x, obj.translation.y, obj.translation.z};
+        transform["rotation"] = {obj.rotation.x, obj.rotation.y, obj.rotation.z};
+        transform["scaling"] = {obj.scaling.x, obj.scaling.y, obj.scaling.z};
+        objJson["transform"] = transform;
+
+        objectsJson.push_back(objJson);
+    }
+
+    // spawners (PlayerSpawn)
+    for (const auto& spawner : levelData->spawners) {
+        nlohmann::json spawnerJson;
+        spawnerJson["name"] = spawner.entityType;
+        spawnerJson["type"] = "PlayerSpawn";
+        spawnerJson["entity_type"] = spawner.entityType;
+
+        nlohmann::json transform;
+        transform["translation"] = {spawner.translation.x, spawner.translation.y, spawner.translation.z};
+        transform["rotation"] = {spawner.rotation.x, spawner.rotation.y, spawner.rotation.z};
+        transform["scaling"] = {spawner.scaling.x, spawner.scaling.y, spawner.scaling.z};
+        spawnerJson["transform"] = transform;
+
+        objectsJson.push_back(spawnerJson);
+    }
+
+    // cameras
+    for (const auto& cam : levelData->cameras) {
+        nlohmann::json camJson;
+        camJson["name"] = "Camera";
+        camJson["type"] = "CAMERA";
+
+        nlohmann::json transform;
+        transform["translation"] = {cam.translation.x, cam.translation.y, cam.translation.z};
+        transform["rotation"] = {cam.rotation.x - 1.570796f, cam.rotation.y, cam.rotation.z};
+        transform["scaling"] = {1.0f, 1.0f, 1.0f};
+        camJson["transform"] = transform;
+
+        objectsJson.push_back(camJson);
+    }
+
+    // lights
+    for (const auto& light : levelData->lights) {
+        nlohmann::json lightJson;
+        lightJson["name"] = "Light";
+        lightJson["type"] = "LIGHT";
+
+        nlohmann::json transform;
+        transform["translation"] = {light.translation.x, light.translation.y, light.translation.z};
+        transform["rotation"] = {light.rotation.x, light.rotation.y, light.rotation.z};
+        transform["scaling"] = {1.0f, 1.0f, 1.0f};
+        lightJson["transform"] = transform;
+
+        objectsJson.push_back(lightJson);
+    }
+
+    // sprites
+    for (const auto& sprite : levelData->sprites) {
+        nlohmann::json spriteJson;
+        spriteJson["name"] = sprite.filename;
+        spriteJson["type"] = "SPRITE";
+        spriteJson["file_name"] = sprite.filename;
+
+        nlohmann::json transform;
+        transform["translation"] = {sprite.translation.x, sprite.translation.y, 0.0f};
+        transform["rotation"] = {0.0f, 0.0f, sprite.rotation};
+        transform["scaling"] = {sprite.scaling.x, sprite.scaling.y, 1.0f};
+        spriteJson["transform"] = transform;
+
+        spriteJson["color"] = {sprite.color.x, sprite.color.y, sprite.color.z, sprite.color.w};
+
+        objectsJson.push_back(spriteJson);
+    }
+
+    root["objects"] = objectsJson;
+
+    // ファイルに書き出す
+    std::ofstream file(fullpath);
+    if (file.fail()) {
+        return false;
+    }
+    file << root.dump(4);
+    return true;
 }
