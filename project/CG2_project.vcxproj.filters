@@ -189,6 +189,9 @@
     <ClCompile Include="engine\debug\ImGuiManager.cpp">
       <Filter>ソース ファイル\engine\debug</Filter>
     </ClCompile>
+    <ClCompile Include="engine\debug\DevelopEditor.cpp">
+      <Filter>ソース ファイル\engine\debug</Filter>
+    </ClCompile>
     <ClCompile Include="engine\graphics\TextureManager.cpp">
       <Filter>ソース ファイル\engine\graphics</Filter>
     </ClCompile>

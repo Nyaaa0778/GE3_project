@@ -10,6 +10,9 @@ public:
 	void Update();
 	void Draw();
 
+	const WorldTransform& GetWorldTransform() const { return worldTransform_; }
+	WorldTransform& GetWorldTransform() { return worldTransform_; }
+
 private:
 	// ワールド変換データ
 	WorldTransform worldTransform_;

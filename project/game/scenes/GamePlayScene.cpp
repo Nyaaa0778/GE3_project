@@ -4,6 +4,16 @@
 #include "PostProcessRenderer.h"
 #include "TextureManager.h"
 #include "Input.h"
+#include "GameFramework.h"
+#include "Logger.h"
+#include "DirectXCommon.h"
+#include "ShaderResourceViewManager.h"
+#include "../externals/imgui/imgui.h"
+#include <filesystem>
+#include <unordered_map>
+#include <string>
+#include <vector>
+#include "DevelopEditor.h"
 
 #include "LevelLoader.h"
 #include "Level.h"
@@ -19,6 +29,7 @@
 #include "Skydome.h"
 #include "RusherEnemy.h"
 #include "Shockwave.h"
+
 #include "Collider.h"
 #include "Shake.h"
 #include "TimeManager.h"
@@ -176,7 +187,9 @@ void GamePlayScene::Update() {
 	// カメラ
 	// ------------------------------------
 
-	if (railCamera_) {
+	bool isPaused = DevelopEditor::GetInstance()->IsPaused();
+
+	if (railCamera_ && !isPaused) {
 		railCamera_->Update(!useDebugCamera_);
 	}
 	if (useDebugCamera_) {
@@ -189,137 +202,139 @@ void GamePlayScene::Update() {
 	}
 #endif
 
-	// 画面シェイクの更新と適用
-	if (shake_) {
-		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
-		if (shake_->IsActive() && !useDebugCamera_) {
-			Vector3 offset = shake_->GetOffset();
-			camera_->matWorld.m[3][0] += offset.x;
-			camera_->matWorld.m[3][1] += offset.y;
-			camera_->matWorld.m[3][2] += offset.z;
+	if (!isPaused) {
+		// 画面シェイクの更新と適用
+		if (shake_) {
+			shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
+			if (shake_->IsActive() && !useDebugCamera_) {
+				Vector3 offset = shake_->GetOffset();
+				camera_->matWorld.m[3][0] += offset.x;
+				camera_->matWorld.m[3][1] += offset.y;
+				camera_->matWorld.m[3][2] += offset.z;
 
-			camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
-			camera_->UpdateViewProjection();
+				camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
+				camera_->UpdateViewProjection();
+			}
 		}
-	}
 
-	// ------------------------------------
-	// ゴールの更新・アニメーション
-	// ------------------------------------
-	if (goal_) {
-		goal_->Update();
-	}
-
-	// ------------------------------------
-	// ゴール到達判定とシーン遷移
-	// ------------------------------------
-	if (isGoalReached_) {
-		Input* input = Input::GetInstance();
-		if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
-			SceneManager::GetInstance()->ChangeScene("TITLE");
-			return;
+		// ------------------------------------
+		// ゴールの更新・アニメーション
+		// ------------------------------------
+		if (goal_) {
+			goal_->Update();
 		}
-	} else {
-		// 自機との衝突判定によるゴール到達チェック
-		if (player_ && goal_) {
-			if (Collision::CheckCollision(player_.get(), goal_.get())) {
-				isGoalReached_ = true;
-				if (railCamera_) {
+
+		// ------------------------------------
+		// ゴール到達判定とシーン遷移
+		// ------------------------------------
+		if (isGoalReached_) {
+			Input* input = Input::GetInstance();
+			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+				return;
+			}
+		} else {
+			// 自機との衝突判定によるゴール到達チェック
+			if (player_ && goal_) {
+				if (Collision::CheckCollision(player_.get(), goal_.get())) {
+					isGoalReached_ = true;
+					if (railCamera_) {
+						railCamera_->SetIsPlaying(false);
+					}
+				}
+			}
+
+			// カメラがレール末尾に到達したことによるゴール到達チェック
+			if (railCamera_ && !railCamera_->GetIsLoop()) {
+				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+				if (railCamera_->GetSplineTime() >= maxTime) {
+					isGoalReached_ = true;
 					railCamera_->SetIsPlaying(false);
 				}
 			}
 		}
 
-		// カメラがレール末尾に到達したことによるゴール到達チェック
-		if (railCamera_ && !railCamera_->GetIsLoop()) {
-			float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
-			if (railCamera_->GetSplineTime() >= maxTime) {
-				isGoalReached_ = true;
-				railCamera_->SetIsPlaying(false);
-			}
-		}
-	}
-
-	// ------------------------------------
-	// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
-	// ------------------------------------
-	if (!isGoalReached_) {
-		std::list<EnemyBase*> activeEnemies;
-		for (const auto& enemy : enemies_) {
-			activeEnemies.push_back(enemy.get());
-		}
-		player_->Update(activeEnemies);
-
-		for (auto& enemy : enemies_) {
-			enemy->Update();
-		}
-
-		CheckAllCollisions();
-
-		for (auto it = enemies_.begin(); it != enemies_.end(); ) {
-			if (!(*it)->IsAlive()) {
-				if (dynamic_cast<RusherEnemy*>(it->get())) {
-					auto shockwave = std::make_unique<Shockwave>();
-					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
-					shockwaves_.push_back(std::move(shockwave));
-				}
-				it = enemies_.erase(it);
-			} else {
-				++it;
-			}
-		}
-
-		for (auto& shockwave : shockwaves_) {
-			shockwave->Update();
-		}
-		shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
-			return shockwave->IsFinished();
-							  });
-
-		if (lockOn_) {
-			// LockOn::Update が求める「生ポインタのリスト」をその場で作成
-			std::list<EnemyBase*> enemyPtrs;
+		// ------------------------------------
+		// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
+		// ------------------------------------
+		if (!isGoalReached_) {
+			std::list<EnemyBase*> activeEnemies;
 			for (const auto& enemy : enemies_) {
-				enemyPtrs.push_back(enemy.get());
+				activeEnemies.push_back(enemy.get());
+			}
+			player_->Update(activeEnemies);
+
+			for (auto& enemy : enemies_) {
+				enemy->Update();
 			}
 
-			// プレイヤー、作成した生ポインタリスト、カメラを渡して更新
-			lockOn_->Update(player_.get(), enemyPtrs, camera_.get());
+			CheckAllCollisions();
+
+			for (auto it = enemies_.begin(); it != enemies_.end(); ) {
+				if (!(*it)->IsAlive()) {
+					if (dynamic_cast<RusherEnemy*>(it->get())) {
+						auto shockwave = std::make_unique<Shockwave>();
+						shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
+						shockwaves_.push_back(std::move(shockwave));
+					}
+					it = enemies_.erase(it);
+				} else {
+					++it;
+				}
+			}
+
+			for (auto& shockwave : shockwaves_) {
+				shockwave->Update();
+			}
+			shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
+				return shockwave->IsFinished();
+								  });
+
+			if (lockOn_) {
+				// LockOn::Update が求める「生ポインタのリスト」をその場で作成
+				std::list<EnemyBase*> enemyPtrs;
+				for (const auto& enemy : enemies_) {
+					enemyPtrs.push_back(enemy.get());
+				}
+
+				// プレイヤー、作成した生ポインタリスト、カメラを渡して更新
+				lockOn_->Update(player_.get(), enemyPtrs, camera_.get());
+			}
 		}
-	}
 
-	// ------------------------------------
-	// オブジェクト
-	// ------------------------------------
+		// ------------------------------------
+		// オブジェクト
+		// ------------------------------------
 
-	level_->Update();
+		level_->Update();
 
-	// ------------------------------------
-	// 天球
-	// ------------------------------------
+		// ------------------------------------
+		// 天球
+		// ------------------------------------
 
-	skydome_->Update();
+		skydome_->Update();
 
-	// ------------------------------------
-	// パーティクルの更新
-	// ------------------------------------
-	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+		// ------------------------------------
+		// パーティクルの更新
+		// ------------------------------------
+		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
-	// HPが20以下の時に Vignetting 赤点滅を適用
-	if (player_->GetHP() <= 20.0f) {
-		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
+		// HPが20以下の時に Vignetting 赤点滅を適用
+		if (player_->GetHP() <= 20.0f) {
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
 
-		// 点滅の計算 (サイン波を用いて明滅)
-		static float vignetteTimer = 0.0f;
-		vignetteTimer += 0.1f; // 点滅スピード
+			// 点滅の計算 (サイン波を用いて明滅)
+			static float vignetteTimer = 0.0f;
+			vignetteTimer += 0.1f; // 点滅スピード
 
-		float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
-		float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
-		PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
-	} else {
-		// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
-		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
-			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+			float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
+			float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
+			PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
+		} else {
+			// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
+			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+			}
 		}
 	}
 }
@@ -410,11 +425,46 @@ void GamePlayScene::CheckAllCollisions() {
 
 void GamePlayScene::UpdateImGui() {
 #ifdef USE_IMGUI
-	ImGui::Begin("デバッグウィンドウ");
+	// 毎フレームエンティティを登録し直すことで、動的な増減に対応（ dangling pointer 防止 ）
+	DevelopEditor* editor = DevelopEditor::GetInstance();
+	editor->ClearEntities();
+	editor->RegisterCamera("Main Camera", camera_.get());
+	if (railCamera_) {
+		editor->RegisterEntity("Rail Camera", railCamera_->GetWorldTransform(), [this]() {
+			bool isLoop = railCamera_->GetIsLoop();
+			if (ImGui::Checkbox("Loop", &isLoop)) {
+				railCamera_->SetIsLoop(isLoop);
+			}
+			float speed = railCamera_->GetSpeed();
+			if (ImGui::DragFloat("Speed", &speed, 0.001f, 0.0f, 1.0f)) {
+				railCamera_->SetSpeed(speed);
+			}
+		});
+	}
+	if (skydome_) {
+		editor->RegisterEntity("Skydome (天球)", &skydome_->GetWorldTransform());
+	}
+	if (player_) {
+		editor->RegisterEntity("Player (自機)", player_->GetWorldTransform(), [this]() {
+			float hp = player_->GetHP();
+			if (ImGui::DragFloat("HP", &hp, 1.0f, 0.0f, 100.0f)) {
+				player_->SetHP(hp);
+			}
+			ImGui::Text("Is LockOn Mode: %s", player_->GetIsLockOnMode() ? "True" : "False");
+		});
+	}
+	if (goal_) {
+		editor->RegisterEntity("Goal (ゴール)", &goal_->GetWorldTransform());
+	}
+	int enemyIdx = 0;
+	for (auto& enemy : enemies_) {
+		std::string name = std::format("Enemy_{}", enemyIdx++);
+		editor->RegisterEntity(name, &enemy->GetWorldTransform(), [enemyPtr = enemy.get()]() {
+			ImGui::Text("Status: %s", enemyPtr->IsAlive() ? "Alive" : "Dead");
+		});
+	}
 
-	// FPSを表示
-	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-
-	ImGui::End();
+	// DevelopEditor全体の更新・描画
+	editor->Update();
 #endif
 }

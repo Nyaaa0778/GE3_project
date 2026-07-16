@@ -17,6 +17,7 @@
 #include "SkyboxRenderer.h"
 #include "PrimitiveRenderer.h"
 #include "PostProcessRenderer.h"
+#include "DevelopEditor.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -166,6 +167,8 @@ void GameFramework::Initialize() {
 	// ImGuiManager の初期化
 	ImGuiManager::GetInstance()->Initialize(
 		DirectXCommon::GetInstance(), ShaderResourceViewManager::GetInstance());
+	// DevelopEditor の初期化
+	DevelopEditor::GetInstance()->Initialize();
 #endif
 }
 
@@ -195,6 +198,7 @@ void GameFramework::Finalize() {
 
 #ifdef USE_IMGUI
 
+	DevelopEditor::Finalize();
 	ImGuiManager::GetInstance()->Finalize();
 
 #endif
@@ -294,7 +298,9 @@ void GameFramework::EndFrame() {
 	// 2. RenderTextureの画像を Swapchain にコピーして描画する
 	uint32_t rtexSrvIndex = DirectXCommon::GetInstance()->GetRenderTextureSrvIndex();
 	D3D12_GPU_DESCRIPTOR_HANDLE rtexSrvHandle = ShaderResourceViewManager::GetInstance()->GetGPUDescriptorHandle(rtexSrvIndex);
-	PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
+	if (!DevelopEditor::GetInstance()->IsEditorMode()) {
+		PostProcessRenderer::GetInstance()->Draw(rtexSrvHandle);
+	}
 
 	// 3. コピーした画像の上に ImGui を重ねて描画する
 	ImGuiManager::GetInstance()->Draw();
