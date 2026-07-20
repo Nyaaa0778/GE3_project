@@ -273,13 +273,13 @@
     <ClCompile Include="engine\3d\Skydome.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="game\player\IPlayerBullet.cpp">
+    <ClCompile Include="game\playerBullet\IPlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="game\player\NormalPlayerBullet.cpp">
+    <ClCompile Include="game\playerBullet\NormalPlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="game\player\HomingPlayerBullet.cpp">
+    <ClCompile Include="game\playerBullet\HomingPlayerBullet.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="game\enemy\EnemyBase.cpp">
@@ -310,6 +310,12 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="engine\core\graphics\PostProcessEffects.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\ObjectPoolManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\3d\Object3dFactory.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -549,13 +555,13 @@
     <ClInclude Include="engine\3d\Skydome.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="game\player\IPlayerBullet.h">
+    <ClInclude Include="game\playerBullet\IPlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="game\player\NormalPlayerBullet.h">
+    <ClInclude Include="game\playerBullet\NormalPlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="game\player\HomingPlayerBullet.h">
+    <ClInclude Include="game\playerBullet\HomingPlayerBullet.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\enemy\EnemyBase.h">
@@ -589,6 +595,12 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\core\graphics\PostProcessEffects.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\ObjectPoolManager.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\3d\Object3dFactory.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
