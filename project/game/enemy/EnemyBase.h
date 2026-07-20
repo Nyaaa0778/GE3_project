@@ -27,6 +27,9 @@ public:
 	// 生存確認
 	bool IsAlive() const { return isAlive_; }
 
+	// スコア値取得
+	virtual int GetScore() const { return 100; }
+
 protected:
 	// ワールド変換データ
 	WorldTransform worldTransform_;

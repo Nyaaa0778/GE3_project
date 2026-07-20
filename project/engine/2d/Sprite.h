@@ -48,6 +48,8 @@ public:
 	const Vector4& GetColor() const { return materialData_->color; }
 	// 拡縮
 	const Vector2& GetScale() const { return scale_; }
+	// サイズ
+	const Vector2& GetSize() const { return size_; }
 	// BlendMode
 	SpriteRenderer::BlendMode GetBlendMode() const { return blendMode_; }
 
@@ -74,6 +76,8 @@ public:
 	void SetColor(const Vector4& color);
 	// 拡縮
 	void SetScale(const Vector2& scale);
+	// サイズ
+	void SetSize(const Vector2& size);
 	// BlendMode
 	void SetBlendMode(SpriteRenderer::BlendMode blendMode) { blendMode_ = blendMode; }
 

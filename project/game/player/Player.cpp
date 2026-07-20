@@ -372,7 +372,7 @@ void Player::Attack() {
 
 void Player::OnCollision() {
 	// 被弾時にHPを減らす
-	hp_ -= 0.5f;
+	hp_ -= 20.0f;
 	if (hp_ < 0.0f) {
 		hp_ = 0.0f;
 	}

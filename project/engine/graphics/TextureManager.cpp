@@ -85,12 +85,15 @@ void TextureManager::LoadTexture(const std::string& filePath) {
 	// mipMap: 元画像より小さなテクスチャ群
 	DirectX::ScratchImage mipImages {};
 
-	if (DirectX::IsCompressed(image.GetMetadata().format)) {
-		mipImages = std::move(image);
-	} else {
-		hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
-			image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
-			4, mipImages);
+	if (SUCCEEDED(hr)) {
+		if (DirectX::IsCompressed(image.GetMetadata().format) ||
+			(image.GetMetadata().width == 1 && image.GetMetadata().height == 1)) {
+			mipImages = std::move(image);
+		} else {
+			hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(),
+				image.GetMetadata(), DirectX::TEX_FILTER_SRGB,
+				0, mipImages);
+		}
 	}
 
 	assert(SUCCEEDED(hr));

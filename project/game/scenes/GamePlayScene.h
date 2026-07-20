@@ -2,7 +2,6 @@
 
 #include "IScene.h"
 #include "WorldTransform.h"
-#include "../goal/Goal.h"
 
 #include <memory>
 #include <vector>
@@ -20,6 +19,8 @@ class Collider;
 class Shockwave;
 class Shake;
 class LockOn;
+class Goal;
+class Sprite;
 
 class GamePlayScene : public IScene {
 public:
@@ -96,6 +97,22 @@ private:
 	// ------------------------------------
 	std::unique_ptr<Goal> goal_;
 	bool isGoalReached_ = false;
+
+	// ------------------------------------
+	// UI
+	// ------------------------------------
+
+	// プレイヤーのHP
+	std::unique_ptr<Sprite> uiPlayerHp_;
+
+	// スコア
+	int score_ = 0;
+	int prevScore_ = -1;
+
+	// スコアUI
+	static constexpr int kMaxScoreDigits = 5;
+	std::vector<std::unique_ptr<Sprite>> uiScoreDigits_;
+
 
 private:
 	// 全ての衝突判定をチェック

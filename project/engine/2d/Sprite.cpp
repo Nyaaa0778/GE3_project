@@ -218,6 +218,8 @@ void Sprite::SetRotation(float rotation) { rotation_ = rotation; }
 void Sprite::SetColor(const Vector4& color) { materialData_->color = color; }
 // 拡縮
 void Sprite::SetScale(const Vector2& scale) { scale_ = scale; }
+// サイズ
+void Sprite::SetSize(const Vector2& size) { size_ = size; }
 // テクスチャ
 void Sprite::SetTexture(const std::string& filePath) {
 	std::string fullPath = filePath;

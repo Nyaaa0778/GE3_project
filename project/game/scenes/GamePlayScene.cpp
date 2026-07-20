@@ -21,7 +21,9 @@
 #include "Shockwave.h"
 #include "Collider.h"
 #include "Shake.h"
+#include "Goal.h"
 #include "TimeManager.h"
+#include "Sprite.h"
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -35,7 +37,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
+	std::unique_ptr<LevelData> levelData(loader.Load("stage"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -51,7 +53,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "stage");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -161,6 +163,31 @@ void GamePlayScene::Initialize() {
 	// パーティクルグループの作成と初期クリア
 	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
 	ParticleManager::GetInstance()->ClearAllParticles();
+
+	// ------------------------------------
+	// UI
+	// ------------------------------------
+
+	uiPlayerHp_ = std::make_unique<Sprite>();
+	uiPlayerHp_->Initialize("white.png", {10.0f, 10.0f}, {0.0f, 0.0f});
+	uiPlayerHp_->SetSize({player_->GetHP() * 4.0f, 40.0f});
+
+	// スコアの初期化
+	score_ = 0;
+	prevScore_ = -1;
+	uiScoreDigits_.resize(kMaxScoreDigits);
+	float startX = 1260.0f; // 右端の基準位置
+	float startY = 20.0f;   // 上端の基準位置
+	float digitWidth = 24.0f; // 数字の幅
+	float digitHeight = 48.0f; // 数字の高さ
+	for (int i = 0; i < kMaxScoreDigits; ++i) {
+		uiScoreDigits_[i] = std::make_unique<Sprite>();
+		// 右から左に向かって桁を並べる (1桁目は一番右)
+		Vector2 pos = { startX - (i + 1) * digitWidth, startY };
+		uiScoreDigits_[i]->Initialize("numbers/0.png", pos, {0.0f, 0.0f});
+		uiScoreDigits_[i]->SetSize({digitWidth, digitHeight});
+	}
+
 }
 
 void GamePlayScene::Update() {
@@ -258,6 +285,9 @@ void GamePlayScene::Update() {
 
 		for (auto it = enemies_.begin(); it != enemies_.end(); ) {
 			if (!(*it)->IsAlive()) {
+				// スコア加算
+				score_ += (*it)->GetScore();
+
 				if (dynamic_cast<RusherEnemy*>(it->get())) {
 					auto shockwave = std::make_unique<Shockwave>();
 					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
@@ -322,6 +352,31 @@ void GamePlayScene::Update() {
 			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 		}
 	}
+
+	// ------------------------------------
+	// UI
+	// ------------------------------------
+
+	uiPlayerHp_->SetSize({player_->GetHP() * 4.0f, 40.0f});
+
+	uiPlayerHp_->Update();
+
+	// スコアの更新があった場合のみテクスチャを再設定
+	if (score_ != prevScore_) {
+		int temp = score_;
+		for (int i = 0; i < kMaxScoreDigits; ++i) {
+			int digit = temp % 10;
+			temp /= 10;
+			std::string path = "numbers/" + std::to_string(digit) + ".png";
+			uiScoreDigits_[i]->SetTexture(path);
+		}
+		prevScore_ = score_;
+	}
+
+	// スコアスプライトの更新
+	for (auto& digitSprite : uiScoreDigits_) {
+		digitSprite->Update();
+	}
 }
 
 void GamePlayScene::Draw() {
@@ -376,6 +431,17 @@ void GamePlayScene::Draw() {
 	// パーティクル描画
 	// ------------------------------------
 	ParticleManager::GetInstance()->Draw();
+
+	// ------------------------------------
+	// UI
+	// ------------------------------------
+
+	uiPlayerHp_->Draw();
+
+	// スコアUIの描画
+	for (auto& digitSprite : uiScoreDigits_) {
+		digitSprite->Draw();
+	}
 }
 
 
@@ -414,6 +480,7 @@ void GamePlayScene::UpdateImGui() {
 
 	// FPSを表示
 	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+	ImGui::Text("Score: %d", score_);
 
 	ImGui::End();
 #endif

@@ -29,6 +29,11 @@ public:
 	/// </summary>
 	void OnCollision() override;
 
+	/// <summary>
+	/// スコア値取得
+	/// </summary>
+	int GetScore() const override { return 250; }
+
 private:
 	// 各フェーズの更新処理
 	void UpdateIdle();
