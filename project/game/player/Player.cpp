@@ -12,6 +12,9 @@
 #include "IPlayerBullet.h"
 #include "NormalPlayerBullet.h"
 #include "HomingPlayerBullet.h"
+#include "IPlayerState.h"
+#include "PlayerIdleState.h"
+#include "PlayerMoveState.h"
 #include "LockOn.h"
 #include "EnemyBase.h"
 #include "Logger.h"
@@ -43,6 +46,9 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	// トランスフォームの初期化
 	worldTransform_.Initialize();
 	worldTransform_.translation = InitialPos;
+
+	// 初期ステートは待機状態
+	ChangeState(std::make_unique<PlayerIdleState>());
 
 	// モデルに自身のトランスフォームをセット
 	model_->SetWorldTransform(&worldTransform_);
@@ -118,8 +124,11 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// プレイヤーの回転を常に(0, 0, 0)にする（親であるレールカメラの向きに平行にする）
 	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
 
-	// 移動処理
-	UpdateMove();
+	// ステートの更新
+	if (currentState_)
+	{
+		currentState_->Update();
+	}
 
 	// トランスフォーム行列の更新と転送
 	worldTransform_.UpdateMatrix();
@@ -174,40 +183,23 @@ void Player::Draw() {
 }
 
 /// <summary>
-/// 移動処理
+/// ステートチェンジ
 /// </summary>
-void Player::UpdateMove() {
-	// 移動方向ベクトル
-	Vector3 move = {0.0f, 0.0f, 0.0f};
-
-	// 入力取得
-	Input* input = Input::GetInstance();
-
-	// X軸（左右）
-	if (input->PushKey(DIK_D)) { move.x += 1.0f; }
-	if (input->PushKey(DIK_A)) { move.x -= 1.0f; }
-
-	// Y軸（上下）
-	if (input->PushKey(DIK_W)) { move.y += 1.0f; }
-	if (input->PushKey(DIK_S)) { move.y -= 1.0f; }
-
-	// 斜め移動の速度を一定にするための正規化
-	float length = std::sqrt(move.x * move.x + move.y * move.y);
-	if (length > 0.0f) {
-		move.x /= length;
-		move.y /= length;
+/// <param name="newState"></param>
+void Player::ChangeState(std::unique_ptr<IPlayerState> newState) {
+// 古い状態があれば Exit を呼ぶ
+	if (currentState_)
+	{
+		currentState_->Exit();
 	}
 
-	// 速度を適用して移動
-	worldTransform_.translation.x += move.x * kBaseSpeed;
-	worldTransform_.translation.y += move.y * kBaseSpeed;
+	// 新しいステートに所有権を移動
+	currentState_ = std::move(newState);
 
-	// 範囲を超えないように制限
-	worldTransform_.translation.x = std::clamp(worldTransform_.translation.x, -kMoveLimitX, kMoveLimitX);
-	worldTransform_.translation.y = std::clamp(worldTransform_.translation.y, -kMoveLimitY, kMoveLimitY);
+	// 自機のポインタをセット
+	currentState_->SetPlayer(this);
+	currentState_->Enter();
 }
-
-
 
 /// <summary>
 /// 弾の更新

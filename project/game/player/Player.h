@@ -18,6 +18,7 @@ class Sprite;
 
 class LockOn;
 class IPlayerBullet;
+class IPlayerState;
 
 class EnemyBase;
 
@@ -37,6 +38,10 @@ public:
 	void OnCollision() override;
 	Vector3 GetWorldPosition() override;
 
+	/// <summary>
+	/// ステートチェンジ
+	/// </summary>
+	void ChangeState(std::unique_ptr<IPlayerState> newState);
 
 public:
 	const WorldTransform* GetWorldTransform() const { return &worldTransform_; }
@@ -75,14 +80,8 @@ private:
 	// 3Dレティクルのワールド座標 - 自機のワールド座標
 	Vector3 reticleWorldPos = {};
 
-	// 速さ
-	float kBaseSpeed = 0.2f;
-	// 速度
-	Vector3 velocity_ = {0.0f, 0.0f, 0.0f};
-
-	// 移動制限
-	static constexpr float kMoveLimitX = 7.0f;
-	static constexpr float kMoveLimitY = 3.5f;
+	// 現在のステート
+	std::unique_ptr<IPlayerState> currentState_;
 
 	// HP
 	float hp_ = 100.0f;
@@ -139,10 +138,6 @@ public:
 	Vector3 prevWorldPos_ = { 0.0f, 0.0f, 0.0f };
 
 private:
-	/// <summary>
-	/// 移動処理
-	/// </summary>
-	void UpdateMove();
 
 	/// <summary>
 	/// 照準の更新
