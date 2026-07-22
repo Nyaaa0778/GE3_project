@@ -8,6 +8,12 @@ struct Material
     float32_t4x4 uvTransform;
     float32_t shininess;
     float32_t environmentCoefficient;
+    
+    // --- 追加パラメータ ---
+    float32_t dissolveThreshold;
+    float32_t dissolveEdgeWidth;
+    float32_t4 dissolveEdgeColor;
+    int32_t isDissolveEnabled;
 };
 ConstantBuffer<Material> gMaterial : register(b0);
 
@@ -61,6 +67,7 @@ ConstantBuffer<Camera> gCamera : register(b2);
 
 Texture2D<float32_t4> gTexture : register(t0);
 TextureCube<float32_t4> gEnvironmentTexture : register(t1);
+Texture2D<float32_t4> gDissolveMaskTexture : register(t2);
 
 SamplerState gSampler : register(s0);
 
@@ -229,11 +236,29 @@ PixelShaderOutput main(VertexShaderOutput input)
     // 環境マップによる環境光の計算と加算
     if (gMaterial.environmentCoefficient > 0.0f)
     {
-        float3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
-        float3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
+        float32_t3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
+        float32_t3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
         float4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
         
         output.color.rgb += environmentColor.rgb * gMaterial.environmentCoefficient;
+    }
+
+    // ディゾルブ処理
+    if (gMaterial.isDissolveEnabled != 0)
+    {
+        float32_t mask = gDissolveMaskTexture.Sample(gSampler, input.texcoord).r;
+        
+        if (mask < gMaterial.dissolveThreshold)
+        {
+            discard;
+        }
+        
+        float32_t edgeThreshold = gMaterial.dissolveThreshold + gMaterial.dissolveEdgeWidth;
+        if (mask < edgeThreshold)
+        {
+            float32_t edgeWeight = (edgeThreshold - mask) / gMaterial.dissolveEdgeWidth;
+            output.color.rgb = lerp(output.color.rgb, gMaterial.dissolveEdgeColor.rgb, edgeWeight);
+        }
     }
 
     return output;

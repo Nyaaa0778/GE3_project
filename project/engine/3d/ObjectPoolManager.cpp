@@ -1,17 +1,15 @@
 #include "ObjectPoolManager.h"
 
+/// <summary>
+/// オブジェクトプールの生成
+/// </summary>
+/// <param name="capacity">同時に存在させられるオブジェクトの最大数</param>
 template<class T>
-inline void ObjectPoolManager<T>::Create(int capacity) {
-	pool_ = new T[capacity];
+inline void ObjectPoolManager<T>::Create(int size) {
+	pool_.resize(size);
 	// 同時に存在させられるオブジェクトの最大数を設定
-	capacity_ = capacity;
+	capacity_ = size;
 }
-
-template<class T>
-void ObjectPoolManager<T>::Destroy() {
-	delete[] pool_;
-}
-
 template<class T>
 T* ObjectPoolManager<T>::Recycle() {
 	for (int i = 0; i < capacity_; i++) {

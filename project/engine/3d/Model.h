@@ -41,12 +41,17 @@ private:
 
 	// マテリアル
 	struct Material {
-		Vector4 color;
-		int32_t lightingType;
-		float padding[3];
-		Matrix4x4 uvTransform;
-		float shininess;
-		float environmentCoefficient;
+		Vector4 color;              // 16 bytes
+		int32_t lightingType;       // 4 bytes
+		float padding1[3];          // 12 bytes (align Matrix4x4)
+		Matrix4x4 uvTransform;      // 64 bytes
+		float shininess;            // 4 bytes
+		float environmentCoefficient;// 4 bytes
+		float dissolveThreshold;    // 4 bytes
+		float dissolveEdgeWidth;    // 4 bytes
+		Vector4 dissolveEdgeColor;  // 16 bytes
+		int32_t isDissolveEnabled;  // 4 bytes
+		float padding2[3];          // 12 bytes (align total size to 16 bytes boundary, total 144 bytes)
 	};
 
 	// マテリアルデータ
@@ -106,6 +111,12 @@ public:
 
 	const ModelData& GetModelData() const { return modelData_; }
 
+	// ディゾルブパラメータ
+	float GetDissolveThreshold() const { return materialData_->dissolveThreshold; }
+	float GetDissolveEdgeWidth() const { return materialData_->dissolveEdgeWidth; }
+	const Vector4& GetDissolveEdgeColor() const { return materialData_->dissolveEdgeColor; }
+	bool IsDissolveEnabled() const { return materialData_->isDissolveEnabled != 0; }
+
 	//================================================================================
 	// Setter
 	//================================================================================
@@ -116,6 +127,11 @@ public:
 	void SetLightingType(LightingType type) { materialData_->lightingType = static_cast<int32_t>(type); }
 	// 環境光の映り込み具合
 	void SetEnvironmentCoefficient(float coeff) { materialData_->environmentCoefficient = coeff; }
+	// ディゾルブパラメータ
+	void SetDissolveThreshold(float threshold) { materialData_->dissolveThreshold = threshold; }
+	void SetDissolveEdgeWidth(float width) { materialData_->dissolveEdgeWidth = width; }
+	void SetDissolveEdgeColor(const Vector4& color) { materialData_->dissolveEdgeColor = color; }
+	void SetDissolveEnabled(bool enabled) { materialData_->isDissolveEnabled = enabled ? 1 : 0; }
 
 private:
 	//================================================================================

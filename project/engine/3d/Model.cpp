@@ -230,4 +230,8 @@ void Model::CreateMaterialData() {
 	materialData_->uvTransform = MakeIdentityMatrix();
 	materialData_->shininess = 70.0f;
 	materialData_->environmentCoefficient = 0.0f;
+	materialData_->dissolveThreshold = 0.0f;
+	materialData_->dissolveEdgeWidth = 0.05f;
+	materialData_->dissolveEdgeColor = Vector4(1.0f, 0.5f, 0.0f, 1.0f);
+	materialData_->isDissolveEnabled = 0;
 }

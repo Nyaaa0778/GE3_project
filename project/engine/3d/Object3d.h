@@ -141,6 +141,13 @@ public:
 	}
 	void SetEnvironmentCoefficient(float coeff);
 
+	// ディゾルブ設定
+	void SetDissolveEnabled(bool enabled) { isDissolveEnabled_ = enabled; }
+	void SetDissolveThreshold(float threshold) { dissolveThreshold_ = threshold; }
+	void SetDissolveEdgeWidth(float width) { dissolveEdgeWidth_ = width; }
+	void SetDissolveEdgeColor(const Vector4& color) { dissolveEdgeColor_ = color; }
+	void SetDissolveNoiseTexture(const std::string& filePath) { dissolveMaskTexturePath_ = filePath; }
+
 private:
 	//================================================================================
 	// 内部構造体
@@ -191,6 +198,13 @@ private:
 	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
 
 	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_ {};
+
+	// ディゾルブ用パラメータ
+	bool isDissolveEnabled_ = false;
+	float dissolveThreshold_ = 0.0f;
+	float dissolveEdgeWidth_ = 0.05f;
+	Vector4 dissolveEdgeColor_ = { 1.0f, 0.5f, 0.0f, 1.0f };
+	std::string dissolveMaskTexturePath_ = "";
 
 private:
 	//================================================================================

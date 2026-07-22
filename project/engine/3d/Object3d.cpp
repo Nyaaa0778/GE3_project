@@ -93,6 +93,22 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_) {
+		// ディゾルブ用パラメータをマテリアルに適用
+		model_->SetDissolveEnabled(isDissolveEnabled_);
+		model_->SetDissolveThreshold(dissolveThreshold_);
+		model_->SetDissolveEdgeWidth(dissolveEdgeWidth_);
+		model_->SetDissolveEdgeColor(dissolveEdgeColor_);
+
+		// ディゾルブマスク用テクスチャのバインド（レジスタt2 -> スロット6）
+		if (isDissolveEnabled_ && !dissolveMaskTexturePath_.empty()) {
+			auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU(dissolveMaskTexturePath_);
+			object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, srvHandle);
+		} else {
+			// ディゾルブ無効時も、何かダミーテクスチャを割り当てておく（未割り当てによるバグ防止）
+			auto dummyHandle = TextureManager::GetInstance()->GetSrvHandleGPU(model_->GetModelData().material.textureFilePath);
+			object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, dummyHandle);
+		}
+
 		model_->Draw();
 	}
 }

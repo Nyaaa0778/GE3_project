@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 template <class T>
 
 class ObjectPoolManager {
@@ -44,7 +46,7 @@ public:
 
 protected:
 	// オブジェクトプール
-	T* pool_ = nullptr;
+	std::vector<T> pool_;
 
 	// 同時に存在させられるオブジェクトの最大数
 	int capacity_ = 0;

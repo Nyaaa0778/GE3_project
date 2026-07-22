@@ -69,7 +69,7 @@ void Object3dRenderer::CreateRootSignature() {
 	descriptionRootSignature.Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	D3D12_ROOT_PARAMETER rootParameters[6] = {};
+	D3D12_ROOT_PARAMETER rootParameters[7] = {};
 
 	// 0: Material (PS b0)
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -114,6 +114,18 @@ void Object3dRenderer::CreateRootSignature() {
 	rootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	rootParameters[5].DescriptorTable.pDescriptorRanges = &envRange;
 	rootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
+
+	// 6: Dissolve Mask Texture (PS t2)
+	D3D12_DESCRIPTOR_RANGE dissolveRange {};
+	dissolveRange.BaseShaderRegister = 2;
+	dissolveRange.NumDescriptors = 1;
+	dissolveRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	dissolveRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	rootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[6].DescriptorTable.pDescriptorRanges = &dissolveRange;
+	rootParameters[6].DescriptorTable.NumDescriptorRanges = 1;
 
 	descriptionRootSignature.pParameters =
 		rootParameters; // ルートパラメータ配列へのポインタ

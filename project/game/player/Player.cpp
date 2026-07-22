@@ -16,6 +16,7 @@
 #include "EnemyBase.h"
 #include "Logger.h"
 #include "Random.h"
+#include "TextureManager.h"
 
 using namespace MathUtility;
 
@@ -69,6 +70,19 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 
 	// HPの初期化
 	hp_ = 100.0f;
+
+	// 生存フラグとディゾルブ設定の初期化
+	isAlive_ = true;
+	dissolveThreshold_ = 0.0f;
+
+	model_->SetDissolveEnabled(false);
+	model_->SetDissolveThreshold(0.0f);
+	model_->SetDissolveEdgeWidth(0.04f);
+	model_->SetDissolveEdgeColor(Vector4(1.0f, 0.4f, 0.0f, 1.0f)); // 炎のようなオレンジ
+
+	// ディゾルブ用のマスクテクスチャをあらかじめ読み込んで設定
+	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise0.png");
+	model_->SetDissolveNoiseTexture("resources/sprites/noise0.png");
 }
 
 void Player::Update(const std::list<EnemyBase*>& enemies) {
@@ -76,6 +90,31 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// 本体
 	// ------------------------------------
 	
+	if (!isAlive_) {
+		// 死亡時のディゾルブアニメーション
+		if (dissolveThreshold_ < 1.0f) {
+			dissolveThreshold_ += dissolveSpeed_;
+			if (dissolveThreshold_ > 1.0f) {
+				dissolveThreshold_ = 1.0f;
+			}
+		}
+		model_->SetDissolveEnabled(true);
+		model_->SetDissolveThreshold(dissolveThreshold_);
+
+		// トランスフォーム行列の更新と転送
+		worldTransform_.UpdateMatrix();
+
+		// モデルの更新
+		model_->Update();
+
+		// 死亡時は既存の弾の更新のみ行う（新規攻撃は不可）
+		UpdateBullet(enemies);
+
+		// 前フレームのワールド座標を保存
+		prevWorldPos_ = worldTransform_.GetWorldPosition();
+		return;
+	}
+
 	// プレイヤーの回転を常に(0, 0, 0)にする（親であるレールカメラの向きに平行にする）
 	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
 
@@ -113,13 +152,16 @@ void Player::Draw() {
 	// ------------------------------------
 	// 本体
 	// ------------------------------------
-	model_->Draw();
+	// 完全にディゾルブしきるまでは描画する
+	if (isAlive_ || dissolveThreshold_ < 1.0f) {
+		model_->Draw();
+	}
 
 	// ------------------------------------
 	// 照準
 	// ------------------------------------
-	// ロックオンモードではない場合のみ通常レティクルを描画
-	if (!isLockOnMode_) {
+	// 生存時かつ、ロックオンモードではない場合のみ通常レティクルを描画
+	if (isAlive_ && !isLockOnMode_) {
 		reticle_->Draw();
 	}
 
@@ -371,10 +413,18 @@ void Player::Attack() {
 }
 
 void Player::OnCollision() {
+	if (!isAlive_) {
+		return;
+	}
+
 	// 被弾時にHPを減らす
-	hp_ -= 20.0f;
-	if (hp_ < 0.0f) {
+	hp_ -= 80.0f;
+	if (hp_ <= 0.0f) {
 		hp_ = 0.0f;
+		isAlive_ = false;
+		// ディゾルブ開始設定
+		model_->SetDissolveEnabled(true);
+		model_->SetDissolveThreshold(0.0f);
 	}
 }
 

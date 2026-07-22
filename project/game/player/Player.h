@@ -91,6 +91,14 @@ private:
 	bool isAlive_ = true;
 	bool isReticleHit_ = false;
 
+	// ディゾルブ用パラメータ
+	float dissolveThreshold_ = 0.0f;
+	float dissolveSpeed_ = 0.015f; // ディゾルブの進行速度
+
+public:
+	// 生存フラグのゲッター
+	bool IsAlive() const { return isAlive_; }
+
 	// 当たり判定の大きさ
 	static constexpr Vector3 kCollisionSize = {1.0f, 1.0f, 1.0f};
 
