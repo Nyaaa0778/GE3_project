@@ -13,22 +13,12 @@ public:
 	// ------------------------------------
 
 	// 状態開始
-	virtual void Enter() = 0;
+	virtual void Enter(Player* player) = 0;
 
 	// 更新
-	virtual void Update() = 0;
+	virtual void Update(Player* player) = 0;
 
 	// 状態終了
-	virtual void Exit() = 0;
-
-	// ------------------------------------
-	// Setter
-	// ------------------------------------
-
-	// プレイヤーをセット
-	void SetPlayer(Player* player);
-
-protected:
-	Player* player_ = nullptr;
+	virtual void Exit(Player* player) = 0;
 };
 

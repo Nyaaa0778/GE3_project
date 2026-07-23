@@ -1,10 +1,6 @@
 #pragma once
-
 #include "IPlayerState.h"
-
-#include <Vector3.h>
-
-class PlayerMoveState : public IPlayerState {
+class PlayerDeathState : public IPlayerState {
 public:
 	// 状態開始
 	void Enter(Player* player) override;
@@ -16,11 +12,7 @@ public:
 	void Exit(Player* player) override;
 
 private:
-	// 速さ
-	float kBaseSpeed = 0.2f;
-
-	// 移動制限
-	static constexpr float kMoveLimitX = 7.0f;
-	static constexpr float kMoveLimitY = 3.5f;
+	// ディゾルブ用パラメータ
+	float dissolveThreshold_ = 0.0f;
+	float dissolveSpeed_ = 0.015f; // ディゾルブの進行速度
 };
-

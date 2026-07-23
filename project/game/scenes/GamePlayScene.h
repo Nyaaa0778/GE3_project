@@ -24,6 +24,15 @@ class Sprite;
 
 class GamePlayScene : public IScene {
 public:
+	enum class Phase {
+		kLeady,    // スタート準備
+		kPlay,     // ゲームプレイ
+		kClear,    // クリア
+		kGameOver, // ゲームオーバー
+	};
+
+	Phase phase_ = Phase::kLeady;
+public:
 	GamePlayScene();
 	~GamePlayScene();
 
@@ -118,5 +127,9 @@ private:
 	// 全ての衝突判定をチェック
 	void CheckAllCollisions();
 
+	// フェーズチェンジ
+	void ChangePhase(Phase nextPhase);
+
+	// ImGuiの更新
 	void UpdateImGui();
 };

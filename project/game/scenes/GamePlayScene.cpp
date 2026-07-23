@@ -116,7 +116,8 @@ void GamePlayScene::Initialize() {
 
 	// Spawnerデータから "Enemy" という名前が含まれるものをすべて取得して生成
 	std::vector<LevelData::SpawnerData> enemySpawners = level_->GetSpawners("Enemy");
-	for (const auto& spawnerData : enemySpawners) {
+	for (const auto& spawnerData : enemySpawners)
+	{
 		auto enemy = std::make_unique<RusherEnemy>();
 		enemy->Initialize(enemyModel_.get(), camera_.get(), spawnerData.translation, player_.get());
 		enemy->GetWorldTransform().rotation = spawnerData.rotation;
@@ -148,9 +149,11 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 	goal_ = std::make_unique<Goal>();
 	Vector3 goalPos = {0.0f, 0.0f, 150.0f};
-	if (railCamera_) {
+	if (railCamera_)
+	{
 		const auto& controlPoints = railCamera_->GetControlPoints();
-		if (!controlPoints.empty()) {
+		if (!controlPoints.empty())
+		{
 			goalPos = controlPoints.back();
 		}
 		// レールカメラのループをオフにしてゴール地点で停止するようにする
@@ -180,10 +183,11 @@ void GamePlayScene::Initialize() {
 	float startY = 20.0f;   // 上端の基準位置
 	float digitWidth = 24.0f; // 数字の幅
 	float digitHeight = 48.0f; // 数字の高さ
-	for (int i = 0; i < kMaxScoreDigits; ++i) {
+	for (int i = 0; i < kMaxScoreDigits; ++i)
+	{
 		uiScoreDigits_[i] = std::make_unique<Sprite>();
 		// 右から左に向かって桁を並べる (1桁目は一番右)
-		Vector2 pos = { startX - (i + 1) * digitWidth, startY };
+		Vector2 pos = {startX - (i + 1) * digitWidth, startY};
 		uiScoreDigits_[i]->Initialize("numbers/0.png", pos, {0.0f, 0.0f});
 		uiScoreDigits_[i]->SetSize({digitWidth, digitHeight});
 	}
@@ -203,23 +207,28 @@ void GamePlayScene::Update() {
 	// カメラ
 	// ------------------------------------
 
-	if (railCamera_) {
+	if (railCamera_)
+	{
 		railCamera_->Update(!useDebugCamera_);
 	}
-	if (useDebugCamera_) {
+	if (useDebugCamera_)
+	{
 		debugCamera_->Update(camera_.get());
 	}
 
 #ifdef USE_IMGUI
-	if (railCamera_) {
+	if (railCamera_)
+	{
 		railCamera_->DrawDebugSpline();
 	}
 #endif
 
 	// 画面シェイクの更新と適用
-	if (shake_) {
+	if (shake_)
+	{
 		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
-		if (shake_->IsActive() && !useDebugCamera_) {
+		if (shake_->IsActive() && !useDebugCamera_)
+		{
 			Vector3 offset = shake_->GetOffset();
 			camera_->matWorld.m[3][0] += offset.x;
 			camera_->matWorld.m[3][1] += offset.y;
@@ -230,126 +239,152 @@ void GamePlayScene::Update() {
 		}
 	}
 
-	// ------------------------------------
-	// ゴールの更新・アニメーション
-	// ------------------------------------
-	if (goal_) {
-		goal_->Update();
-	}
+	if (player_->IsAlive())
+	{
 
-	// ------------------------------------
-	// ゴール到達判定とシーン遷移
-	// ------------------------------------
-	if (isGoalReached_) {
-		Input* input = Input::GetInstance();
-		if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
-			SceneManager::GetInstance()->ChangeScene("TITLE");
-			return;
+		// ------------------------------------
+		// ゴールの更新・アニメーション
+		// ------------------------------------
+		if (goal_)
+		{
+			goal_->Update();
 		}
-	} else {
-		// 自機との衝突判定によるゴール到達チェック
-		if (player_ && goal_) {
-			if (Collision::CheckCollision(player_.get(), goal_.get())) {
-				isGoalReached_ = true;
-				if (railCamera_) {
+
+		// ------------------------------------
+		// ゴール到達判定とシーン遷移
+		// ------------------------------------
+		if (isGoalReached_)
+		{
+			Input* input = Input::GetInstance();
+			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A))
+			{
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+				return;
+			}
+		} else
+		{
+			// 自機との衝突判定によるゴール到達チェック
+			if (player_ && goal_)
+			{
+				if (Collision::CheckCollision(player_.get(), goal_.get()))
+				{
+					isGoalReached_ = true;
+					if (railCamera_)
+					{
+						railCamera_->SetIsPlaying(false);
+					}
+				}
+			}
+
+			// カメラがレール末尾に到達したことによるゴール到達チェック
+			if (railCamera_ && !railCamera_->GetIsLoop())
+			{
+				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+				if (railCamera_->GetSplineTime() >= maxTime)
+				{
+					isGoalReached_ = true;
 					railCamera_->SetIsPlaying(false);
 				}
 			}
 		}
 
-		// カメラがレール末尾に到達したことによるゴール到達チェック
-		if (railCamera_ && !railCamera_->GetIsLoop()) {
-			float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
-			if (railCamera_->GetSplineTime() >= maxTime) {
-				isGoalReached_ = true;
-				railCamera_->SetIsPlaying(false);
+		// ------------------------------------
+		// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
+		// ------------------------------------
+		if (!isGoalReached_)
+		{
+			std::list<EnemyBase*> activeEnemies;
+			for (const auto& enemy : enemies_)
+			{
+				activeEnemies.push_back(enemy.get());
 			}
-		}
-	}
+			player_->Update(activeEnemies);
 
-	// ------------------------------------
-	// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
-	// ------------------------------------
-	if (!isGoalReached_) {
-		std::list<EnemyBase*> activeEnemies;
-		for (const auto& enemy : enemies_) {
-			activeEnemies.push_back(enemy.get());
-		}
-		player_->Update(activeEnemies);
+			for (auto& enemy : enemies_)
+			{
+				enemy->Update();
+			}
 
-		for (auto& enemy : enemies_) {
-			enemy->Update();
-		}
+			CheckAllCollisions();
 
-		CheckAllCollisions();
+			for (auto it = enemies_.begin(); it != enemies_.end(); )
+			{
+				if (!(*it)->IsAlive())
+				{
+					// スコア加算
+					score_ += (*it)->GetScore();
 
-		for (auto it = enemies_.begin(); it != enemies_.end(); ) {
-			if (!(*it)->IsAlive()) {
-				// スコア加算
-				score_ += (*it)->GetScore();
-
-				if (dynamic_cast<RusherEnemy*>(it->get())) {
-					auto shockwave = std::make_unique<Shockwave>();
-					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
-					shockwaves_.push_back(std::move(shockwave));
+					if (dynamic_cast<RusherEnemy*>(it->get()))
+					{
+						auto shockwave = std::make_unique<Shockwave>();
+						shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
+						shockwaves_.push_back(std::move(shockwave));
+					}
+					it = enemies_.erase(it);
+				} else
+				{
+					++it;
 				}
-				it = enemies_.erase(it);
-			} else {
-				++it;
+			}
+
+			for (auto& shockwave : shockwaves_)
+			{
+				shockwave->Update();
+			}
+			shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
+				return shockwave->IsFinished();
+								  });
+
+			if (lockOn_)
+			{
+				// LockOn::Update が求める「生ポインタのリスト」をその場で作成
+				std::list<EnemyBase*> enemyPtrs;
+				for (const auto& enemy : enemies_)
+				{
+					enemyPtrs.push_back(enemy.get());
+				}
+
+				// プレイヤー、作成した生ポインタリスト、カメラを渡して更新
+				lockOn_->Update(player_.get(), enemyPtrs, camera_.get());
 			}
 		}
 
-		for (auto& shockwave : shockwaves_) {
-			shockwave->Update();
-		}
-		shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
-			return shockwave->IsFinished();
-							  });
+		// ------------------------------------
+		// オブジェクト
+		// ------------------------------------
 
-		if (lockOn_) {
-			// LockOn::Update が求める「生ポインタのリスト」をその場で作成
-			std::list<EnemyBase*> enemyPtrs;
-			for (const auto& enemy : enemies_) {
-				enemyPtrs.push_back(enemy.get());
+		level_->Update();
+
+		// ------------------------------------
+		// 天球
+		// ------------------------------------
+
+		skydome_->Update();
+
+		// ------------------------------------
+		// パーティクルの更新
+		// ------------------------------------
+		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+
+		// HPが20以下の時に Vignetting 赤点滅を適用
+		if (player_->GetHP() <= 20.0f)
+		{
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
+
+			// 点滅の計算 (サイン波を用いて明滅)
+			static float vignetteTimer = 0.0f;
+			vignetteTimer += 0.1f; // 点滅スピード
+
+			float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
+			float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
+			PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
+		} else
+		{
+			// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
+			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+			{
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 			}
-
-			// プレイヤー、作成した生ポインタリスト、カメラを渡して更新
-			lockOn_->Update(player_.get(), enemyPtrs, camera_.get());
-		}
-	}
-
-	// ------------------------------------
-	// オブジェクト
-	// ------------------------------------
-
-	level_->Update();
-
-	// ------------------------------------
-	// 天球
-	// ------------------------------------
-
-	skydome_->Update();
-
-	// ------------------------------------
-	// パーティクルの更新
-	// ------------------------------------
-	ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
-
-	// HPが20以下の時に Vignetting 赤点滅を適用
-	if (player_->GetHP() <= 20.0f) {
-		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
-
-		// 点滅の計算 (サイン波を用いて明滅)
-		static float vignetteTimer = 0.0f;
-		vignetteTimer += 0.1f; // 点滅スピード
-
-		float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
-		float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
-		PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
-	} else {
-		// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
-		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting) {
-			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 		}
 	}
 
@@ -362,9 +397,11 @@ void GamePlayScene::Update() {
 	uiPlayerHp_->Update();
 
 	// スコアの更新があった場合のみテクスチャを再設定
-	if (score_ != prevScore_) {
+	if (score_ != prevScore_)
+	{
 		int temp = score_;
-		for (int i = 0; i < kMaxScoreDigits; ++i) {
+		for (int i = 0; i < kMaxScoreDigits; ++i)
+		{
 			int digit = temp % 10;
 			temp /= 10;
 			std::string path = "numbers/" + std::to_string(digit) + ".png";
@@ -374,7 +411,8 @@ void GamePlayScene::Update() {
 	}
 
 	// スコアスプライトの更新
-	for (auto& digitSprite : uiScoreDigits_) {
+	for (auto& digitSprite : uiScoreDigits_)
+	{
 		digitSprite->Update();
 	}
 }
@@ -395,7 +433,8 @@ void GamePlayScene::Draw() {
 	// ------------------------------------
 	// ゴール
 	// ------------------------------------
-	if (goal_) {
+	if (goal_)
+	{
 		goal_->Draw();
 	}
 
@@ -403,7 +442,8 @@ void GamePlayScene::Draw() {
 	// 敵
 	// ------------------------------------
 
-	for (auto& enemy : enemies_) {
+	for (auto& enemy : enemies_)
+	{
 		enemy->Draw();
 	}
 
@@ -411,7 +451,8 @@ void GamePlayScene::Draw() {
 	// 衝撃波エフェクト
 	// ------------------------------------
 
-	for (auto& shockwave : shockwaves_) {
+	for (auto& shockwave : shockwaves_)
+	{
 		shockwave->Draw();
 	}
 
@@ -439,7 +480,8 @@ void GamePlayScene::Draw() {
 	uiPlayerHp_->Draw();
 
 	// スコアUIの描画
-	for (auto& digitSprite : uiScoreDigits_) {
+	for (auto& digitSprite : uiScoreDigits_)
+	{
 		digitSprite->Draw();
 	}
 }
@@ -449,12 +491,15 @@ void GamePlayScene::Finalize() {}
 
 void GamePlayScene::CheckAllCollisions() {
 	// プレイヤーと敵の衝突判定
-	for (auto& enemy : enemies_) {
+	for (auto& enemy : enemies_)
+	{
 		if (!enemy->IsAlive()) continue; // すでに死亡している敵はスキップ
-		if (Collision::CheckCollision(player_.get(), enemy.get())) {
+		if (Collision::CheckCollision(player_.get(), enemy.get()))
+		{
 			player_->OnCollision();
 			enemy->OnCollision();
-			if (shake_) {
+			if (shake_)
+			{
 				shake_->Start(0.4f, 0.8f);
 			}
 		}
@@ -462,15 +507,36 @@ void GamePlayScene::CheckAllCollisions() {
 
 	// プレイヤーの弾と敵の衝突判定
 	const auto& bullets = player_->GetBullets();
-	for (const auto& bullet : bullets) {
+	for (const auto& bullet : bullets)
+	{
 		if (bullet->IsDead()) continue; // すでに死亡している弾はスキップ
-		for (auto& enemy : enemies_) {
+		for (auto& enemy : enemies_)
+		{
 			if (!enemy->IsAlive()) continue; // すでに死亡している敵はスキップ
-			if (Collision::CheckCollision(bullet.get(), enemy.get())) {
+			if (Collision::CheckCollision(bullet.get(), enemy.get()))
+			{
 				bullet->OnCollision();
 				enemy->OnCollision();
 			}
 		}
+	}
+}
+
+void GamePlayScene::ChangePhase(Phase nextPhase) {
+	// 次のフェーズをセット
+	phase_ = nextPhase;
+
+	switch (phase_)
+	{
+	case Phase::kLeady:
+		phase_
+		break;
+	case Phase::kPlay:
+		break;
+	case Phase::kClear:
+		break;
+	case Phase::kGameOver:
+		break;
 	}
 }
 

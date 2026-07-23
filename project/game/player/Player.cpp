@@ -97,14 +97,7 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	
 	if (!isAlive_) {
-		// 死亡時のディゾルブアニメーション
-		if (dissolveThreshold_ < 1.0f) {
-			dissolveThreshold_ += dissolveSpeed_;
-			if (dissolveThreshold_ > 1.0f) {
-				dissolveThreshold_ = 1.0f;
-			}
-		}
-		model_->SetDissolveEnabled(true);
+		model_->SetDissolveEnabled(useDissolve_);
 		model_->SetDissolveThreshold(dissolveThreshold_);
 
 		// トランスフォーム行列の更新と転送
@@ -127,7 +120,7 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ステートの更新
 	if (currentState_)
 	{
-		currentState_->Update();
+		currentState_->Update(this);
 	}
 
 	// トランスフォーム行列の更新と転送
@@ -187,18 +180,17 @@ void Player::Draw() {
 /// </summary>
 /// <param name="newState"></param>
 void Player::ChangeState(std::unique_ptr<IPlayerState> newState) {
-// 古い状態があれば Exit を呼ぶ
+	// 古い状態があれば Exit を呼ぶ
 	if (currentState_)
 	{
-		currentState_->Exit();
+		currentState_->Exit(this);
 	}
 
 	// 新しいステートに所有権を移動
 	currentState_ = std::move(newState);
 
-	// 自機のポインタをセット
-	currentState_->SetPlayer(this);
-	currentState_->Enter();
+	// 新しいステートを開始
+	currentState_->Enter(this);
 }
 
 /// <summary>

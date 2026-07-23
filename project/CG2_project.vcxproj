@@ -258,6 +258,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\Object3dFactory.cpp" />
     <ClCompile Include="game\playerState\PlayerIdleState.cpp" />
     <ClCompile Include="game\playerState\PlayerMoveState.cpp" />
+    <ClCompile Include="game\playerState\PlayerDeathState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl">
@@ -487,6 +488,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\playerState\IPlayerState.h" />
     <ClInclude Include="game\playerState\PlayerIdleState.h" />
     <ClInclude Include="game\playerState\PlayerMoveState.h" />
+    <ClInclude Include="game\playerState\PlayerDeathState.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

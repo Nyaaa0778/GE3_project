@@ -62,6 +62,10 @@ public:
 	// 弾リストのゲッター
 	const std::list<std::unique_ptr<IPlayerBullet>>& GetBullets() const { return bullets_; }
 
+	// Dissolveをセット
+	void SetDissolveEnable(bool useDissolve) { useDissolve_ = useDissolve; }
+	void SetDissolveThreshold(float dissolveThreshold) { dissolveThreshold_ = dissolveThreshold; }
+
 	// HPのゲッター・セッター
 	float GetHP() const { return hp_; }
 	void SetHP(float hp) { hp_ = hp; }
@@ -92,7 +96,7 @@ private:
 
 	// ディゾルブ用パラメータ
 	float dissolveThreshold_ = 0.0f;
-	float dissolveSpeed_ = 0.015f; // ディゾルブの進行速度
+	bool useDissolve_ = false;
 
 public:
 	// 生存フラグのゲッター

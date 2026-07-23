@@ -6,19 +6,27 @@
 
 #include "Player.h"
 #include "PlayerMoveState.h"
+#include "PlayerDeathState.h"
 
-void PlayerIdleState::Enter() {
+void PlayerIdleState::Enter(Player* player) {
 }
 
-void PlayerIdleState::Update() {
+void PlayerIdleState::Update(Player* player) {
 	auto input = Input::GetInstance();
 
-	if (input->PushKey(DIK_W) || input->PushKey(DIK_S) || 
-		input->PushKey(DIK_A) || input->PushKey(DIK_D))
+	if(player->IsAlive())
 	{
-		player_->ChangeState(std::make_unique<PlayerMoveState>());
+		if (input->PushKey(DIK_W) || input->PushKey(DIK_S) ||
+			input->PushKey(DIK_A) || input->PushKey(DIK_D))
+		{
+			player->ChangeState(std::make_unique<PlayerMoveState>());
+		}
+	} else
+	{
+		player->ChangeState(std::make_unique<PlayerDeathState>());
 	}
+
 }
 
-void PlayerIdleState::Exit() {
+void PlayerIdleState::Exit(Player* player) {
 }
