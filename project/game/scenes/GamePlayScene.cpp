@@ -387,6 +387,32 @@ void GamePlayScene::Update() {
 			}
 		}
 	}
+	else
+	{
+		// ------------------------------------
+		// プレイヤー死亡時（ゲーム全体の動きを止め、プレイヤーをディゾルブ消滅させる）
+		// ------------------------------------
+		// レールカメラの動きを止める
+		if (railCamera_)
+		{
+			railCamera_->SetIsPlaying(false);
+		}
+
+		// プレイヤーの更新（ディゾルブを進行させる）
+		std::list<EnemyBase*> activeEnemies;
+		player_->Update(activeEnemies);
+
+		// ディゾルブ消滅が完了したら、ENTERキー/Aボタンでタイトルへ戻れるようにする
+		if (player_->GetDissolveThreshold() >= 1.0f)
+		{
+			Input* input = Input::GetInstance();
+			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A))
+			{
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+				return;
+			}
+		}
+	}
 
 	// ------------------------------------
 	// UI
@@ -529,7 +555,7 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 	switch (phase_)
 	{
 	case Phase::kLeady:
-		phase_
+		//phase_
 		break;
 	case Phase::kPlay:
 		break;

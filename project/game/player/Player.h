@@ -65,6 +65,7 @@ public:
 	// Dissolveをセット
 	void SetDissolveEnable(bool useDissolve) { useDissolve_ = useDissolve; }
 	void SetDissolveThreshold(float dissolveThreshold) { dissolveThreshold_ = dissolveThreshold; }
+	float GetDissolveThreshold() const { return dissolveThreshold_; }
 
 	// HPのゲッター・セッター
 	float GetHP() const { return hp_; }
@@ -104,6 +105,9 @@ public:
 
 	// 当たり判定の大きさ
 	static constexpr Vector3 kCollisionSize = {1.0f, 1.0f, 1.0f};
+
+	// ディゾルブ時間（秒）
+	static constexpr float kDissolveDuration = 1.5f;
 
 	// ------------------------------------
 	// 照準

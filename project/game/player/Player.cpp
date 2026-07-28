@@ -80,6 +80,7 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	// 生存フラグとディゾルブ設定の初期化
 	isAlive_ = true;
 	dissolveThreshold_ = 0.0f;
+	useDissolve_ = false;
 
 	model_->SetDissolveEnabled(false);
 	model_->SetDissolveThreshold(0.0f);
@@ -97,6 +98,14 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	
 	if (!isAlive_) {
+		// ディゾルブを進行させる
+		if (useDissolve_) {
+			dissolveThreshold_ += (1.0f / kDissolveDuration) * TimeManager::GetInstance()->GetDeltaTime();
+			if (dissolveThreshold_ > 1.0f) {
+				dissolveThreshold_ = 1.0f;
+			}
+		}
+
 		model_->SetDissolveEnabled(useDissolve_);
 		model_->SetDissolveThreshold(dissolveThreshold_);
 
@@ -106,8 +115,8 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 		// モデルの更新
 		model_->Update();
 
-		// 死亡時は既存の弾の更新のみ行う（新規攻撃は不可）
-		UpdateBullet(enemies);
+		// ゲーム全体の動きを止めるため、既存の弾の更新も停止する
+		// UpdateBullet(enemies);
 
 		// 前フレームのワールド座標を保存
 		prevWorldPos_ = worldTransform_.GetWorldPosition();
@@ -407,8 +416,10 @@ void Player::OnCollision() {
 		hp_ = 0.0f;
 		isAlive_ = false;
 		// ディゾルブ開始設定
-		model_->SetDissolveEnabled(true);
-		model_->SetDissolveThreshold(0.0f);
+		useDissolve_ = true;
+		dissolveThreshold_ = 0.0f;
+		model_->SetDissolveEnabled(useDissolve_);
+		model_->SetDissolveThreshold(dissolveThreshold_);
 	}
 }
 
