@@ -20,6 +20,12 @@ void ReplayManager::RecordFrame(const FrameState& state) {
     frames_.push_back(state);
 }
 
+void ReplayManager::Truncate(int frameCount) {
+    if (frameCount >= 0 && frameCount < static_cast<int>(frames_.size())) {
+        frames_.resize(frameCount);
+    }
+}
+
 bool ReplayManager::GetFrameState(int index, FrameState& outState) const {
     if (index < 0 || index >= static_cast<int>(frames_.size())) {
         return false;

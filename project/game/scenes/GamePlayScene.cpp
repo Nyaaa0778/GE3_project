@@ -190,6 +190,8 @@ void GamePlayScene::Update() {
 
 	// ソケットからテイクオーバー命令を受信したかチェック
 	if (socketServer_.CheckTakeover()) {
+		// テイクオーバーする時点の状態を強制的に適用する
+		RollbackToFrameState(playbackFrame_);
 		isPlayback_ = false;
 	}
 
@@ -492,6 +494,9 @@ void GamePlayScene::RollbackToFrameState(int frame) {
 
 		isBugTriggered_ = f.bugTrigger;
 		strcpy_s(bugMessage_, f.bugMsg.c_str());
+		
+		// 巻き戻し先のフレーム時間に合わせて敵の移動タイマーを同期する
+		enemyTimer_ = frame * 0.016f;
 	}
 }
 

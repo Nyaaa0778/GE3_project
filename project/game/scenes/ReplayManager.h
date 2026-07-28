@@ -44,6 +44,7 @@ public:
     void Clear();
     void SetSnapshot(const SnapshotData& snapshot);
     void RecordFrame(const FrameState& state);
+    void Truncate(int frameCount);
     
     bool SaveLog(const std::string& filepath);
     bool LoadLog(const std::string& filepath);
