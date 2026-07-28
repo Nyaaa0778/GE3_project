@@ -33,6 +33,9 @@ struct DebugState {
     bool* saveReplayNow;
     bool* loadReplayNow;
 
+    // Additional scene details
+    int* staticObjectCount;
+
     // Allocator functions to share the heap between EXE and DLL
     void* allocFunc;
     void* freeFunc;

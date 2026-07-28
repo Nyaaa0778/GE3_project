@@ -1,6 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
+cd /d "%~dp0.."
+
 echo [Game Builder] Setting up Visual Studio build environment...
 
 set "VS_PATH="

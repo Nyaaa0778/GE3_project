@@ -151,6 +151,8 @@ void GamePlayScene::Initialize() {
 	debugState_.saveReplayNow = &saveReplayNow_;
 	debugState_.loadReplayNow = &loadReplayNow_;
 
+	debugState_.staticObjectCount = &staticObjectCount_;
+
 	debugState_.allocFunc = (void*)allocFunc;
 	debugState_.freeFunc = (void*)freeFunc;
 	debugState_.allocUserData = userData;
@@ -169,10 +171,7 @@ void GamePlayScene::Update() {
 	// ソケットからリプレイログ自動ロード命令を受信したかチェック
 	std::string loadPath = "";
 	if (isSocketSyncEnabled_ && socketServer_.GetLoadReplayPath(loadPath)) {
-		if (replayManager_.LoadLog(loadPath)) {
-			isPlayback_ = true;
-			playbackFrame_ = 0;
-		}
+		LoadReplay(loadPath);
 	}
 
 	// ソケットからタイムライン同期命令を受信したかチェック
@@ -206,10 +205,7 @@ void GamePlayScene::Update() {
 		saveReplayNow_ = false;
 	}
 	if (loadReplayNow_) {
-		if (replayManager_.LoadLog("logs/play_log.json")) {
-			isPlayback_ = true;
-			playbackFrame_ = 0;
-		}
+		LoadReplay("logs/play_log.json");
 		loadReplayNow_ = false;
 	}
 
@@ -286,9 +282,6 @@ void GamePlayScene::Update() {
 	if (drawDebugUI_) {
 		drawDebugUI_(ImGui::GetCurrentContext(), &debugState_);
 	}
-
-	// データフローシミュレータウィンドウを描画
-	DrawDataFlowSimulator();
 #endif
 
 	// 共有変数で変更された値をエンジン側に適用する
@@ -353,17 +346,17 @@ void GamePlayScene::Finalize() {
 }
 
 void GamePlayScene::LoadDebugUI() {
-	if (std::filesystem::exists("DebugUI_temp.dll")) {
-		std::filesystem::remove("DebugUI_temp.dll");
+	if (std::filesystem::exists("debugUiBuild/debugUiTemp.dll")) {
+		std::filesystem::remove("debugUiBuild/debugUiTemp.dll");
 	}
 
-	if (std::filesystem::exists("DebugUI.dll")) {
+	if (std::filesystem::exists("debugUiBuild/debugUi.dll")) {
 		try {
-			std::filesystem::copy("DebugUI.dll", "DebugUI_temp.dll");
-			debugDll_ = LoadLibraryA("DebugUI_temp.dll");
+			std::filesystem::copy("debugUiBuild/debugUi.dll", "debugUiBuild/debugUiTemp.dll");
+			debugDll_ = LoadLibraryA("debugUiBuild/debugUiTemp.dll");
 			if (debugDll_) {
 				drawDebugUI_ = (DrawDebugUIFunc)GetProcAddress(debugDll_, "DrawDebugUI");
-				dllLastWriteTime_ = std::filesystem::last_write_time("DebugUI.dll");
+				dllLastWriteTime_ = std::filesystem::last_write_time("debugUiBuild/debugUi.dll");
 			}
 		} catch (...) {
 			// DLLがコンパイル中でロックされている場合は次回試行する
@@ -380,8 +373,8 @@ void GamePlayScene::UnloadDebugUI() {
 }
 
 void GamePlayScene::UpdateDLL() {
-	if (std::filesystem::exists("DebugUI.dll")) {
-		auto writeTime = std::filesystem::last_write_time("DebugUI.dll");
+	if (std::filesystem::exists("debugUiBuild/debugUi.dll")) {
+		auto writeTime = std::filesystem::last_write_time("debugUiBuild/debugUi.dll");
 		if (writeTime != dllLastWriteTime_) {
 			UnloadDebugUI();
 			std::this_thread::sleep_for(std::chrono::milliseconds(100)); // ビルド書き込み完了を少し待つ
@@ -433,6 +426,7 @@ void GamePlayScene::CaptureStateToVars() {
 	isSocketConnected_ = socketServer_.IsConnected();
 	socketPort_ = socketServer_.GetPort();
 	totalFrames_ = replayManager_.GetTotalFrames();
+	staticObjectCount_ = static_cast<int>(replayManager_.GetSnapshot().staticObjects.size());
 }
 
 void GamePlayScene::ApplyStateFromVars() {
@@ -440,10 +434,7 @@ void GamePlayScene::ApplyStateFromVars() {
 	obj_->SetRotation({playerRot_[0], playerRot_[1], playerRot_[2]});
 	obj_->SetColor({playerColor_[0], playerColor_[1], playerColor_[2], playerColor_[3]});
 
-	activeThreadNodes_.clear();
-	for (int i = 0; i < threadNodeCount_ && i < 100; ++i) {
-		activeThreadNodes_.push_back({threadNodes_[i * 3 + 0], threadNodes_[i * 3 + 1], threadNodes_[i * 3 + 2]});
-	}
+
 
 	for (int i = 0; i < enemyCount_ && i < 5; ++i) {
 		enemies_[i]->SetPosition({enemyPositions_[i * 3 + 0], enemyPositions_[i * 3 + 1], enemyPositions_[i * 3 + 2]});
@@ -500,84 +491,11 @@ void GamePlayScene::RollbackToFrameState(int frame) {
 	}
 }
 
-void GamePlayScene::DrawDataFlowSimulator() {
-	ImGui::Begin("Blender Data Flow Simulator");
-	ImGui::Text("Interactive Flow of Replay & Takeover Sync");
-	ImGui::Separator();
-
-	// Node 1: Game Engine Logger
-	ImGui::BeginChild("EngineNode", ImVec2(220, 160), true);
-	ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "[1] Game Engine (C++)");
-	ImGui::Text("State: %s", isPlayback_ ? "ROLLBACK PLAYBACK" : "LIVE RECORDING");
-	ImGui::Text("Total Frames: %d", totalFrames_);
-	ImGui::Text("Current Frame: %d", isPlayback_ ? playbackFrame_ : totalFrames_);
-	
-	if (ImGui::Button("Explain Logger")) {
-		ImGui::OpenPopup("ExplainLoggerPopup");
+void GamePlayScene::LoadReplay(const std::string& path) {
+	if (replayManager_.LoadLog(path)) {
+		isPlayback_ = true;
+		playbackFrame_ = 0;
 	}
-	ImGui::EndChild();
-
-	ImGui::SameLine();
-	ImGui::Text(" ----> ");
-	ImGui::SameLine();
-
-	// Node 2: JSON Log File
-	ImGui::BeginChild("JsonNode", ImVec2(220, 160), true);
-	ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.2f, 1.0f), "[2] replay_log.json");
-	ImGui::Text("Snapshot Objects: %d", (int)replayManager_.GetSnapshot().staticObjects.size());
-	ImGui::Text("Enemies Tracked: %d", enemyCount_);
-	ImGui::Text("Max Thread Nodes: 100");
-	if (ImGui::Button("Explain Log JSON")) {
-		ImGui::OpenPopup("ExplainJSONPopup");
-	}
-	ImGui::EndChild();
-
-	ImGui::SameLine();
-	ImGui::Text(" ----> ");
-	ImGui::SameLine();
-
-	// Node 3: Blender Python Importer
-	ImGui::BeginChild("BlenderNode", ImVec2(220, 160), true);
-	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.1f, 1.0f), "[3] Blender 3D (Python)");
-	ImGui::Text("Sync TCP Socket: %s", isSocketConnected_ ? "CONNECTED" : "DISCONNECTED");
-	ImGui::Text("Curve Object: PlayerThread");
-	if (ImGui::Button("Explain Addon")) {
-		ImGui::OpenPopup("ExplainBlenderPopup");
-	}
-	ImGui::EndChild();
-
-	ImGui::Separator();
-	
-	// Bidirectional Socket connection visual flow
-	if (isSocketConnected_) {
-		ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "LIVE SYNC ACTIVE: Blender Timeline <==== (TCP) ====> Game Replay Engine");
-	} else {
-		ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Sync Status: Waiting for Blender socket connection on port 12345...");
-	}
-
-	// Explanation Popups
-	if (ImGui::BeginPopup("ExplainLoggerPopup")) {
-		ImGui::Text("Phase 1 (C++ side):");
-		ImGui::BulletText("At stage start, captures coordinates of fixed objects (snapshot).");
-		ImGui::BulletText("Every frame, records player transform, thread coordinates, enemy details, and flags.");
-		ImGui::BulletText("Stores list in memory and writes to logs/play_log.json on save.");
-		ImGui::EndPopup();
-	}
-	if (ImGui::BeginPopup("ExplainJSONPopup")) {
-		ImGui::Text("Replay Data Format:");
-		ImGui::BulletText("`snapshot`: Fixed meshes (eg. eggs, traps, terrain) coordinate structures.");
-		ImGui::BulletText("`frames`: Array of frame-by-frame updates (player, thread curve nodes, enemy HP/animations).");
-		ImGui::BulletText("`events`: Event triggers (eg. bugs, collisions) flagged to jump to instantly.");
-		ImGui::EndPopup();
-	}
-	if (ImGui::BeginPopup("ExplainBlenderPopup")) {
-		ImGui::Text("Phase 2 & 3 (Blender side):");
-		ImGui::BulletText("Reconstructs the stage using bpy primitives based on the snapshot.");
-		ImGui::BulletText("Inserts location/rotation keyframes on timeline for animation.");
-		ImGui::BulletText("Updates curve control points on frame change pre-handler.");
-		ImGui::BulletText("Sends socket message `FRAME <index>` to sync back to the C++ engine.");
-		ImGui::EndPopup();
-	}
-
-	ImGui::End();
 }
+
+

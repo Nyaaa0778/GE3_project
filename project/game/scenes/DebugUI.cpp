@@ -1,6 +1,8 @@
 #include <imgui.h>
 #include "DebugState.h"
 
+void DrawDataFlowSimulator(DebugState* state);
+
 extern "C" __declspec(dllexport) void DrawDebugUI(ImGuiContext* ctx, DebugState* state) {
     if (!ctx || !state) return;
     ImGui::SetCurrentContext(ctx);
@@ -89,6 +91,90 @@ extern "C" __declspec(dllexport) void DrawDebugUI(ImGuiContext* ctx, DebugState*
         if (ImGui::Button("Trigger Bug Now")) {
             *(state->triggerBugNow) = true;
         }
+    }
+
+    DrawDataFlowSimulator(state);
+
+    ImGui::End();
+}
+
+void DrawDataFlowSimulator(DebugState* state) {
+    ImGui::Begin("Blender Data Flow Simulator");
+    ImGui::Text("Interactive Flow of Replay & Takeover Sync");
+    ImGui::Separator();
+
+    // Node 1: Game Engine Logger
+    ImGui::BeginChild("EngineNode", ImVec2(220, 160), true);
+    ImGui::TextColored(ImVec4(0.3f, 0.8f, 1.0f, 1.0f), "[1] Game Engine (C++)");
+    ImGui::Text("State: %s", *(state->isPlayback) ? "ROLLBACK PLAYBACK" : "LIVE RECORDING");
+    ImGui::Text("Total Frames: %d", *(state->totalFrames));
+    ImGui::Text("Current Frame: %d", *(state->isPlayback) ? *(state->playbackFrame) : *(state->totalFrames));
+    
+    if (ImGui::Button("Explain Logger")) {
+        ImGui::OpenPopup("ExplainLoggerPopup");
+    }
+    ImGui::EndChild();
+
+    ImGui::SameLine();
+    ImGui::Text(" ----> ");
+    ImGui::SameLine();
+
+    // Node 2: JSON Log File
+    ImGui::BeginChild("JsonNode", ImVec2(220, 160), true);
+    ImGui::TextColored(ImVec4(0.9f, 0.8f, 0.2f, 1.0f), "[2] replay_log.json");
+    ImGui::Text("Snapshot Objects: %d", *(state->staticObjectCount));
+    ImGui::Text("Enemies Tracked: %d", *(state->enemyCount));
+    ImGui::Text("Max Thread Nodes: 100");
+    if (ImGui::Button("Explain Log JSON")) {
+        ImGui::OpenPopup("ExplainJSONPopup");
+    }
+    ImGui::EndChild();
+
+    ImGui::SameLine();
+    ImGui::Text(" ----> ");
+    ImGui::SameLine();
+
+    // Node 3: Blender Python Importer
+    ImGui::BeginChild("BlenderNode", ImVec2(220, 160), true);
+    ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.1f, 1.0f), "[3] Blender 3D (Python)");
+    ImGui::Text("Sync TCP Socket: %s", *(state->isSocketConnected) ? "CONNECTED" : "DISCONNECTED");
+    ImGui::Text("Curve Object: PlayerThread");
+    if (ImGui::Button("Explain Addon")) {
+        ImGui::OpenPopup("ExplainBlenderPopup");
+    }
+    ImGui::EndChild();
+
+    ImGui::Separator();
+    
+    // Bidirectional Socket connection visual flow
+    if (*(state->isSocketConnected)) {
+        ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.2f, 1.0f), "LIVE SYNC ACTIVE: Blender Timeline <==== (TCP) ====> Game Replay Engine");
+    } else {
+        ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "Sync Status: Waiting for Blender socket connection on port 12345...");
+    }
+
+    // Explanation Popups
+    if (ImGui::BeginPopup("ExplainLoggerPopup")) {
+        ImGui::Text("Phase 1 (C++ side):");
+        ImGui::BulletText("At stage start, captures coordinates of fixed objects (snapshot).");
+        ImGui::BulletText("Every frame, records player transform, thread coordinates, enemy details, and flags.");
+        ImGui::BulletText("Stores list in memory and writes to logs/play_log.json on save.");
+        ImGui::EndPopup();
+    }
+    if (ImGui::BeginPopup("ExplainJSONPopup")) {
+        ImGui::Text("Replay Data Format:");
+        ImGui::BulletText("`snapshot`: Fixed meshes (eg. eggs, traps, terrain) coordinate structures.");
+        ImGui::BulletText("`frames`: Array of frame-by-frame updates (player, thread curve nodes, enemy HP/animations).");
+        ImGui::BulletText("`events`: Event triggers (eg. bugs, collisions) flagged to jump to instantly.");
+        ImGui::EndPopup();
+    }
+    if (ImGui::BeginPopup("ExplainBlenderPopup")) {
+        ImGui::Text("Phase 2 & 3 (Blender side):");
+        ImGui::BulletText("Reconstructs the stage using bpy primitives based on the snapshot.");
+        ImGui::BulletText("Inserts location/rotation keyframes on timeline for animation.");
+        ImGui::BulletText("Updates curve control points on frame change pre-handler.");
+        ImGui::BulletText("Sends socket message `FRAME <index>` to sync back to the C++ engine.");
+        ImGui::EndPopup();
     }
 
     ImGui::End();

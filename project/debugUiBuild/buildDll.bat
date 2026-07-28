@@ -1,6 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
+cd /d "%~dp0.."
+
 echo [DLL Builder] Setting up Visual Studio build environment...
 
 set "VS_PATH="
@@ -34,20 +36,27 @@ if "%1"=="debug" (
     set "OPTS=/MT /O2"
 )
 
-echo [DLL Builder] Compiling DebugUI.dll...
+echo [DLL Builder] Compiling debugUi.dll...
+
+if not exist debugUiBuild mkdir debugUiBuild
 
 cl.exe /LD %OPTS% /EHsc /DUSE_IMGUI /I"externals/imgui" /I"game/scenes" ^
+    /Fo"debugUiBuild/" ^
+    /Fd"debugUiBuild/" ^
     "game/scenes/DebugUI.cpp" ^
     "externals/imgui/imgui.cpp" ^
     "externals/imgui/imgui_draw.cpp" ^
     "externals/imgui/imgui_widgets.cpp" ^
     "externals/imgui/imgui_tables.cpp" ^
-    /link /OUT:DebugUI.dll
+    /link /OUT:debugUiBuild/debugUi.dll ^
+    /IMPLIB:debugUiBuild/debugUi.lib ^
+    /PDB:debugUiBuild/debugUi.pdb ^
+    /ILK:debugUiBuild/debugUi.ilk
 
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Compilation failed with error code %ERRORLEVEL%
     exit /b %ERRORLEVEL%
 )
 
-echo [DLL Builder] Successfully built: DebugUI.dll
+echo [DLL Builder] Successfully built: debugUiBuild/debugUi.dll
 exit /b 0

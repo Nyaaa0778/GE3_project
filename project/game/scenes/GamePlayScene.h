@@ -43,9 +43,9 @@ private:
 	void ApplyStateFromVars();
 	void RecordFrameState();
 	void RollbackToFrameState(int frame);
+	void LoadReplay(const std::string& path);
 
-	// シミュレータの描画
-	void DrawDataFlowSimulator();
+
 
 private:
 	// モデル
@@ -90,6 +90,7 @@ private:
 	bool isSocketSyncEnabled_ = true;
 	bool isSocketConnected_ = false;
 	int socketPort_ = 12345;
+	int staticObjectCount_ = 0;
 
 	bool isBugTriggered_ = false;
 	char bugMessage_[256] = "";
