@@ -153,6 +153,31 @@ void GamePlayScene::Initialize() {
 
 	debugState_.staticObjectCount = &staticObjectCount_;
 
+	// 汎用オブジェクト同期システム初期化と登録
+	debugSync_.BindToState(debugState_);
+	debugSync_.Register(obj_.get(), "Player", "Player");
+	for (size_t i = 0; i < enemies_.size(); ++i) {
+		debugSync_.Register(enemies_[i].get(), "Enemy_" + std::to_string(i), "Enemy");
+	}
+	for (size_t i = 0; i < objects_.size(); ++i) {
+		debugSync_.Register(objects_[i].get(), "Obj_" + std::to_string(i), "Object");
+	}
+
+	// [テスト] 新しい障害物の生成とデバッグシステムへの登録
+	for (int i = 0; i < 2; ++i) {
+		auto obs = std::make_unique<Object3d>();
+		obs->Initialize("cube");
+		obs->SetPosition({ (i == 0 ? -3.0f : 3.0f), 0.5f, 3.0f });
+		obs->SetScale({ 1.0f, 1.0f, 1.0f });
+		obs->SetCamera(camera_.get());
+		obs->SetColor({ 0.5f, 0.5f, 0.5f, 1.0f }); // グレーの立方体
+		
+		// 登録処理
+		debugSync_.Register(obs.get(), "Obstacle_" + std::to_string(i), "Obstacle");
+		
+		obstacles_.push_back(std::move(obs));
+	}
+
 	debugState_.allocFunc = (void*)allocFunc;
 	debugState_.freeFunc = (void*)freeFunc;
 	debugState_.allocUserData = userData;
@@ -303,6 +328,11 @@ void GamePlayScene::Update() {
 		enemy->Update();
 	}
 
+	// 新しい障害物の更新
+	for (auto& obs : obstacles_) {
+		obs->Update();
+	}
+
 	// 糸（スレッド）表示用球体の更新
 	while (threadSpherePool_.size() < activeThreadNodes_.size()) {
 		auto sphere = std::make_unique<Object3d>();
@@ -322,20 +352,25 @@ void GamePlayScene::Draw() {
 	// プレイヤー描画
 	obj_->Draw();
 
-	// 静的背景オブジェクト描画
-	for (auto& obj : objects_) {
-		obj->Draw();
-	}
+	//// 静的背景オブジェクト描画
+	//for (auto& obj : objects_) {
+	//	obj->Draw();
+	//}
 
 	// 敵オブジェクト描画
 	for (auto& enemy : enemies_) {
 		enemy->Draw();
 	}
 
-	// 糸（スレッド）描画
-	for (size_t i = 0; i < activeThreadNodes_.size(); ++i) {
-		threadSpherePool_[i]->Draw();
-	}
+	//// 新しい障害物の描画
+	//for (auto& obs : obstacles_) {
+	//	obs->Draw();
+	//}
+
+	//// 糸（スレッド）描画
+	//for (size_t i = 0; i < activeThreadNodes_.size(); ++i) {
+	//	threadSpherePool_[i]->Draw();
+	//}
 }
 
 void GamePlayScene::Finalize() {
@@ -427,6 +462,9 @@ void GamePlayScene::CaptureStateToVars() {
 	socketPort_ = socketServer_.GetPort();
 	totalFrames_ = replayManager_.GetTotalFrames();
 	staticObjectCount_ = static_cast<int>(replayManager_.GetSnapshot().staticObjects.size());
+
+	// 汎用オブジェクトのキャプチャ
+	debugSync_.Capture();
 }
 
 void GamePlayScene::ApplyStateFromVars() {
@@ -440,6 +478,9 @@ void GamePlayScene::ApplyStateFromVars() {
 		enemies_[i]->SetPosition({enemyPositions_[i * 3 + 0], enemyPositions_[i * 3 + 1], enemyPositions_[i * 3 + 2]});
 		enemies_[i]->SetRotation({enemyRotations_[i * 3 + 0], enemyRotations_[i * 3 + 1], enemyRotations_[i * 3 + 2]});
 	}
+
+	// 汎用オブジェクトの適用
+	debugSync_.Apply();
 }
 
 void GamePlayScene::RecordFrameState() {
@@ -463,6 +504,9 @@ void GamePlayScene::RecordFrameState() {
 	f.bugTrigger = isBugTriggered_;
 	f.bugMsg = bugMessage_;
 
+	// 汎用オブジェクトの記録
+	f.objects = debugSync_.ExportFrameState();
+
 	replayManager_.RecordFrame(f);
 }
 
@@ -485,6 +529,9 @@ void GamePlayScene::RollbackToFrameState(int frame) {
 
 		isBugTriggered_ = f.bugTrigger;
 		strcpy_s(bugMessage_, f.bugMsg.c_str());
+		
+		// 汎用オブジェクトの復元
+		debugSync_.ImportFrameState(f.objects);
 		
 		// 巻き戻し先のフレーム時間に合わせて敵の移動タイマーを同期する
 		enemyTimer_ = frame * 0.016f;

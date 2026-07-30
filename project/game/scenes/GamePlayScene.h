@@ -14,6 +14,7 @@
 
 #include "ReplayManager.h"
 #include "DebugState.h"
+#include "DebugSyncSystem.h"
 
 class Object3d;
 class Camera;
@@ -61,10 +62,14 @@ private:
 	// 敵オブジェクトのリスト (オブジェクトを特定しやすくするため個別に保持)
 	std::vector<std::unique_ptr<Object3d>> enemies_;
 
+	// 新規デバッグ用障害物リスト (テスト用)
+	std::vector<std::unique_ptr<Object3d>> obstacles_;
+
 	// --- デバッグ＆連携システム用メンバ ---
 	ReplayManager replayManager_;
 	SocketServer socketServer_;
 	DebugState debugState_;
+	DebugSyncSystem debugSync_; // General object sync manager
 	HMODULE debugDll_ = nullptr;
 	std::filesystem::file_time_type dllLastWriteTime_;
 	typedef void (*DrawDebugUIFunc)(ImGuiContext*, DebugState*);

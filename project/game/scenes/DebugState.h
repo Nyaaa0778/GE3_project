@@ -1,5 +1,19 @@
 #pragma once
 
+struct DebugObjectState {
+    char name[64];
+    char typeName[64];
+    float pos[3];
+    float rot[3];
+    float scale[3];
+    bool isAlive;
+
+    // Custom parameters
+    int customFloatCount;
+    float customFloats[4];
+    char customFloatNames[4][32];
+};
+
 struct DebugState {
     // Player state
     float* playerPos;      // float[3]
@@ -35,6 +49,10 @@ struct DebugState {
 
     // Additional scene details
     int* staticObjectCount;
+
+    // Generic dynamic objects (New sync system)
+    int* objectCount;
+    DebugObjectState* objects; // array of DebugObjectState (capacity defined on EXE side)
 
     // Allocator functions to share the heap between EXE and DLL
     void* allocFunc;

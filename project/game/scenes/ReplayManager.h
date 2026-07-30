@@ -4,6 +4,7 @@
 #include <json.hpp>
 #include "Vector3.h"
 #include "Vector4.h"
+#include "DebugState.h"
 
 struct SnapshotObject {
     std::string name;
@@ -32,9 +33,11 @@ struct FrameState {
     Vector4 playerColor;
     std::vector<Vector3> threadNodes;
     std::vector<EnemyFrameState> enemies;
+    std::vector<DebugObjectState> objects; // New generic dynamic objects list
     bool bugTrigger;
     std::string bugMsg;
 };
+
 
 class ReplayManager {
 public:

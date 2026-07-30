@@ -82,6 +82,30 @@ bool ReplayManager::SaveLog(const std::string& filepath) {
         }
         jFrame["enemies"] = jEnemies;
 
+        json jObjects = json::array();
+        for (const auto& obj : f.objects) {
+            json jObj = json::object();
+            jObj["name"] = obj.name;
+            jObj["type"] = obj.typeName;
+            jObj["translation"] = { obj.pos[0], obj.pos[1], obj.pos[2] };
+            jObj["rotation"] = { obj.rot[0], obj.rot[1], obj.rot[2] };
+            jObj["scaling"] = { obj.scale[0], obj.scale[1], obj.scale[2] };
+            jObj["is_alive"] = obj.isAlive;
+            
+            if (obj.customFloatCount > 0) {
+                json jCustom = json::array();
+                for (int p = 0; p < obj.customFloatCount; p++) {
+                    json jParam = json::object();
+                    jParam["name"] = obj.customFloatNames[p];
+                    jParam["value"] = obj.customFloats[p];
+                    jCustom.push_back(jParam);
+                }
+                jObj["custom_floats"] = jCustom;
+            }
+            jObjects.push_back(jObj);
+        }
+        jFrame["objects"] = jObjects;
+
         json jEvents = json::object();
         jEvents["bug_trigger"] = f.bugTrigger;
         jEvents["msg"] = f.bugMsg;
@@ -169,6 +193,45 @@ bool ReplayManager::LoadLog(const std::string& filepath) {
                     e.hp = jEnemy.value("hp", 0.0f);
                     e.animState = jEnemy.value("anim_state", "");
                     f.enemies.push_back(e);
+                }
+            }
+
+            if (jFrame.contains("objects")) {
+                for (const auto& jObj : jFrame["objects"]) {
+                    DebugObjectState obj = {};
+                    strcpy_s(obj.name, jObj.value("name", "").c_str());
+                    strcpy_s(obj.typeName, jObj.value("type", "").c_str());
+                    
+                    auto t = jObj["translation"];
+                    obj.pos[0] = t[0].get<float>();
+                    obj.pos[1] = t[1].get<float>();
+                    obj.pos[2] = t[2].get<float>();
+                    
+                    auto r = jObj["rotation"];
+                    obj.rot[0] = r[0].get<float>();
+                    obj.rot[1] = r[1].get<float>();
+                    obj.rot[2] = r[2].get<float>();
+                    
+                    auto s = jObj["scaling"];
+                    obj.scale[0] = s[0].get<float>();
+                    obj.scale[1] = s[1].get<float>();
+                    obj.scale[2] = s[2].get<float>();
+                    
+                    obj.isAlive = jObj.value("is_alive", true);
+                    
+                    if (jObj.contains("custom_floats")) {
+                        int pCount = 0;
+                        for (const auto& jParam : jObj["custom_floats"]) {
+                            if (pCount >= 4) break;
+                            strcpy_s(obj.customFloatNames[pCount], jParam.value("name", "").c_str());
+                            obj.customFloats[pCount] = jParam.value("value", 0.0f);
+                            pCount++;
+                        }
+                        obj.customFloatCount = pCount;
+                    } else {
+                        obj.customFloatCount = 0;
+                    }
+                    f.objects.push_back(obj);
                 }
             }
 

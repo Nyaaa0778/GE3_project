@@ -55,6 +55,31 @@ extern "C" __declspec(dllexport) void DrawDebugUI(ImGuiContext* ctx, DebugState*
         }
     }
 
+    // Dynamic Objects (New Sync System)
+    if (state->objectCount && state->objects) {
+        if (ImGui::CollapsingHeader("Active Scene Objects (Dynamic)", ImGuiTreeNodeFlags_DefaultOpen)) {
+            int objectCount = *(state->objectCount);
+            ImGui::Text("Registered Objects: %d", objectCount);
+            for (int i = 0; i < objectCount; i++) {
+                DebugObjectState& obj = state->objects[i];
+                if (!obj.isAlive) continue;
+
+                ImGui::PushID(i);
+                if (ImGui::TreeNode(obj.name, "%s [%s]", obj.name, obj.typeName)) {
+                    ImGui::DragFloat3("Position", obj.pos, 0.1f);
+                    ImGui::DragFloat3("Rotation", obj.rot, 0.05f);
+                    ImGui::DragFloat3("Scale", obj.scale, 0.05f);
+
+                    for (int p = 0; p < obj.customFloatCount; p++) {
+                        ImGui::SliderFloat(obj.customFloatNames[p], &obj.customFloats[p], 0.0f, 100.0f);
+                    }
+                    ImGui::TreePop();
+                }
+                ImGui::PopID();
+            }
+        }
+    }
+
     // Replay / Timeline Controls
     if (ImGui::CollapsingHeader("Replay / Timeline Control", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Replay Playback Mode", state->isPlayback);
