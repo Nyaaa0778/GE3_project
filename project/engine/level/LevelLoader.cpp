@@ -134,6 +134,13 @@ void LevelLoader::ParseObject(const nlohmann::json& object, LevelData* levelData
             spawnerData.entityType = object["name"].get<std::string>();
         }
 
+        // 出現時間を読み込む
+        if (object.contains("spawn_time")) {
+            spawnerData.spawnTime = object["spawn_time"].get<float>();
+        } else {
+            spawnerData.spawnTime = 0.0f;
+        }
+
         const nlohmann::json& transform = object["transform"];
         // 平行移動の数値を書き込む
         spawnerData.translation = {

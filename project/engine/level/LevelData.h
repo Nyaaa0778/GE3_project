@@ -28,6 +28,7 @@ struct LevelData {
 		Vector3 translation;
 		Vector3 rotation;
 		Vector3 scaling = { 1.0f, 1.0f, 1.0f };
+		float spawnTime = 0.0f;
 	};
 
 	std::vector<ObjectData> objects;

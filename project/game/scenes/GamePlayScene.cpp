@@ -37,7 +37,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("stage"));
+	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -53,7 +53,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "stage");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -114,17 +114,8 @@ void GamePlayScene::Initialize() {
 	enemyModel_->SetCamera(camera_.get());
 	enemyModel_->SetLightingType(LightingType::kHalfLambert);
 
-	// Spawnerデータから "Enemy" という名前が含まれるものをすべて取得して生成
-	std::vector<LevelData::SpawnerData> enemySpawners = level_->GetSpawners("Enemy");
-	for (const auto& spawnerData : enemySpawners)
-	{
-		auto enemy = std::make_unique<RusherEnemy>();
-		enemy->Initialize(enemyModel_.get(), camera_.get(), spawnerData.translation, player_.get());
-		enemy->GetWorldTransform().rotation = spawnerData.rotation;
-		enemy->GetWorldTransform().scale = spawnerData.scaling;
-
-		enemies_.push_back(std::move(enemy));
-	}
+	// Spawnerデータから "Enemy" という名前が含まれるものをすべて取得して出現待ちリストに格納
+	pendingEnemies_ = level_->GetSpawners("Enemy");
 
 	// ------------------------------------
 	// 天球
@@ -293,6 +284,29 @@ void GamePlayScene::Update() {
 		// ------------------------------------
 		if (!isGoalReached_)
 		{
+			// 敵の発生タイミング判定 (タイムライン制御)
+			if (railCamera_)
+			{
+				float currentSplineTime = railCamera_->GetSplineTime();
+				for (auto it = pendingEnemies_.begin(); it != pendingEnemies_.end(); )
+				{
+					if (currentSplineTime >= it->spawnTime)
+					{
+						auto enemy = std::make_unique<RusherEnemy>();
+						enemy->Initialize(enemyModel_.get(), camera_.get(), it->translation, player_.get());
+						enemy->GetWorldTransform().rotation = it->rotation;
+						enemy->GetWorldTransform().scale = it->scaling;
+						enemies_.push_back(std::move(enemy));
+
+						it = pendingEnemies_.erase(it);
+					}
+					else
+					{
+						++it;
+					}
+				}
+			}
+
 			std::list<EnemyBase*> activeEnemies;
 			for (const auto& enemy : enemies_)
 			{

@@ -2,6 +2,7 @@
 
 #include "IScene.h"
 #include "WorldTransform.h"
+#include "LevelData.h"
 
 #include <memory>
 #include <vector>
@@ -93,6 +94,7 @@ private:
 
 	std::unique_ptr<Object3d> enemyModel_;
 	std::list<std::unique_ptr<EnemyBase>> enemies_;
+	std::vector<LevelData::SpawnerData> pendingEnemies_;
 
 	// ------------------------------------
 	// エフェクト
