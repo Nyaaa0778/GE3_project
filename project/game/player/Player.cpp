@@ -90,6 +90,10 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 	// ディゾルブ用のマスクテクスチャをあらかじめ読み込んで設定
 	TextureManager::GetInstance()->LoadTexture("resources/sprites/noise0.png");
 	model_->SetDissolveNoiseTexture("resources/sprites/noise0.png");
+
+	// プールの初期化
+	normalBulletPool_.Initialize(kMaxBullets);
+	homingBulletPool_.Initialize(kMaxBullets);
 }
 
 void Player::Update(const std::list<EnemyBase*>& enemies) {
@@ -212,13 +216,21 @@ void Player::UpdateBullet(const std::list<EnemyBase*>& enemies) {
 	}
 
 	// 弾の更新
-	for (const auto& bullet : bullets_) {
+	for (IPlayerBullet* bullet : bullets_) {
 		bullet->Update(enemies);
 	}
 
-	bullets_.remove_if([](const std::unique_ptr<IPlayerBullet>& bullet) {
-		// 条件に一致すれば true を返すだけで、自動的に delete される
-		return bullet->IsDead();
+	bullets_.remove_if([this](IPlayerBullet* bullet) {
+		if (bullet->IsDead()) {
+			// 型を判定して適切なプールに返却
+			if (auto* normal = dynamic_cast<NormalPlayerBullet*>(bullet)) {
+				normalBulletPool_.Release(normal);
+			} else if (auto* homing = dynamic_cast<HomingPlayerBullet*>(bullet)) {
+				homingBulletPool_.Release(homing);
+			}
+			return true;
+		}
+		return false;
 	});
 }
 
@@ -237,7 +249,7 @@ void Player::Attack() {
 		if(cooldownTimer_ <= 0.0f)
 		{
 			bool canShoot = false;
-			std::unique_ptr<IPlayerBullet> newBullet;
+			NormalPlayerBullet* newBullet = nullptr;
 			Vector3 spawnPos = worldTransform_.GetWorldPosition();
 			Vector3 shootDir = {};
 
@@ -257,15 +269,17 @@ void Player::Attack() {
 						// 弾の速度（自機の速度＋射撃方向の弾速）
 						Vector3 targetBulletVelocity = playerFrameVelocity + targetShootDir * kBulletSpeed;
 
-						// ホーミング弾を生成・初期化
-						auto homingBullet = std::make_unique<HomingPlayerBullet>();
-						PlayerBulletParam param;
-						param.camera = camera_;
-						param.position = spawnPos;
-						param.velocity = targetBulletVelocity;
-						param.target = target;
-						homingBullet->Initialize(param);
-						bullets_.push_back(std::move(homingBullet));
+						// ホーミング弾をプールから取得・初期化
+						HomingPlayerBullet* homingBullet = homingBulletPool_.Acquire();
+						if (homingBullet) {
+							PlayerBulletParam param;
+							param.camera = camera_;
+							param.position = spawnPos;
+							param.velocity = targetBulletVelocity;
+							param.target = target;
+							homingBullet->Initialize(param);
+							bullets_.push_back(homingBullet);
+						}
 
 						// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
 						Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
@@ -329,19 +343,21 @@ void Player::Attack() {
 				// 弾の速度（自機の速度＋射撃方向の弾速）
 				bulletVelocity_ = playerFrameVelocity + shootDir * kBulletSpeed;
 
-				// 通常の弾を生成・初期化
-				newBullet = std::make_unique<NormalPlayerBullet>();
-				PlayerBulletParam param;
-				param.camera = camera_;
-				param.position = spawnPos;
-				param.velocity = bulletVelocity_;
-				newBullet->Initialize(param);
-				canShoot = true;
+				// 通常の弾をプールから取得・初期化
+				newBullet = normalBulletPool_.Acquire();
+				if (newBullet) {
+					PlayerBulletParam param;
+					param.camera = camera_;
+					param.position = spawnPos;
+					param.velocity = bulletVelocity_;
+					newBullet->Initialize(param);
+					canShoot = true;
+				}
 			}
 
-			if (canShoot) {
+			if (canShoot && newBullet) {
 				// 弾を登録する
-				bullets_.push_back(std::move(newBullet));
+				bullets_.push_back(newBullet);
 
 				// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
 				Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;

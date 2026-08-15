@@ -10,6 +10,9 @@
 
 #include "Collider.h"
 #include "Reticle.h"
+#include "ObjectPool.h"
+#include "NormalPlayerBullet.h"
+#include "HomingPlayerBullet.h"
 
 class Object3d;
 class Camera;
@@ -17,7 +20,6 @@ class Primitive;
 class Sprite;
 
 class LockOn;
-class IPlayerBullet;
 class IPlayerState;
 
 class EnemyBase;
@@ -60,7 +62,7 @@ public:
 	bool GetIsLockOnMode() const { return isLockOnMode_; }
 
 	// 弾リストのゲッター
-	const std::list<std::unique_ptr<IPlayerBullet>>& GetBullets() const { return bullets_; }
+	const std::list<IPlayerBullet*>& GetBullets() const { return bullets_; }
 
 	// Dissolveをセット
 	void SetDissolveEnable(bool useDissolve) { useDissolve_ = useDissolve; }
@@ -134,7 +136,12 @@ public:
 	// 弾
 	// ------------------------------------
 
-	std::list<std::unique_ptr<IPlayerBullet>> bullets_;
+	std::list<IPlayerBullet*> bullets_;
+
+	ObjectPool<NormalPlayerBullet> normalBulletPool_;
+	ObjectPool<HomingPlayerBullet> homingBulletPool_;
+
+	static constexpr size_t kMaxBullets = 50;
 
 	Vector3 bulletVelocity_ = {0.0f, 0.0f, 0.0f};
 	static constexpr float kBulletSpeed = 7.0f;

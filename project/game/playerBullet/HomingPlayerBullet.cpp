@@ -7,8 +7,10 @@
 using namespace MathUtility;
 
 void HomingPlayerBullet::Initialize(const PlayerBulletParam& param) {
-	model_ = std::make_unique<Object3d>();
-	model_->Initialize("sphere");
+	if (!model_) {
+		model_ = std::make_unique<Object3d>();
+		model_->Initialize("sphere");
+	}
 	model_->SetCamera(param.camera);
 
 	worldTransform_.Initialize();
@@ -24,6 +26,7 @@ void HomingPlayerBullet::Initialize(const PlayerBulletParam& param) {
 	
 	target_ = param.target;
 	deathTimer_ = kHomingLifeTime;
+	isDead_ = false;
 }
 
 void HomingPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {

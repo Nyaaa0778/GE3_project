@@ -27,7 +27,11 @@ public:
 	Vector3 GetPrevWorldPosition() override;
 
 public:
+	IPlayerBullet() = default;
 	virtual ~IPlayerBullet() override = default;
+
+	IPlayerBullet(IPlayerBullet&&) noexcept = default;
+	IPlayerBullet& operator=(IPlayerBullet&&) noexcept = default;
 
 	virtual void Initialize(const PlayerBulletParam& param) = 0;
 

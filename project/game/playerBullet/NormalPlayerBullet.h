@@ -7,6 +7,9 @@ public:
 	NormalPlayerBullet() = default;
 	~NormalPlayerBullet() override = default;
 
+	NormalPlayerBullet(NormalPlayerBullet&&) noexcept = default;
+	NormalPlayerBullet& operator=(NormalPlayerBullet&&) noexcept = default;
+
 	void Initialize(const PlayerBulletParam& param) override;
 
 	void Update(const std::list<EnemyBase*>& enemies) override;

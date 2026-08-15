@@ -539,7 +539,7 @@ void GamePlayScene::CheckAllCollisions() {
 		for (auto& enemy : enemies_)
 		{
 			if (!enemy->IsAlive()) continue; // すでに死亡している敵はスキップ
-			if (Collision::CheckCollision(bullet.get(), enemy.get()))
+			if (Collision::CheckCollision(bullet, enemy.get()))
 			{
 				bullet->OnCollision();
 				enemy->OnCollision();

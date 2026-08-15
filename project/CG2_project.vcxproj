@@ -254,7 +254,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\goal\Goal.cpp" />
     <ClCompile Include="engine\core\graphics\PostProcessRenderer.cpp" />
     <ClCompile Include="engine\core\graphics\PostProcessEffects.cpp" />
-    <ClCompile Include="engine\3d\ObjectPoolManager.cpp" />
     <ClCompile Include="engine\3d\Object3dFactory.cpp" />
     <ClCompile Include="game\playerState\PlayerIdleState.cpp" />
     <ClCompile Include="game\playerState\PlayerMoveState.cpp" />
@@ -483,7 +482,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\core\graphics\PostProcessRenderer.h" />
     <ClInclude Include="engine\core\graphics\IPostProcessEffect.h" />
     <ClInclude Include="engine\core\graphics\PostProcessEffects.h" />
-    <ClInclude Include="engine\3d\ObjectPoolManager.h" />
+    <ClInclude Include="engine\core\utility\ObjectPool.h" />
     <ClInclude Include="engine\3d\Object3dFactory.h" />
     <ClInclude Include="game\playerState\IPlayerState.h" />
     <ClInclude Include="game\playerState\PlayerIdleState.h" />

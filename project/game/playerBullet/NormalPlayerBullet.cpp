@@ -8,8 +8,10 @@
 using namespace MathUtility;
 
 void NormalPlayerBullet::Initialize(const PlayerBulletParam& param) {
-	model_ = std::make_unique<Object3d>();
-	model_->Initialize("sphere");
+	if (!model_) {
+		model_ = std::make_unique<Object3d>();
+		model_->Initialize("sphere");
+	}
 	model_->SetCamera(param.camera);
 
 	worldTransform_.Initialize();
@@ -23,6 +25,7 @@ void NormalPlayerBullet::Initialize(const PlayerBulletParam& param) {
 
 	prevWorldPos_ = param.position;
 	deathTimer_ = kLifeTime;
+	isDead_ = false;
 }
 
 void NormalPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {

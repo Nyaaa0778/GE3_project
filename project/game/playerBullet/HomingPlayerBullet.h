@@ -9,6 +9,9 @@ public:
 	HomingPlayerBullet() = default;
 	~HomingPlayerBullet() override = default;
 
+	HomingPlayerBullet(HomingPlayerBullet&&) noexcept = default;
+	HomingPlayerBullet& operator=(HomingPlayerBullet&&) noexcept = default;
+
 	// 基底クラスの仮想関数のオーバーライド
 	void Initialize(const PlayerBulletParam& param) override;
 	void Update(const std::list<EnemyBase*>& enemies) override;
