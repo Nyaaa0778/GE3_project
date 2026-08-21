@@ -18,12 +18,15 @@
 #include "RailCameraController.h"
 #include "Skydome.h"
 #include "RusherEnemy.h"
+#include "FormationDroneEnemy.h"
 #include "Shockwave.h"
 #include "Collider.h"
 #include "Shake.h"
 #include "Goal.h"
 #include "TimeManager.h"
 #include "Sprite.h"
+
+using namespace MathUtility;
 
 GamePlayScene::GamePlayScene() = default;
 GamePlayScene::~GamePlayScene() = default;
@@ -37,7 +40,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("TL1Sample"));
+	std::unique_ptr<LevelData> levelData(loader.Load("formingEnemy"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -53,7 +56,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "TL1Sample");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "formingEnemy");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -293,11 +296,35 @@ void GamePlayScene::Update() {
 				{
 					if (currentSplineTime >= it->spawnTime)
 					{
-						auto enemy = std::make_unique<RusherEnemy>();
-						enemy->Initialize(enemyModel_.get(), camera_.get(), it->translation, player_.get());
-						enemy->GetWorldTransform().rotation = it->rotation;
-						enemy->GetWorldTransform().scale = it->scaling;
-						enemies_.push_back(std::move(enemy));
+						// entityType に応じて敵を分岐生成
+						if (it->entityType.find("Drone") != std::string::npos ||
+							it->entityType.find("Formation") != std::string::npos ||
+							it->entityType.find("Wave") != std::string::npos)
+						{
+							DroneFlightPattern pattern = DroneFlightPattern::kSineWave;
+							if (it->entityType.find("Circle") != std::string::npos)
+							{
+								pattern = DroneFlightPattern::kCircle;
+							}
+							else if (it->entityType.find("Slalom") != std::string::npos)
+							{
+								pattern = DroneFlightPattern::kSlalom;
+							}
+							else if (it->entityType.find("FigureEight") != std::string::npos)
+							{
+								pattern = DroneFlightPattern::kFigureEight;
+							}
+
+							SpawnDroneFormation(it->translation, pattern, 4);
+						}
+						else
+						{
+							auto enemy = std::make_unique<RusherEnemy>();
+							enemy->Initialize(enemyModel_.get(), camera_.get(), it->translation, player_.get());
+							enemy->GetWorldTransform().rotation = it->rotation;
+							enemy->GetWorldTransform().scale = it->scaling;
+							enemies_.push_back(std::move(enemy));
+						}
 
 						it = pendingEnemies_.erase(it);
 					}
@@ -329,12 +356,11 @@ void GamePlayScene::Update() {
 					// スコア加算
 					score_ += (*it)->GetScore();
 
-					if (dynamic_cast<RusherEnemy*>(it->get()))
-					{
-						auto shockwave = std::make_unique<Shockwave>();
-						shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
-						shockwaves_.push_back(std::move(shockwave));
-					}
+					// 敵撃破時の衝撃波エフェクト生成
+					auto shockwave = std::make_unique<Shockwave>();
+					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
+					shockwaves_.push_back(std::move(shockwave));
+
 					it = enemies_.erase(it);
 				} else
 				{
@@ -581,6 +607,48 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 	}
 }
 
+void GamePlayScene::SpawnDroneFormation(const Vector3& basePos, DroneFlightPattern pattern, int count) {
+	for (int i = 0; i < count; ++i)
+	{
+		FormationDroneEnemy::FormationConfig config;
+		config.pattern = pattern;
+		config.phaseOffset = static_cast<float>(i) * 0.45f;
+
+		if (pattern == DroneFlightPattern::kSineWave)
+		{
+			config.localOffset = { (i - (count - 1) * 0.5f) * 2.0f, 0.0f, static_cast<float>(i) * 3.0f };
+			config.speed = 18.0f;
+			config.waveAmplitude = 4.0f;
+			config.waveFrequency = 2.0f;
+		}
+		else if (pattern == DroneFlightPattern::kCircle)
+		{
+			config.localOffset = { 0.0f, 0.0f, static_cast<float>(i) * 2.5f };
+			config.speed = 14.0f;
+			config.waveAmplitude = 5.0f;
+			config.waveFrequency = 2.5f;
+		}
+		else if (pattern == DroneFlightPattern::kSlalom)
+		{
+			config.localOffset = { 0.0f, (i - (count - 1) * 0.5f) * 0.8f, static_cast<float>(i) * 3.5f };
+			config.speed = 20.0f;
+			config.waveAmplitude = 6.0f;
+			config.waveFrequency = 2.0f;
+		}
+		else if (pattern == DroneFlightPattern::kFigureEight)
+		{
+			config.localOffset = { 0.0f, 0.0f, static_cast<float>(i) * 3.0f };
+			config.speed = 15.0f;
+			config.waveAmplitude = 5.0f;
+			config.waveFrequency = 2.0f;
+		}
+
+		auto drone = std::make_unique<FormationDroneEnemy>();
+		drone->Initialize(enemyModel_.get(), camera_.get(), basePos, config);
+		enemies_.push_back(std::move(drone));
+	}
+}
+
 void GamePlayScene::UpdateImGui() {
 #ifdef USE_IMGUI
 	ImGui::Begin("デバッグウィンドウ");
@@ -588,6 +656,35 @@ void GamePlayScene::UpdateImGui() {
 	// FPSを表示
 	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 	ImGui::Text("Score: %d", score_);
+	ImGui::Text("Active Enemies: %d", static_cast<int>(enemies_.size()));
+
+	if (ImGui::CollapsingHeader("Enemy Spawner Debug"))
+	{
+		Vector3 spawnFront = { 0.0f, 0.0f, 60.0f };
+		if (player_)
+		{
+			spawnFront = player_->GetWorldTransform()->GetWorldPosition() + Vector3{ 0.0f, 0.0f, 80.0f };
+		}
+
+		if (ImGui::Button("Spawn Wave Formation (4)"))
+		{
+			SpawnDroneFormation(spawnFront, DroneFlightPattern::kSineWave, 4);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn Circle Formation (4)"))
+		{
+			SpawnDroneFormation(spawnFront, DroneFlightPattern::kCircle, 4);
+		}
+		if (ImGui::Button("Spawn Slalom Formation (4)"))
+		{
+			SpawnDroneFormation(spawnFront, DroneFlightPattern::kSlalom, 4);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn 8-Shape Formation (4)"))
+		{
+			SpawnDroneFormation(spawnFront, DroneFlightPattern::kFigureEight, 4);
+		}
+	}
 
 	ImGui::End();
 #endif

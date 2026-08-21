@@ -1,0 +1,239 @@
+{
+    "name": "scene",
+    "rail_spline": [
+        [
+            0.0,
+            0.0,
+            0.0
+        ],
+        [
+            -0.06651496887207031,
+            0.0,
+            50.77030563354492
+        ],
+        [
+            0.0,
+            0.0,
+            173.53485107421875
+        ]
+    ],
+    "objects": [
+        {
+            "type": "LIGHT",
+            "name": "Light",
+            "transform": {
+                "translation": [
+                    4.076245307922363,
+                    5.903861999511719,
+                    1.0054539442062378
+                ],
+                "rotation": [
+                    -0.6503280401229858,
+                    -1.8663909435272217,
+                    -0.05521724745631218
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    0.9999998211860657
+                ]
+            }
+        },
+        {
+            "type": "CAMERA",
+            "name": "Camera.",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    -20.0
+                ],
+                "rotation": [
+                    -1.5707966089248657,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "PlayerSpawn",
+            "transform": {
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_1",
+            "transform": {
+                "translation": [
+                    3.8211841583251953,
+                    0.0,
+                    50.0
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.49
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_2",
+            "transform": {
+                "translation": [
+                    5.876783847808838,
+                    0.0,
+                    80.0
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.76
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_3",
+            "transform": {
+                "translation": [
+                    -8.674517631530762,
+                    0.20011675357818604,
+                    110.0
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.2000000476837158,
+                    1.2000000476837158,
+                    1.2000000476837158
+                ]
+            },
+            "spawn_time": 0.96
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_6",
+            "transform": {
+                "translation": [
+                    -8.674517631530762,
+                    0.20011675357818604,
+                    195.82672119140625
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.2000000476837158,
+                    1.2000000476837158,
+                    1.2000000476837158
+                ]
+            },
+            "spawn_time": 1.5
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_5",
+            "transform": {
+                "translation": [
+                    5.876783847808838,
+                    0.0,
+                    165.82672119140625
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 1.4
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher_4",
+            "transform": {
+                "translation": [
+                    3.8211841583251953,
+                    0.0,
+                    135.82672119140625
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 1.14
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Formation_FigureEight",
+            "transform": {
+                "translation": [
+                    -5.621216773986816,
+                    0.0,
+                    54.083839416503906
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.41000000000000003
+        }
+    ]
+}

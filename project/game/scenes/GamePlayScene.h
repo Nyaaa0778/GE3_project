@@ -22,6 +22,7 @@ class Shake;
 class LockOn;
 class Goal;
 class Sprite;
+enum class DroneFlightPattern;
 
 class GamePlayScene : public IScene {
 public:
@@ -126,6 +127,9 @@ private:
 
 
 private:
+	// ドローン編隊の生成
+	void SpawnDroneFormation(const Vector3& basePos, DroneFlightPattern pattern, int count = 4);
+
 	// 全ての衝突判定をチェック
 	void CheckAllCollisions();
 

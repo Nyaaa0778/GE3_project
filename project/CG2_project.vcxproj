@@ -250,6 +250,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="game\playerBullet\NormalPlayerBullet.cpp" />
     <ClCompile Include="game\playerBullet\HomingPlayerBullet.cpp" />
     <ClCompile Include="game\enemy\RusherEnemy.cpp" />
+    <ClCompile Include="game\enemy\FormationDroneEnemy.cpp" />
     <ClCompile Include="game\enemy\Shockwave.cpp" />
     <ClCompile Include="game\goal\Goal.cpp" />
     <ClCompile Include="engine\core\graphics\PostProcessRenderer.cpp" />
@@ -475,6 +476,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\playerBullet\NormalPlayerBullet.h" />
     <ClInclude Include="game\playerBullet\HomingPlayerBullet.h" />
     <ClInclude Include="game\enemy\RusherEnemy.h" />
+    <ClInclude Include="game\enemy\FormationDroneEnemy.h" />
     <ClInclude Include="game\enemy\Shockwave.h" />
     <ClInclude Include="game\goal\Goal.h" />
     <ClInclude Include="game\player\LockOn.h" />
