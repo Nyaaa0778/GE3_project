@@ -24,7 +24,7 @@ public:
 		DroneFlightPattern pattern = DroneFlightPattern::kSineWave;
 		float phaseOffset = 0.0f;       // 編隊内の位相差（時間オフセット）
 		Vector3 localOffset = {0.0f, 0.0f, 0.0f}; // 編隊内の相対配置オフセット
-		float speed = 18.0f;            // 進行速度
+		float speed = 1.0f;            // 進行速度
 		float waveAmplitude = 4.0f;     // サイン波振幅 / 旋回半径
 		float waveFrequency = 2.5f;     // 周期・周波数
 		float lifeTime = 12.0f;         // 生存時間（画面外退避後の自動消滅）
