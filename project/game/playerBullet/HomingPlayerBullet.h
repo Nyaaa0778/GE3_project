@@ -21,7 +21,10 @@ public:
 
 private:
 	EnemyBase* target_ = nullptr;
-	
-	// ホーミング弾は追尾時間を長くするため、寿命を長めに設定する（例: 2.0秒）
-	static constexpr float kHomingLifeTime = 2.0f;
+	Vector3 startPos_ = {};
+	Vector3 targetPos_ = {};
+	float curveSignX_ = 1.0f;
+	float arcWidth_ = 5.0f;
+	float progress_ = 0.0f;
+	float progressSpeed_ = 2.0f;
 };

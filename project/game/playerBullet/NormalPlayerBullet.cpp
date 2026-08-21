@@ -16,7 +16,7 @@ void NormalPlayerBullet::Initialize(const PlayerBulletParam& param) {
 
 	worldTransform_.Initialize();
 	worldTransform_.translation = param.position;
-	worldTransform_.scale = {0.5f, 0.5f, 0.5f};
+	worldTransform_.scale = {0.0f, 0.0f, 0.0f};
 	velocity_ = param.velocity;
 
 	// コライダーの初期設定 (球, 半径 0.2)
@@ -37,6 +37,32 @@ void NormalPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {
 	worldTransform_.translation += velocity_;
 	worldTransform_.UpdateMatrix();
 	model_->Update(&worldTransform_);
+
+	// 光の軌道（パーティクルのトレイル）を生成
+	Vector3 startPos = prevWorldPos_;
+	Vector3 endPos = worldTransform_.GetWorldPosition();
+	Vector3 diff = endPos - startPos;
+	float totalDist = Length(diff);
+	float stepDist = 0.2f;
+	int numSteps = static_cast<int>(totalDist / stepDist);
+	if (numSteps < 1) {
+		numSteps = 1;
+	}
+
+	for (int i = 0; i < numSteps; ++i) {
+		float t = static_cast<float>(i) / static_cast<float>(numSteps);
+		Vector3 trailPos = startPos + diff * t;
+		Vector4 trailColor = { 0.2f, 0.7f, 1.0f, 1.0f }; // 鮮やかなシアン
+		Vector3 trailScale = { 0.4f, 0.4f, 0.4f };
+		float trailLifeTime = 0.15f;
+		ParticleManager::GetInstance()->Emit("CircleParticle", trailPos, {0.0f, 0.0f, 0.0f}, trailColor, trailScale, trailLifeTime, 1);
+	}
+
+	// 弾頭のコア（白い高輝度パーティクル）
+	Vector4 coreColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	Vector3 coreScale = { 0.6f, 0.6f, 0.6f };
+	float coreLifeTime = 0.05f;
+	ParticleManager::GetInstance()->Emit("CircleParticle", endPos, {0.0f, 0.0f, 0.0f}, coreColor, coreScale, coreLifeTime, 1);
 
 	if (!isDead_) {
 		deathTimer_ -= TimeManager::GetInstance()->GetDeltaTime();
