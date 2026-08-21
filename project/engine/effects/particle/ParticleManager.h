@@ -30,6 +30,12 @@ public:
 		kBox
 	};
 
+	// 使用するシェーダの種類
+	enum class ShaderType {
+		kDefault,
+		kBulletTrail
+	};
+
 	//================================================================================
 	// シングルトン
 	//================================================================================
@@ -109,7 +115,8 @@ public:
 	/// <param
 	/// name="textureFilePath">グループで使用するテクスチャのファイルパス</param>
 	void CreateParticleGroup(const std::string groupName,
-		const std::string textureFilePath, ParticleShape shape = ParticleShape::kPlane);
+		const std::string textureFilePath, ParticleShape shape = ParticleShape::kPlane,
+		ShaderType shaderType = ShaderType::kDefault);
 
 	/// <summary>
 	/// 指定したパーティクルグループからパーティクルを発生させる
@@ -200,6 +207,9 @@ private:
 
 		// ビルボードを使うか？
 		bool useBillboard = true;
+
+		// シェーダタイプ
+		ShaderType shaderType = ShaderType::kDefault;
 	};
 
 	// BlendMode
@@ -251,8 +261,11 @@ private:
 	// ルートシグネチャ
 	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
 
-	// グラフィックスパイプラインステート
+	// グラフィックスパイプラインステート（デフォルト）
 	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+
+	// グラフィックスパイプラインステート（弾トレイル用専用PSO）
+	ComPtr<ID3D12PipelineState> bulletTrailPipelineState_ = nullptr;
 
 	//================================================================================
 	// GPU リソース

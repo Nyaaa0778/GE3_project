@@ -156,6 +156,7 @@ void GamePlayScene::Initialize() {
 
 	// パーティクルグループの作成と初期クリア
 	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
+	ParticleManager::GetInstance()->CreateParticleGroup("BulletTrail", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane, ParticleManager::ShaderType::kBulletTrail);
 	ParticleManager::GetInstance()->ClearAllParticles();
 
 	// ------------------------------------

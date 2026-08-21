@@ -167,9 +167,6 @@ void ParticleManager::Draw()
 	// コマンド：ルートシグネチャを設定
 	cmd->SetGraphicsRootSignature(rootSignature_.Get());
 
-	// コマンド：PSO を設定
-	cmd->SetPipelineState(graphicsPipelineState_.Get());
-
 	// コマンド：プリミティブトポロジー（描画形状）を設定
 	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -180,6 +177,13 @@ void ParticleManager::Draw()
 	for (auto& [name, group] : particleGroups_) {
 		if (group.instanceCount == 0) {
 			continue;
+		}
+
+		// グループのシェーダタイプに応じてPSOを切り替え
+		if (group.shaderType == ShaderType::kBulletTrail && bulletTrailPipelineState_) {
+			cmd->SetPipelineState(bulletTrailPipelineState_.Get());
+		} else {
+			cmd->SetPipelineState(graphicsPipelineState_.Get());
 		}
 
 		// コマンド：テクスチャのSRVのDescriptorTableを設定（root[1]）
@@ -361,6 +365,19 @@ void ParticleManager::CreateGraphicsPipeline()
 	HRESULT hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(
 		&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState_));
 	assert(SUCCEEDED(hr));
+
+	// 弾トレイル用専用PSをコンパイル
+	ComPtr<IDxcBlob> bulletTrailPSBlob = dxCommon_->CompileShader(
+		L"resources/shaders/particle/BulletTrail.PS.hlsl", L"ps_6_0");
+	assert(bulletTrailPSBlob != nullptr);
+
+	// 専用PSに差し替えて専用PSOを生成
+	graphicsPipelineStateDesc.PS = {bulletTrailPSBlob->GetBufferPointer(),
+		bulletTrailPSBlob->GetBufferSize()};
+
+	hr = dxCommon_->GetDevice()->CreateGraphicsPipelineState(
+		&graphicsPipelineStateDesc, IID_PPV_ARGS(&bulletTrailPipelineState_));
+	assert(SUCCEEDED(hr));
 }
 
 //================================================================================
@@ -378,7 +395,7 @@ void ParticleManager::CreateGraphicsPipeline()
 	/// <param
 	/// name="textureFilePath">グループで使用するテクスチャのファイルパス</param>
 void ParticleManager::CreateParticleGroup(const std::string groupName,
-	const std::string textureFilePath, ParticleShape shape)
+	const std::string textureFilePath, ParticleShape shape, ShaderType shaderType)
 {
 	// 登録済みの名前かチェック
 	const bool alreadyExists =
@@ -390,6 +407,7 @@ void ParticleManager::CreateParticleGroup(const std::string groupName,
 	// 新たに空っぽのパーティクルグループを作成し、コンテナに登録
 
 	ParticleGroup newGroup {};
+	newGroup.shaderType = shaderType;
 	particleGroups_.emplace(groupName, std::move(newGroup));
 
 	// 以降は登録した実体を参照して初期化していく

@@ -280,51 +280,6 @@ void Player::Attack() {
 							homingBullet->Initialize(param);
 							bullets_.push_back(homingBullet);
 						}
-
-						// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
-						Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
-						// 球体自機の少し前方から射出する
-						Vector3 effectSpawnPos = spawnPos + targetShootDir * 1.2f;
-
-						// 1. 飛び散る火花 (方向・速度・色の異なるコーン状の広がり)
-						for (uint32_t i = 0; i < 16; ++i) {
-							Vector3 randomSpread = Random::RangeVector3(-0.08f, 0.08f);
-							Vector3 particleVelDir = Normalize(targetShootDir + randomSpread);
-
-							float speed = Random::RangeFloat(35.0f, 75.0f);
-							Vector3 sparkVel = playerVelocity + particleVelDir * speed;
-
-							Vector4 sparkColor;
-							float colorRand = Random::RangeFloat(0.0f, 1.0f);
-							if (colorRand < 0.3f) {
-								sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄
-							} else if (colorRand < 0.7f) {
-								sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ
-							} else {
-								sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ
-							}
-
-							float size = Random::RangeFloat(0.12f, 0.24f);
-							Vector3 sparkScale = { size, size, size };
-							float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
-
-							ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, sparkVel, sparkColor, sparkScale, sparkLifeTime, 1);
-						}
-
-						// 2. 銃口の閃光 (白熱コア)
-						for (uint32_t i = 0; i < 4; ++i) {
-							Vector3 randomSpread = Random::RangeVector3(-0.03f, 0.03f);
-							Vector3 coreVelDir = Normalize(targetShootDir + randomSpread);
-							float speed = Random::RangeFloat(5.0f, 12.0f);
-							Vector3 coreVel = playerVelocity + coreVelDir * speed;
-
-							Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f };
-							float size = Random::RangeFloat(1.0f, 1.4f);
-							Vector3 coreScale = { size, size, size };
-							float coreLifeTime = Random::RangeFloat(0.05f, 0.09f);
-
-							ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);
-						}
 					}
 
 					// 射撃した後は、ロックオンをクリアする
@@ -358,61 +313,6 @@ void Player::Attack() {
 			if (canShoot && newBullet) {
 				// 弾を登録する
 				bullets_.push_back(newBullet);
-
-				// 自機のワールド移動速度（1フレーム移動量 * 60秒）を算出
-				Vector3 playerVelocity = (worldTransform_.GetWorldPosition() - prevWorldPos_) * 60.0f;
-
-				// 射撃方向の算出
-				shootDir = Normalize(bulletVelocity_);
-				// 球体自機の少し前方から射出する
-				Vector3 effectSpawnPos = spawnPos + shootDir * 1.2f;
-
-				// 1. 飛び散る火花 (方向・速度・色の異なるコーン状の広がり)
-				for (uint32_t i = 0; i < 16; ++i) {
-					// 弾道の周りに広がり（スプレッド）を加算
-					// より直線的で鋭い火花にするため、範囲を -0.08f 〜 0.08f に絞る
-					Vector3 randomSpread = Random::RangeVector3(-0.08f, 0.08f);
-					Vector3 particleVelDir = Normalize(shootDir + randomSpread);
-
-					// 速度をランダムにばらけさせる (秒速35.0〜75.0)
-					float speed = Random::RangeFloat(35.0f, 75.0f);
-					Vector3 sparkVel = playerVelocity + particleVelDir * speed;
-
-					// 色のばらつき（白黄、オレンジ、赤オレンジ）を持たせて熱量を表現
-					Vector4 sparkColor;
-					float colorRand = Random::RangeFloat(0.0f, 1.0f);
-					if (colorRand < 0.3f) {
-						sparkColor = { 1.0f, 1.0f, 0.7f, 1.0f }; // 白黄 (最も熱いコア付近)
-					} else if (colorRand < 0.7f) {
-						sparkColor = { 1.0f, 0.6f, 0.1f, 1.0f }; // オレンジ (一般的な火花)
-					} else {
-						sparkColor = { 0.9f, 0.3f, 0.05f, 1.0f }; // 赤オレンジ (冷めかけた火花)
-					}
-
-					// サイズもランダムに揺らす (直径0.12f〜0.24f)
-					float size = Random::RangeFloat(0.12f, 0.24f);
-					Vector3 sparkScale = { size, size, size };
-
-					// 寿命もランダム (0.10秒〜0.22秒)
-					float sparkLifeTime = Random::RangeFloat(0.10f, 0.22f);
-
-					ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, sparkVel, sparkColor, sparkScale, sparkLifeTime, 1);
-				}
-
-				// 2. 銃口の閃光 (白熱コア)
-				for (uint32_t i = 0; i < 4; ++i) {
-					Vector3 randomSpread = Random::RangeVector3(-0.03f, 0.03f);
-					Vector3 coreVelDir = Normalize(shootDir + randomSpread);
-					float speed = Random::RangeFloat(5.0f, 12.0f);
-					Vector3 coreVel = playerVelocity + coreVelDir * speed;
-
-					Vector4 coreColor = { 1.0f, 1.0f, 0.8f, 1.0f }; // 高輝度の白黄
-					float size = Random::RangeFloat(1.0f, 1.4f);
-					Vector3 coreScale = { size, size, size };
-					float coreLifeTime = Random::RangeFloat(0.05f, 0.09f); // 瞬時に消滅
-
-					ParticleManager::GetInstance()->Emit("CircleParticle", effectSpawnPos, coreVel, coreColor, coreScale, coreLifeTime, 1);
-				}
 
 				// クールダウンを設定
 				cooldownTimer_ = kCooldownDuration;

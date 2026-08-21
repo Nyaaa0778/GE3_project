@@ -23,8 +23,11 @@ private:
 	EnemyBase* target_ = nullptr;
 	Vector3 startPos_ = {};
 	Vector3 targetPos_ = {};
+	Vector3 forwardDir_ = { 0.0f, 0.0f, 1.0f };
+	Vector3 sideDir_ = { 1.0f, 0.0f, 0.0f };
 	float curveSignX_ = 1.0f;
 	float arcWidth_ = 5.0f;
 	float progress_ = 0.0f;
 	float progressSpeed_ = 2.0f;
+	bool hasArrived_ = false;
 };
