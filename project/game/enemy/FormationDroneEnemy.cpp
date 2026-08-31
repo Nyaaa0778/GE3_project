@@ -20,6 +20,7 @@ void FormationDroneEnemy::Initialize(Object3d* model, Camera* camera, const Vect
 
 	// ドローン用の小型スケール
 	worldTransform_.scale = { 0.6f, 0.6f, 0.6f };
+	baseScale_ = worldTransform_.scale;
 
 	// 初期位置の設定
 	worldTransform_.translation = CalculatePosition(0.0f);
@@ -37,7 +38,7 @@ void FormationDroneEnemy::Update() {
 
 	// 生存時間を超えたら自動退場（自然消滅）
 	if (elapsedTime_ >= config_.lifeTime) {
-		isAlive_ = false;
+		state_ = EnemyState::kDead;
 		return;
 	}
 

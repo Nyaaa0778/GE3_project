@@ -160,6 +160,7 @@ void GamePlayScene::Initialize() {
 	// パーティクルグループの作成と初期クリア
 	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
 	ParticleManager::GetInstance()->CreateParticleGroup("BulletTrail", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane, ParticleManager::ShaderType::kBulletTrail);
+	ParticleManager::GetInstance()->CreateParticleGroup("DigitalGlitchBox", "resources/sprites/white.png", ParticleManager::ParticleShape::kBox);
 	ParticleManager::GetInstance()->ClearAllParticles();
 
 	// ------------------------------------
@@ -338,7 +339,10 @@ void GamePlayScene::Update() {
 			std::list<EnemyBase*> activeEnemies;
 			for (const auto& enemy : enemies_)
 			{
-				activeEnemies.push_back(enemy.get());
+				if (enemy->IsAlive())
+				{
+					activeEnemies.push_back(enemy.get());
+				}
 			}
 			player_->Update(activeEnemies);
 
@@ -351,8 +355,11 @@ void GamePlayScene::Update() {
 
 			for (auto it = enemies_.begin(); it != enemies_.end(); )
 			{
-				if (!(*it)->IsAlive())
+				// 撃破トリガー（演出開始時に1回だけ処理）
+				if (!(*it)->IsAlive() && !(*it)->HasGivenScore())
 				{
+					(*it)->SetScoreGiven(true);
+
 					// スコア加算
 					score_ += (*it)->GetScore();
 
@@ -361,8 +368,19 @@ void GamePlayScene::Update() {
 					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
 					shockwaves_.push_back(std::move(shockwave));
 
+					// 撃破時のマイクロシェイク
+					if (shake_)
+					{
+						shake_->Start(0.15f, 0.35f);
+					}
+				}
+
+				// 死亡演出が完全に終わった敵を削除
+				if ((*it)->IsDead())
+				{
 					it = enemies_.erase(it);
-				} else
+				}
+				else
 				{
 					++it;
 				}

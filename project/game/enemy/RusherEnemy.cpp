@@ -18,20 +18,22 @@ void RusherEnemy::Initialize(Object3d* model, Camera* camera, const Vector3& pos
 }
 
 void RusherEnemy::Update() {
+	if (!IsAlive()) {
+		EnemyBase::Update();
+		return;
+	}
+
 	if (player_) {
-		if(IsAlive())
-		{
-			switch (phase_) {
-			case Phase::kIdle:
-				UpdateIdle();
-				break;
-			case Phase::kApproach:
-				UpdateApproach();
-				break;
-			case Phase::kRush:
-				UpdateRush();
-				break;
-			}
+		switch (phase_) {
+		case Phase::kIdle:
+			UpdateIdle();
+			break;
+		case Phase::kApproach:
+			UpdateApproach();
+			break;
+		case Phase::kRush:
+			UpdateRush();
+			break;
 		}
 	}
 
