@@ -123,10 +123,13 @@ void Sprite::Draw() {
 			1, worldTransform_.constBuffer->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableの先頭を設定
+	auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU(filePath_);
+	if (srvHandle.ptr == 0) {
+		return;
+	}
 	DirectXCommon::GetInstance()
 		->GetCommandList()
-		->SetGraphicsRootDescriptorTable(
-			2, TextureManager::GetInstance()->GetSrvHandleGPU(filePath_));
+		->SetGraphicsRootDescriptorTable(2, srvHandle);
 
 	// 描画
 	DirectXCommon::GetInstance()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,

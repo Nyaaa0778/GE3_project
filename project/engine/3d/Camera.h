@@ -29,6 +29,7 @@ public:
 public:
 	struct CameraForGPU {
 		Vector3 worldPosition;
+		float pad = 0.0f;
 	};
 
 	// 定数バッファ作成関数

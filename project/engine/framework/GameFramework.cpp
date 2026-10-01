@@ -226,7 +226,20 @@ void GameFramework::Finalize() {
 	// AudioManagerを解放
 	AudioManager::GetInstance()->Finalize();
 
+	// TextureManagerを解放
 	TextureManager::GetInstance()->Finalize();
+
+	// ParticleManagerを解放
+	ParticleManager::GetInstance()->Finalize();
+
+	// SkyboxRendererを解放
+	SkyboxRenderer::GetInstance()->Finalize();
+
+	// LightManagerを解放
+	LightManager::GetInstance()->Finalize();
+
+	// カメラを解放
+	camera_.reset();
 
 	// SrvManager
 	ShaderResourceViewManager::GetInstance()->Finalize();

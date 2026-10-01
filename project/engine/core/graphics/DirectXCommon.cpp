@@ -137,7 +137,7 @@ void DirectXCommon::InitializeRenderTexture() {
 
 	HRESULT hr = device_->CreateCommittedResource(
 		&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
-		D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clearValue,
 		IID_PPV_ARGS(&renderTextureResource_)
 	);
 	assert(SUCCEEDED(hr));
@@ -225,7 +225,22 @@ void DirectXCommon::EndDraw() {
 	commandQueue_->ExecuteCommandLists(1, commandLists);
 
 	// GPU画面の交換を通知（Present）
-	swapChain_->Present(1, 0);
+	hr = swapChain_->Present(1, 0);
+	if (FAILED(hr)) {
+		HRESULT reason = device_->GetDeviceRemovedReason();
+		Log(std::format("Present failed! hr=0x{:08X}, RemoveReason=0x{:08X}\n",
+			static_cast<uint32_t>(hr), static_cast<uint32_t>(reason)));
+		assert(SUCCEEDED(hr));
+		return;
+	}
+
+	// デバイスがロストしていないか念のため確認
+	HRESULT removedReason = device_->GetDeviceRemovedReason();
+	if (removedReason != S_OK) {
+		Log(std::format("Device Removed detected! Reason: 0x{:08X}\n", static_cast<uint32_t>(removedReason)));
+		assert(removedReason == S_OK);
+		return;
+	}
 
 	// Fence値を更新
 	fenceValue_++;
@@ -354,20 +369,33 @@ DirectXCommon::GetSrvGPUDescriptorHandle(uint32_t index) {
 /// デバイスの初期化
 /// </summary>
 void DirectXCommon::InitializeDevice() {
+#ifdef _DEBUG
+	ComPtr<ID3D12Debug1> debugController;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+		debugController->EnableDebugLayer();
+	}
+#endif
+
 	// DXGIファクトリーの生成
 
-	// HRESULTはWindows系のエラーコードであり、
-	// 関数が成功したかどうかをSUCCEEDEDマクロで判定できる
-	HRESULT hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory_));
+#ifdef _DEBUG
+	UINT createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+#else
+	UINT createFactoryFlags = 0;
+#endif
+	HRESULT hr = CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory_));
+	if (FAILED(hr)) {
+		hr = CreateDXGIFactory(IID_PPV_ARGS(&dxgiFactory_));
+	}
 	// 初期化の根本的な部分でエラーが出た場合はプログラムが間違っているか、
 	// どうにもできない場合が多いのでassertにしておく
 	assert(SUCCEEDED(hr));
 
 	// 使用するアダプタ用の変数、最初にnullptrを入れる
 	ComPtr<IDXGIAdapter4> useAdapter = nullptr;
-	// いい順にアダプタを読む
+	// アダプタの列挙 (UNSPECIFIEDでOS推奨のプライマリアダプタを優先し、PnP停止を防ぐ)
 	for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(
-		i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+		i, DXGI_GPU_PREFERENCE_UNSPECIFIED,
 		IID_PPV_ARGS(&useAdapter)) != DXGI_ERROR_NOT_FOUND;
 		i++) {
 		// アダプターの情報を取得する
@@ -390,6 +418,7 @@ void DirectXCommon::InitializeDevice() {
 	D3D_FEATURE_LEVEL featureLevels[] = {
 		D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0};
 	const char* featureLevelString[] = {"12.2", "12.1", "12.0"};
+
 	// 高い順に生成できるか？
 	for (size_t i = 0; i < _countof(featureLevels); ++i) {
 		// 採用したアダプターでデバイスを作成
@@ -415,7 +444,7 @@ void DirectXCommon::InitializeDevice() {
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
 		// エラー発生時に停止
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-		// 警告時に停止
+		// 警告時に停止 
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
 
 		// 抑制するメッセージID
@@ -430,9 +459,6 @@ void DirectXCommon::InitializeDevice() {
 		filter.DenyList.pSeverityList = severities;
 		// 指定したメッセージの表示を抑制する
 		infoQueue->PushStorageFilter(&filter);
-
-		// 解放
-		infoQueue->Release();
 	}
 #endif
 }
@@ -758,6 +784,8 @@ DirectXCommon::CompileShader(const std::wstring& filePath,
 /// <returns>生成されたID3D12ResourceのComPtr、リソース作成に失敗した場合はnullptr</returns>
 DirectXCommon::ComPtr<ID3D12Resource>
 DirectXCommon::CreateBufferResource(size_t sizeInBytes) {
+	size_t alignedSize = (sizeInBytes + 0xFF) & ~0xFF;
+
 	// 頂点リソース用のヒープの設定
 	D3D12_HEAP_PROPERTIES uploadHeapProperties {};
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD; // UploadHeapを使用
@@ -765,7 +793,7 @@ DirectXCommon::CreateBufferResource(size_t sizeInBytes) {
 	D3D12_RESOURCE_DESC vertexResourceDesc {};
 	// バッファリソース、テクスチャの場合はまた別の設定をする
 	vertexResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	vertexResourceDesc.Width = sizeInBytes;
+	vertexResourceDesc.Width = alignedSize;
 	// バッファの場合は以下は1にする
 	vertexResourceDesc.Height = 1;
 	vertexResourceDesc.DepthOrArraySize = 1;
@@ -779,6 +807,11 @@ DirectXCommon::CreateBufferResource(size_t sizeInBytes) {
 		&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		IID_PPV_ARGS(&vertexResource));
+	if (FAILED(hr))
+	{
+		HRESULT removeReason = device_->GetDeviceRemovedReason();
+		(void) removeReason;
+	}
 	assert(SUCCEEDED(hr));
 
 	return vertexResource;

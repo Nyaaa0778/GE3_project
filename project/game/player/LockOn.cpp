@@ -17,9 +17,6 @@ LockOn::LockOn() = default;
 LockOn::~LockOn() = default;
 
 void LockOn::Initialize() {
-	// ロックオンSEのロード
-	lockOnSeHandle_ = AudioManager::LoadAudio("Alarm01.wav", SoundGroup::SE);
-	isSeLoaded_ = true;
 }
 
 void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera* camera) {
@@ -115,11 +112,6 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 
 			targetInfos_.push_back(std::move(newInfo));
 			targets_.push_back(enemy);
-
-			// SEの再生
-			if (isSeLoaded_) {
-				AudioManager::PlayOneShot(lockOnSeHandle_, 0.4f);
-			}
 		}
 	}
 

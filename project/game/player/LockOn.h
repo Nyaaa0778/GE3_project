@@ -54,10 +54,6 @@ private:
 
 	// 演出管理用のターゲットリスト
 	std::vector<TargetInfo> targetInfos_;
-
-	// 音声再生用
-	uint32_t lockOnSeHandle_ = 0;
-	bool isSeLoaded_ = false;
 };
 
 

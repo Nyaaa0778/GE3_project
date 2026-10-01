@@ -57,3 +57,11 @@ void LightManager::Initialize(DirectXCommon* dxCommon) {
 		lightData_->spotLights[i].enabled = 0; // 無効化
 	}
 }
+
+void LightManager::Finalize() {
+	if (lightDataBuffer_) {
+		lightDataBuffer_->Unmap(0, nullptr);
+		lightDataBuffer_.Reset();
+		lightData_ = nullptr;
+	}
+}

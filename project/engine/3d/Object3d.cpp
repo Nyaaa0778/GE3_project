@@ -88,8 +88,10 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 		->SetGraphicsRootConstantBufferView(
 			3, LightManager::GetInstance()->GetConstantBufferVideoAddress());
 
-	object3dRenderer_->GetDxCommon()->GetCommandList()
-		->SetGraphicsRootDescriptorTable(5, environmentTextureSrvHandleGPU_);
+	if (environmentTextureSrvHandleGPU_.ptr != 0) {
+		object3dRenderer_->GetDxCommon()->GetCommandList()
+			->SetGraphicsRootDescriptorTable(5, environmentTextureSrvHandleGPU_);
+	}
 
 	// 3Dモデルが割り当てられていれば描画する
 	if (model_) {
@@ -102,11 +104,15 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 		// ディゾルブマスク用テクスチャのバインド（レジスタt2 -> スロット6）
 		if (isDissolveEnabled_ && !dissolveMaskTexturePath_.empty()) {
 			auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU(dissolveMaskTexturePath_);
-			object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, srvHandle);
+			if (srvHandle.ptr != 0) {
+				object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, srvHandle);
+			}
 		} else {
 			// ディゾルブ無効時も、何かダミーテクスチャを割り当てておく（未割り当てによるバグ防止）
 			auto dummyHandle = TextureManager::GetInstance()->GetSrvHandleGPU(model_->GetModelData().material.textureFilePath);
-			object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, dummyHandle);
+			if (dummyHandle.ptr != 0) {
+				object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, dummyHandle);
+			}
 		}
 
 		model_->Draw();
