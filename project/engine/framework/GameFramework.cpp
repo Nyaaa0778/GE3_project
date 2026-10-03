@@ -17,6 +17,7 @@
 #include "SkyboxRenderer.h"
 #include "PrimitiveRenderer.h"
 #include "PostProcessRenderer.h"
+#include "WireframeRenderer.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -146,6 +147,10 @@ void GameFramework::Initialize() {
 	// PrimitiveRenderer の初期化
 	PrimitiveRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
+	// WireframeRenderer の初期化
+	WireframeRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
+	WireframeRenderer::GetInstance()->SetDefaultCamera(camera_.get());
+
 	// AudioManager の初期化
 	AudioManager::GetInstance()->Initialize();
 
@@ -213,6 +218,9 @@ void GameFramework::Finalize() {
 
 	// PrimitiveRendererを解放
 	PrimitiveRenderer::GetInstance()->Finalize();
+
+	// WireframeRendererを解放
+	WireframeRenderer::GetInstance()->Finalize();
 
 	// modelCommonを解放
 	ModelCommon::GetInstance()->Finalize();

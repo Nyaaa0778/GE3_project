@@ -1,0 +1,238 @@
+#include "WireframeRenderer.h"
+
+#include "DirectXCommon.h"
+
+#include <cassert>
+#include <d3d12.h>
+
+//================================================================================
+// シングルトン
+//================================================================================
+
+std::unique_ptr<WireframeRenderer> WireframeRenderer::instance = nullptr;
+
+/// <summary>
+/// シングルトンインスタンスの取得
+/// </summary>
+/// <returns>WireframeRendererの唯一のインスタンス</returns>
+WireframeRenderer* WireframeRenderer::GetInstance() {
+	if (instance == nullptr)
+	{
+		instance = std::make_unique<WireframeRenderer>();
+	}
+
+	return instance.get();
+}
+
+/// <summary>
+/// 終了
+/// </summary>
+void WireframeRenderer::Finalize() { instance.reset(); }
+
+//================================================================================
+// 初期化 / 描画設定
+//================================================================================
+
+/// <summary>
+/// 初期化
+/// </summary>
+/// <param name="dxCommon">DirectXCommonのポインタ</param>
+void WireframeRenderer::Initialize(DirectXCommon* dxCommon) {
+	// 引数で受け取ってメンバ変数に記録する
+	dxCommon_ = dxCommon;
+
+	// グラフィックスパイプラインの生成
+	CreateGraphicsPipeline();
+}
+
+/// <summary>
+/// 共通描画設定
+/// </summary>
+void WireframeRenderer::SetupCommonRenderState() {
+	// ルートシグネチャをセット
+	dxCommon_->GetCommandList()->SetGraphicsRootSignature(rootSignature_.Get());
+	// グラフィックスパイプラインステートをセット
+	dxCommon_->GetCommandList()->SetPipelineState(graphicsPipelineState_.Get());
+	// プリミティブトポロジーをセット
+	dxCommon_->GetCommandList()->IASetPrimitiveTopology(
+		D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+}
+
+//================================================================================
+// パイプライン構築（RootSignature / PSO）
+//================================================================================
+
+/// <summary>
+/// ルートシグネチャを作成
+/// </summary>
+void WireframeRenderer::CreateRootSignature() {
+	// RootSignature作成
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+	descriptionRootSignature.Flags =
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+
+	// TransformMatrix
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[0].Descriptor.ShaderRegister = 0;
+
+	// color
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[1].Descriptor.ShaderRegister = 1;
+
+	descriptionRootSignature.pParameters = rootParameters; // ルートパラメータ配列へのポインタ
+	descriptionRootSignature.NumParameters = _countof(rootParameters); // 配列の長さ
+	descriptionRootSignature.pStaticSamplers = nullptr;
+	descriptionRootSignature.NumStaticSamplers = 0;	
+
+	// シリアライズしてバイナリする
+	ComPtr<ID3DBlob> signatureBlob = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature,
+											 D3D_ROOT_SIGNATURE_VERSION_1,
+											 &signatureBlob, &errorBlob);
+	if (FAILED(hr))
+	{
+		assert(false);
+	}
+	// バイナリをもとに生成
+	hr = dxCommon_->GetDevice()->CreateRootSignature(
+		0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(),
+		IID_PPV_ARGS(&rootSignature_));
+	assert(SUCCEEDED(hr));
+}
+/// <summary>
+/// グラフィックスパイプラインの生成
+/// </summary>
+void WireframeRenderer::CreateGraphicsPipeline() {
+	// ルートシグネチャを生成
+	CreateRootSignature();
+
+	// InputLayout
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+	inputElementDescs[0].SemanticName = "POSITION";
+	inputElementDescs[0].SemanticIndex = 0;
+	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+	D3D12_INPUT_LAYOUT_DESC inputLayOutDesc{};
+	inputLayOutDesc.pInputElementDescs = inputElementDescs;
+	inputLayOutDesc.NumElements = _countof(inputElementDescs);
+
+	// RasterizerStateの設定
+	D3D12_RASTERIZER_DESC rasterizerDesc{};
+	// 裏面(時計回り)を表示しない
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	// 三角形の中を塗りつぶす
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+
+	// Shaderをコンパイル
+	ComPtr<IDxcBlob> vertexShaderBlob = dxCommon_->CompileShader(
+		L"resources/shaders/wireframe/Wireframe.VS.hlsl", L"vs_6_0");
+	assert(vertexShaderBlob != nullptr);
+
+	ComPtr<IDxcBlob> pixelShaderBlob = dxCommon_->CompileShader(
+		L"resources/shaders/wireframe/Wireframe.PS.hlsl", L"ps_6_0");
+	assert(pixelShaderBlob != nullptr);
+
+	// DepthStencilStateの設定
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc{};
+	// Depthの機能を有効化
+	depthStencilDesc.DepthEnable = true;
+	// 書き込む
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	// 比較関数はLessEqual、近ければ描画される
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+
+	// PSODesc
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
+	graphicsPipelineStateDesc.pRootSignature = rootSignature_.Get();
+	graphicsPipelineStateDesc.InputLayout = {inputElementDescs, _countof(inputElementDescs)};
+	graphicsPipelineStateDesc.VS = {vertexShaderBlob->GetBufferPointer(),
+		vertexShaderBlob->GetBufferSize()};
+	graphicsPipelineStateDesc.PS = {pixelShaderBlob->GetBufferPointer(),
+		pixelShaderBlob->GetBufferSize()};
+	graphicsPipelineStateDesc.BlendState = MakeBlendDesc(blendMode_);
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
+	// DepthStencilの設定
+	graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
+	graphicsPipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	// 書き込むRTVの情報
+	graphicsPipelineStateDesc.NumRenderTargets = 1;
+	graphicsPipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	// 利用するトポロジ(形状)のタイプ、三角形
+	graphicsPipelineStateDesc.PrimitiveTopologyType =
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	// どのように画面に色を打ち込むのか設定
+	graphicsPipelineStateDesc.SampleDesc.Count = 1;
+	graphicsPipelineStateDesc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+	// 実際に生成
+	HRESULT hr =
+		DirectXCommon::GetInstance()->GetDevice()->CreateGraphicsPipelineState(
+			&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState_));
+	assert(SUCCEEDED(hr));
+}
+
+/// <summary>
+/// 指定したブレンドモードに対応
+/// </summary>
+/// <param name="mode">使いたいBlendMode</param>
+/// <returns>ブレンド設定を格納したD3D12_BLEND_DESC</returns>
+D3D12_BLEND_DESC WireframeRenderer::MakeBlendDesc(BlendMode mode) {
+	D3D12_BLEND_DESC blendDesc{};
+	blendDesc.RenderTarget[0].RenderTargetWriteMask =
+		D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	switch (mode)
+	{
+	case BlendMode::kNone:
+		blendDesc.RenderTarget[0].BlendEnable = FALSE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+		break;
+
+	case BlendMode::kNormal:
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		break;
+
+	case BlendMode::kAdd:
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	case BlendMode::kSubtract:
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+
+	case BlendMode::kMultiply:
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_SRC_COLOR;
+		break;
+
+	case BlendMode::kScreen:
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+		break;
+	}
+
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+
+	return blendDesc;
+}

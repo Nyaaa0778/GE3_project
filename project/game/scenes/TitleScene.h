@@ -11,6 +11,7 @@ class ParticleEmitter;
 class Camera;
 class DebugCamera;
 class Skybox;
+class WireframeObject;
 #include "Plane.h"
 
 class TitleScene : public IScene {
@@ -27,6 +28,9 @@ public:
 	void Finalize() override;
 
 private:
+	// ワイヤーフレーム
+	std::unique_ptr<WireframeObject> wireBox_;
+
 	// モデル
 	std::unique_ptr<Object3d> sphere_;
 	std::unique_ptr<Primitive> primitive_;

@@ -8,6 +8,7 @@
 #include "DebugCamera.h"
 #include "Plane.h"
 #include "TextureManager.h"
+#include "WireframeObject.h"
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
@@ -26,6 +27,14 @@ void TitleScene::Initialize() {
 	debugCamera_->SetTranslate(camera_->GetTranslate());
 	debugCamera_->CalculateMatrix();
 	debugCamera_->CreateConstantBuffer();
+
+	// ワイヤーフレームBoxの初期化
+	wireBox_ = std::make_unique<WireframeObject>();
+	wireBox_->Initialize();
+	wireBox_->SetCamera(camera_.get());
+	wireBox_->CreateBox({4.0f, 4.0f, 4.0f}); // サイズ4の立方体
+	wireBox_->SetPosition({0.0f, 2.0f, 0.0f});
+	wireBox_->SetColor({0.0f, 1.0f, 0.5f, 1.0f}); // エメラルドグリーン
 }
 
 void TitleScene::Update() {
@@ -37,9 +46,13 @@ void TitleScene::Update() {
 		camera_->CalculateMatrix(); // 操作後に行列を更新
 	} else {
 		// 通常時のカメラ挙動（固定やパス移動など）
-	camera_->CalculateMatrix();
+		camera_->CalculateMatrix();
 	}
 
+	// ワイヤーフレームBoxの回転・更新
+	if (wireBox_) {
+		wireBox_->Update();
+	}
 
 	// --- 1. シーン遷移判定 ---
 	if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
@@ -51,10 +64,13 @@ void TitleScene::Update() {
 }
 
 void TitleScene::Draw() {
+	if (wireBox_) {
+		wireBox_->Draw();
+	}
 }
 
 void TitleScene::Finalize() {
-
+	wireBox_.reset();
 }
 
 void TitleScene::UpdateImGui() {
