@@ -12,6 +12,7 @@ class Camera;
 class DebugCamera;
 class Skybox;
 class WireframeObject;
+class CityBackground;
 #include "Plane.h"
 
 class TitleScene : public IScene {
@@ -28,6 +29,9 @@ public:
 	void Finalize() override;
 
 private:
+	// サイバーパンク背景都市
+	std::unique_ptr<CityBackground> cityBackground_;
+
 	// ワイヤーフレーム
 	std::unique_ptr<WireframeObject> wireBox_;
 
@@ -61,4 +65,10 @@ private:
 	bool isDissolving_ = false;
 	bool isFadingOut_ = false;
 	float dissolveSpeed_ = 0.01f;
+
+	// サイバーパンク・グリッチ演出設定
+	bool enableGlitch_ = true;
+	float glitchIntensity_ = 0.5f;
+	float chromaticAberration_ = 0.008f;
+	float scanlineIntensity_ = 0.18f;
 };

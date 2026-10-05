@@ -333,6 +333,9 @@
     <ClCompile Include="engine\3d\WireframeObject.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="game\scenes\CityBackground.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\object3d\Object3d.PS.hlsl">
@@ -375,6 +378,7 @@
     <FxCompile Include="resources\shaders\finalBlit\RandomNoise.PS.hlsl" />
     <FxCompile Include="resources\shaders\wireframe\Wireframe.PS.hlsl" />
     <FxCompile Include="resources\shaders\wireframe\Wireframe.VS.hlsl" />
+    <FxCompile Include="resources\shaders\finalBlit\Glitch.PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -636,6 +640,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\3d\WireframeObject.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\scenes\CityBackground.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

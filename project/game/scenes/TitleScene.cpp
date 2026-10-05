@@ -9,54 +9,87 @@
 #include "Plane.h"
 #include "TextureManager.h"
 #include "WireframeObject.h"
+#include "CityBackground.h"
+#include "PostProcessRenderer.h"
+#include "PostProcessEffects.h"
+
+#ifdef USE_IMGUI
+#include "imgui.h"
+#endif
 
 TitleScene::TitleScene() = default;
 TitleScene::~TitleScene() = default;
 
 void TitleScene::Initialize() {
+	// 1. 通常カメラの初期化（サイバーハイウェイと摩天楼を前方に見渡すアングル）
 	camera_ = std::make_unique<Camera>();
-	camera_->SetRotate({0.5f, 0.0f, 0.0f});
-	camera_->SetTranslate({0.0f, 8.0f, -15.0f});
+	camera_->SetRotate({0.12f, 0.0f, 0.0f});
+	camera_->SetTranslate({0.0f, 3.5f, -8.0f});
 	camera_->CreateConstantBuffer();
 
-	// ② デバッグカメラの初期化（★追加）
+	// 2. デバッグカメラの初期化
 	debugCamera_ = std::make_unique<DebugCamera>();
-	debugCamera_->Initialize(); // Inputの取得など
-	// 通常カメラの初期位置に合わせる
+	debugCamera_->Initialize();
 	debugCamera_->SetRotate(camera_->GetRotate());
 	debugCamera_->SetTranslate(camera_->GetTranslate());
 	debugCamera_->CalculateMatrix();
 	debugCamera_->CreateConstantBuffer();
 
-	// ワイヤーフレームBoxの初期化
+	// 3. サイバーパンク背景都市の初期化
+	cityBackground_ = std::make_unique<CityBackground>();
+	cityBackground_->Initialize(camera_.get());
+	cityBackground_->SetScrollSpeed(0.0f); // デフォルトは静止配置（チラつき防止）
+
+	// 4. 中央のシンボル・ワイヤーフレームBox（回転する幾何学コア）
 	wireBox_ = std::make_unique<WireframeObject>();
 	wireBox_->Initialize();
 	wireBox_->SetCamera(camera_.get());
-	wireBox_->CreateBox({4.0f, 4.0f, 4.0f}); // サイズ4の立方体
-	wireBox_->SetPosition({0.0f, 2.0f, 0.0f});
-	wireBox_->SetColor({0.0f, 1.0f, 0.5f, 1.0f}); // エメラルドグリーン
+	wireBox_->CreateBox({3.0f, 3.0f, 3.0f});
+	wireBox_->SetPosition({0.0f, 4.0f, 15.0f});
+	wireBox_->SetColor({0.0f, 1.0f, 0.9f, 1.0f}); // ネオンシアン
+
+	// 5. グリッチ・ポストプロセスの有効化
+	PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kGlitch);
 }
 
 void TitleScene::Update() {
 	auto input = Input::GetInstance();
 
 	if (useDebugCamera_) {
-		// ★ debugCameraController_ に camera_ を「操作してくれ」と頼む
 		debugCamera_->Update(camera_.get());
-		camera_->CalculateMatrix(); // 操作後に行列を更新
+		camera_->CalculateMatrix();
 	} else {
-		// 通常時のカメラ挙動（固定やパス移動など）
 		camera_->CalculateMatrix();
 	}
 
-	// ワイヤーフレームBoxの回転・更新
+	// 背景都市の更新（カメラ追従＋スクロール＆ネオン明滅）
+	if (cityBackground_) {
+		cityBackground_->SetCamera(camera_.get());
+		cityBackground_->Update();
+	}
+
+	// 中央シンボルの回転
 	if (wireBox_) {
+		static float rotationY = 0.0f;
+		static float rotationX = 0.0f;
+		rotationY += 0.02f;
+		rotationX += 0.015f;
+		wireBox_->SetRotation({rotationX, rotationY, 0.0f});
+		wireBox_->SetCamera(camera_.get());
 		wireBox_->Update();
 	}
 
-	// --- 1. シーン遷移判定 ---
+	// グリッチエフェクトパラメータの反映
+	if (auto* glitch = PostProcessRenderer::GetInstance()->GetEffect<GlitchEffect>(PostProcessRenderer::PostProcessMode::kGlitch)) {
+		glitch->SetIntensity(enableGlitch_ ? glitchIntensity_ : 0.0f);
+		glitch->SetChromaticAberration(enableGlitch_ ? chromaticAberration_ : 0.0f);
+		glitch->SetScanlineIntensity(enableGlitch_ ? scanlineIntensity_ : 0.0f);
+	}
+
+	UpdateImGui();
+
+	// --- シーン遷移判定 (Space / Aボタン) ---
 	if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
-		// 遷移時に振動を止める（重要）
 		input->SetShake(0.0f, 0.0f);
 		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
 		return;
@@ -64,16 +97,54 @@ void TitleScene::Update() {
 }
 
 void TitleScene::Draw() {
+	// 1. サイバーパンク背景都市（地面グリッド＋摩天楼＋ネオンサン）
+	if (cityBackground_) {
+		cityBackground_->Draw();
+	}
+
+	// 2. 中央の回転オブジェクト
 	if (wireBox_) {
 		wireBox_->Draw();
 	}
 }
 
 void TitleScene::Finalize() {
+	// 次のシーンのためにポストプロセスを通常に戻す
+	PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+
+	cityBackground_.reset();
 	wireBox_.reset();
 }
 
 void TitleScene::UpdateImGui() {
 #ifdef USE_IMGUI
+	ImGui::Begin("Cyberpunk Title Settings");
+
+	ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
+
+	if (ImGui::CollapsingHeader("City Background", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (cityBackground_) {
+			float speed = cityBackground_->GetScrollSpeed();
+			if (ImGui::SliderFloat("Scroll Speed", &speed, 0.0f, 30.0f, "%.1f")) {
+				cityBackground_->SetScrollSpeed(speed);
+			}
+
+			static bool pulse = true;
+			if (ImGui::Checkbox("Neon Pulse & Flicker", &pulse)) {
+				cityBackground_->SetPulseEnabled(pulse);
+			}
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Glitch PostProcess", ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::Checkbox("Enable Glitch", &enableGlitch_);
+		if (enableGlitch_) {
+			ImGui::SliderFloat("Glitch Intensity", &glitchIntensity_, 0.0f, 1.0f);
+			ImGui::SliderFloat("Chromatic Aberration", &chromaticAberration_, 0.0f, 0.03f, "%.4f");
+			ImGui::SliderFloat("Scanline Intensity", &scanlineIntensity_, 0.0f, 1.0f);
+		}
+	}
+
+	ImGui::End();
 #endif
 }

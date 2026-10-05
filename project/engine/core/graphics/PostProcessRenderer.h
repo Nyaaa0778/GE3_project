@@ -28,6 +28,7 @@ public:
 		kVignetting,
 		kDissolve,
 		kRandomNoise,
+		kGlitch,
 	};
 
 public:

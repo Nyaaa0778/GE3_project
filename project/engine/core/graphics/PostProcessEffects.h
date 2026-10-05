@@ -207,3 +207,45 @@ private:
 	void CreateRootSignature();
 	void CreatePipelineState();
 };
+
+//================================================================================
+// 10. グリッチエフェクト（サイバーパンク風デジタルノイズ・色収差）
+//================================================================================
+class GlitchEffect : public IPostProcessEffect
+{
+public:
+	struct GlitchParams {
+		float time;
+		float glitchIntensity;
+		float chromaticAberration;
+		float scanlineIntensity;
+	};
+
+public:
+	void Initialize(DirectXCommon* dxCommon) override;
+	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+
+	void SetIntensity(float intensity) { intensity_ = intensity; }
+	float GetIntensity() const { return intensity_; }
+
+	void SetChromaticAberration(float ca) { chromaticAberration_ = ca; }
+	float GetChromaticAberration() const { return chromaticAberration_; }
+
+	void SetScanlineIntensity(float scanline) { scanlineIntensity_ = scanline; }
+	float GetScanlineIntensity() const { return scanlineIntensity_; }
+
+private:
+	DirectXCommon* dxCommon_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
+	GlitchParams* paramsData_ = nullptr;
+
+	float time_ = 0.0f;
+	float intensity_ = 0.6f;
+	float chromaticAberration_ = 0.008f;
+	float scanlineIntensity_ = 0.15f;
+
+	void CreateRootSignature();
+	void CreatePipelineState();
+};
