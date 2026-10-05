@@ -32,14 +32,8 @@ private:
 	// サイバーパンク背景都市
 	std::unique_ptr<CityBackground> cityBackground_;
 
-	// ワイヤーフレーム
-	std::unique_ptr<WireframeObject> wireBox_;
-
-	// モデル
-	std::unique_ptr<Object3d> sphere_;
-	std::unique_ptr<Primitive> primitive_;
-
 	// スプライト
+	std::unique_ptr<Sprite> backgroundSprite_;
 	std::unique_ptr<Sprite> sprite_;
 
 	// 音声
@@ -69,6 +63,10 @@ private:
 	// サイバーパンク・グリッチ演出設定
 	bool enableGlitch_ = true;
 	float glitchIntensity_ = 0.5f;
-	float chromaticAberration_ = 0.008f;
+	float chromaticAberration_ = 0.0f;
 	float scanlineIntensity_ = 0.18f;
+	float glitchSpeed_ = 2.0f;        // リズム (1秒あたりのコマ数)
+	float glitchFrequency_ = 0.05f;    // 発生頻度 (0.0 ~ 1.0)
+	float glitchBlockCount_ = 35.0f;   // 画面の縦分割数
+	float glitchShiftScale_ = 1.0f;    // 横ズレの振れ幅倍率
 };

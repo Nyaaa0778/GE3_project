@@ -22,6 +22,7 @@ class Shake;
 class LockOn;
 class Goal;
 class Sprite;
+class CityBackground;
 enum class DroneFlightPattern;
 
 class GamePlayScene : public IScene {
@@ -79,6 +80,12 @@ private:
 	// デバッグカメラ
 	std::unique_ptr<DebugCamera> debugCamera_;
 	bool useDebugCamera_ = false;
+
+	// ------------------------------------
+	// 背景 (黒スプライト & サイバー都市)
+	// ------------------------------------
+	std::unique_ptr<Sprite> backgroundSprite_;
+	std::unique_ptr<CityBackground> cityBackground_;
 
 	// ------------------------------------
 	// 天球

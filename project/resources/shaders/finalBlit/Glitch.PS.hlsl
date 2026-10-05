@@ -9,6 +9,11 @@ struct GlitchParams
     float32_t glitchIntensity;       // グリッチ全体の強度 (0.0 ~ 1.0)
     float32_t chromaticAberration; // 色収差 (RGBずらし) の基本強度
     float32_t scanlineIntensity;   // 走査線の強度 (0.0 ~ 1.0)
+
+    float32_t glitchSpeed;         // リズム・更新速度 (1秒あたりのステップ数, デフォルト 12.0)
+    float32_t glitchFrequency;     // 発生頻度・確率 (0.0 ~ 1.0, デフォルト 0.35)
+    float32_t blockCount;          // 画面縦の分割数 (デフォルト 35.0)
+    float32_t shiftScale;          // 横ズレの振れ幅倍率 (デフォルト 1.0)
 };
 ConstantBuffer<GlitchParams> gParams : register(b0);
 
@@ -30,24 +35,30 @@ PixelShaderOutput main(VertexShaderOutput input)
     float t = gParams.time;
     
     // 1. ブロックグリッチ (横帯ごとのUVずれ)
-    // 時間によって間欠的にグリッチの強弱をつける
-    float glitchTime = floor(t * 12.0);
-    float glitchPulse = step(0.65, rand(float2(glitchTime, 1.23))); // 約35%の確率で発生
+    // 時間によって間欠的にグリッチの強弱をつける (glitchSpeedでリズム調整)
+    float speed = max(gParams.glitchSpeed, 0.1);
+    float glitchTime = floor(t * speed);
+
+    // 発生頻度 (glitchFrequency: 0.0で発生なし、1.0で常時発生)
+    float pulseThreshold = clamp(1.0 - gParams.glitchFrequency, 0.0, 1.0);
+    float glitchPulse = step(pulseThreshold, rand(float2(glitchTime, 1.23)));
     
-    float blockCount = 35.0;
-    float blockY = floor(uv.y * blockCount);
+    // 分割数 (blockCount)
+    float count = max(gParams.blockCount, 1.0);
+    float blockY = floor(uv.y * count);
     float blockRand = rand(float2(blockY, glitchTime));
     
+    float shiftScale = max(gParams.shiftScale, 0.0);
     float shift = 0.0;
     if (blockRand > 0.88)
     {
         // 激しいラインズレ
-        shift = (rand(float2(blockY, t * 60.0)) - 0.5) * 0.07 * gParams.glitchIntensity;
+        shift = (rand(float2(blockY, t * 60.0)) - 0.5) * 0.07 * gParams.glitchIntensity * shiftScale;
     }
     else if (glitchPulse > 0.5 && blockRand > 0.65)
     {
         // パルス発生時の中程度のズレ
-        shift = (rand(float2(blockY, t * 30.0)) - 0.5) * 0.03 * gParams.glitchIntensity;
+        shift = (rand(float2(blockY, t * 30.0)) - 0.5) * 0.03 * gParams.glitchIntensity * shiftScale;
     }
     
     float2 shiftedUV = uv;

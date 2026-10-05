@@ -565,6 +565,10 @@ void GlitchEffect::Initialize(DirectXCommon* dxCommon) {
 	paramsData_->glitchIntensity = intensity_;
 	paramsData_->chromaticAberration = chromaticAberration_;
 	paramsData_->scanlineIntensity = scanlineIntensity_;
+	paramsData_->glitchSpeed = glitchSpeed_;
+	paramsData_->glitchFrequency = glitchFrequency_;
+	paramsData_->blockCount = blockCount_;
+	paramsData_->shiftScale = shiftScale_;
 
 	CreateRootSignature();
 	CreatePipelineState();
@@ -632,6 +636,10 @@ void GlitchEffect::Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR
 		paramsData_->glitchIntensity = intensity_;
 		paramsData_->chromaticAberration = chromaticAberration_;
 		paramsData_->scanlineIntensity = scanlineIntensity_;
+		paramsData_->glitchSpeed = glitchSpeed_;
+		paramsData_->glitchFrequency = glitchFrequency_;
+		paramsData_->blockCount = blockCount_;
+		paramsData_->shiftScale = shiftScale_;
 	}
 
 	cmdList->SetGraphicsRootSignature(rootSignature_.Get());

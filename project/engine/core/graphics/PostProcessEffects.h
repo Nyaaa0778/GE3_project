@@ -219,6 +219,11 @@ public:
 		float glitchIntensity;
 		float chromaticAberration;
 		float scanlineIntensity;
+
+		float glitchSpeed;
+		float glitchFrequency;
+		float blockCount;
+		float shiftScale;
 	};
 
 public:
@@ -234,6 +239,22 @@ public:
 	void SetScanlineIntensity(float scanline) { scanlineIntensity_ = scanline; }
 	float GetScanlineIntensity() const { return scanlineIntensity_; }
 
+	// リズム・更新速度 (1秒あたりのコマ数)
+	void SetSpeed(float speed) { glitchSpeed_ = speed; }
+	float GetSpeed() const { return glitchSpeed_; }
+
+	// 発生頻度 (0.0 ~ 1.0)
+	void SetFrequency(float freq) { glitchFrequency_ = freq; }
+	float GetFrequency() const { return glitchFrequency_; }
+
+	// 画面縦の分割数
+	void SetBlockCount(float count) { blockCount_ = count; }
+	float GetBlockCount() const { return blockCount_; }
+
+	// 横ズレ幅の倍率
+	void SetShiftScale(float scale) { shiftScale_ = scale; }
+	float GetShiftScale() const { return shiftScale_; }
+
 private:
 	DirectXCommon* dxCommon_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
@@ -245,6 +266,10 @@ private:
 	float intensity_ = 0.6f;
 	float chromaticAberration_ = 0.008f;
 	float scanlineIntensity_ = 0.15f;
+	float glitchSpeed_ = 12.0f;
+	float glitchFrequency_ = 0.35f;
+	float blockCount_ = 35.0f;
+	float shiftScale_ = 1.0f;
 
 	void CreateRootSignature();
 	void CreatePipelineState();

@@ -23,6 +23,7 @@ public:
 	void CreateSphere(float radius = 1.0f, uint32_t subdivision = 16);
 
 	void CreateGrid(float size = 10.0f, uint32_t divisions = 10);
+	void CreateGrid(float sizeX, float sizeZ, uint32_t divisionsX, uint32_t divisionsZ);
 
 public:
 	void SetPosition(const Vector3& pos) { transform_.translation = pos; }

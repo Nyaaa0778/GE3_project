@@ -25,6 +25,8 @@
 #include "Goal.h"
 #include "TimeManager.h"
 #include "Sprite.h"
+#include "CityBackground.h"
+#include "WinApp.h"
 
 using namespace MathUtility;
 
@@ -121,16 +123,22 @@ void GamePlayScene::Initialize() {
 	pendingEnemies_ = level_->GetSpawners("Enemy");
 
 	// ------------------------------------
-	// 天球
+	// 背景 (黒スプライト & サイバー都市)
 	// ------------------------------------
 
-	// モデル
-	skydomeModel_ = std::make_unique<Object3d>();
-	skydomeModel_->Initialize("skydome");
-	skydomeModel_->SetCamera(camera_.get());
+	backgroundSprite_ = std::make_unique<Sprite>();
+	backgroundSprite_->Initialize("white.png", {0.0f, 0.0f}, {0.0f, 0.0f});
+	backgroundSprite_->SetSize({static_cast<float>(WinApp::kClientWidth), static_cast<float>(WinApp::kClientHeight)});
+	backgroundSprite_->SetColor({0.0f, 0.0f, 0.0f, 1.0f});
 
-	skydome_ = std::make_unique<Skydome>();
-	skydome_->Initialize(skydomeModel_.get());
+	cityBackground_ = std::make_unique<CityBackground>();
+	if (railCamera_ && !railCamera_->GetControlPoints().empty()) {
+		// コース（スプライン軌道）に沿ってゴール地点（＋奥の余白）までビル群を生成
+		cityBackground_->InitializeAlongPath(camera_.get(), railCamera_->GetControlPoints(), 10.0f, 8.0f, 60.0f);
+	} else {
+		cityBackground_->Initialize(camera_.get(), -20.0f, 220.0f, 50, 10.0f, 240.0f);
+	}
+	cityBackground_->SetScrollSpeed(0.0f); // レール移動するため静止配置
 
 	// 画面シェイク
 	shake_ = std::make_unique<Shake>();
@@ -415,10 +423,16 @@ void GamePlayScene::Update() {
 		level_->Update();
 
 		// ------------------------------------
-		// 天球
+		// 背景更新
 		// ------------------------------------
 
-		skydome_->Update();
+		if (backgroundSprite_) {
+			backgroundSprite_->Update();
+		}
+		if (cityBackground_) {
+			cityBackground_->SetCamera(camera_.get());
+			cityBackground_->Update();
+		}
 
 		// ------------------------------------
 		// パーティクルの更新
@@ -504,10 +518,15 @@ void GamePlayScene::Update() {
 
 void GamePlayScene::Draw() {
 	// ------------------------------------
-	// 天球
+	// 背景 (最背面の黒スプライト & サイバー都市)
 	// ------------------------------------
 
-	skydome_->Draw();
+	if (backgroundSprite_) {
+		backgroundSprite_->Draw();
+	}
+	if (cityBackground_) {
+		cityBackground_->Draw();
+	}
 
 	// ------------------------------------
 	// オブジェクト
@@ -572,7 +591,10 @@ void GamePlayScene::Draw() {
 }
 
 
-void GamePlayScene::Finalize() {}
+void GamePlayScene::Finalize() {
+	backgroundSprite_.reset();
+	cityBackground_.reset();
+}
 
 void GamePlayScene::CheckAllCollisions() {
 	// プレイヤーと敵の衝突判定
@@ -675,6 +697,18 @@ void GamePlayScene::UpdateImGui() {
 	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 	ImGui::Text("Score: %d", score_);
 	ImGui::Text("Active Enemies: %d", static_cast<int>(enemies_.size()));
+
+	if (ImGui::CollapsingHeader("City Background", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (cityBackground_)
+		{
+			float baseY = cityBackground_->GetBaseY();
+			if (ImGui::SliderFloat("Base Y (Height)", &baseY, -50.0f, 10.0f, "%.1f"))
+			{
+				cityBackground_->SetBaseY(baseY);
+			}
+		}
+	}
 
 	if (ImGui::CollapsingHeader("Enemy Spawner Debug"))
 	{

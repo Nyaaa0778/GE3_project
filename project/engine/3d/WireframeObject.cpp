@@ -123,26 +123,33 @@ void WireframeObject::CreateBox(const Vector3& size) {
 // Grid（床の格子ライン）の生成
 // ------------------------------------------------------------
 void WireframeObject::CreateGrid(float size, uint32_t divisions) {
+	CreateGrid(size, size, divisions, divisions);
+}
+
+void WireframeObject::CreateGrid(float sizeX, float sizeZ, uint32_t divisionsX, uint32_t divisionsZ) {
 	std::vector<Vector4> vertices;
 	std::vector<uint32_t> indices;
-	float halfSize = size * 0.5f;
-	float step = size / static_cast<float>(divisions);
+	float halfX = sizeX * 0.5f;
+	float halfZ = sizeZ * 0.5f;
+	float stepX = sizeX / static_cast<float>(divisionsX);
+	float stepZ = sizeZ / static_cast<float>(divisionsZ);
 	uint32_t currentIndex = 0;
-	// X軸に平行なライン
-	for (uint32_t i = 0; i <= divisions; ++i)
+
+	// X軸に平行なライン（横線）
+	for (uint32_t i = 0; i <= divisionsZ; ++i)
 	{
-		float z = -halfSize + i * step;
-		vertices.push_back({-halfSize, 0.0f, z, 1.0f});
-		vertices.push_back({halfSize, 0.0f, z, 1.0f});
+		float z = -halfZ + i * stepZ;
+		vertices.push_back({-halfX, 0.0f, z, 1.0f});
+		vertices.push_back({halfX, 0.0f, z, 1.0f});
 		indices.push_back(currentIndex++);
 		indices.push_back(currentIndex++);
 	}
-	// Z軸に平行なライン
-	for (uint32_t i = 0; i <= divisions; ++i)
+	// Z軸に平行なライン（縦線・奥行き方向）
+	for (uint32_t i = 0; i <= divisionsX; ++i)
 	{
-		float x = -halfSize + i * step;
-		vertices.push_back({x, 0.0f, -halfSize, 1.0f});
-		vertices.push_back({x, 0.0f, halfSize, 1.0f});
+		float x = -halfX + i * stepX;
+		vertices.push_back({x, 0.0f, -halfZ, 1.0f});
+		vertices.push_back({x, 0.0f, halfZ, 1.0f});
 		indices.push_back(currentIndex++);
 		indices.push_back(currentIndex++);
 	}
