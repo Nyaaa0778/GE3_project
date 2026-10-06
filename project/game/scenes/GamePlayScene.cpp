@@ -202,6 +202,17 @@ void GamePlayScene::Initialize() {
 
 void GamePlayScene::Update() {
 	// ------------------------------------
+	// デバッグ・ショートカット: Tキーでタイトル画面へ遷移
+	// ------------------------------------
+	Input* input = Input::GetInstance();
+	if (input->TriggerKey(DIK_T))
+	{
+		input->SetShake(0.0f, 0.0f);
+		SceneManager::GetInstance()->ChangeScene("TITLE");
+		return;
+	}
+
+	// ------------------------------------
 	// ImGui
 	// ------------------------------------
 #ifdef USE_IMGUI

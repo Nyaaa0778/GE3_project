@@ -10,6 +10,7 @@
 #include "TextureManager.h"
 #include "WireframeObject.h"
 #include "CityBackground.h"
+#include "TitleLogo.h"
 #include "Sprite.h"
 #include "PostProcessRenderer.h"
 #include "PostProcessEffects.h"
@@ -50,6 +51,10 @@ void TitleScene::Initialize() {
 	cityBackground_->SetScrollSpeed(0.0f); // デフォルトは静止配置（チラつき防止）
 	cityBackground_->SetBuildAnimationEnabled(true); // 建物を徐々に枝分かれ形成
 
+	// 4. タイトルロゴ「CYBERAIL」の初期化（都市と同じワイヤー形成演出＋視認性確保の半透明バックプレート）
+	titleLogo_ = std::make_unique<TitleLogo>();
+	titleLogo_->Initialize(); // nullptrで専用HUD正面カメラを生成
+
 	// 5. グリッチ・ポストプロセスの有効化
 	PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kGlitch);
 }
@@ -77,6 +82,11 @@ void TitleScene::Update() {
 	if (cityBackground_) {
 		cityBackground_->SetCamera(camera_.get());
 		cityBackground_->Update();
+	}
+
+	// タイトルロゴ「CYBERAIL」の更新（文字形成アニメーション＆ネオン点灯）
+	if (titleLogo_) {
+		titleLogo_->Update();
 	}
 
 	// 間欠的グリッチ演出の制御（普段は静止・平穏、2.5〜5.5秒に1度だけ一瞬0.05〜0.10秒激しく乱れる）
@@ -150,6 +160,11 @@ void TitleScene::Draw() {
 	if (cityBackground_) {
 		cityBackground_->Draw();
 	}
+
+	// 2. タイトルロゴ「CYBERAIL」（半透明ダーク遮蔽プレート＋動的形成ワイヤー文字＋装飾枠）
+	if (titleLogo_) {
+		titleLogo_->Draw();
+	}
 }
 
 void TitleScene::Finalize() {
@@ -158,6 +173,7 @@ void TitleScene::Finalize() {
 
 	backgroundSprite_.reset();
 	cityBackground_.reset();
+	titleLogo_.reset();
 }
 
 void TitleScene::UpdateOrbitCamera() {
@@ -279,6 +295,53 @@ void TitleScene::UpdateImGui() {
 				isGlitching_ = true;
 				glitchBurstTimer_ = 0.0f;
 				glitchBurstDuration_ = 0.08f;
+			}
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Cyber Title Logo (CYBERAIL)", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (titleLogo_) {
+			if (ImGui::Button("Replay Logo Formation")) {
+				titleLogo_->ResetAnimation();
+			}
+			ImGui::SameLine();
+			ImGui::Text("Status: %s", titleLogo_->IsAllBuilt() ? "Built (Pulsing)" : "Constructing...");
+
+			static bool enablePlate = true;
+			if (ImGui::Checkbox("Backdrop Dark Plate", &enablePlate)) {
+				titleLogo_->SetBackdropEnabled(enablePlate);
+			}
+
+			static float plateAlpha = 0.75f;
+			if (ImGui::SliderFloat("Backdrop Plate Alpha", &plateAlpha, 0.0f, 1.0f, "%.2f")) {
+				titleLogo_->SetBackdropAlpha(plateAlpha);
+			}
+
+			Vector3 logoPos = titleLogo_->GetPosition();
+			if (ImGui::SliderFloat3("Logo Position", &logoPos.x, -5.0f, 5.0f, "%.2f")) {
+				titleLogo_->SetPosition(logoPos);
+			}
+
+			Vector3 logoScale = titleLogo_->GetScale();
+			if (ImGui::SliderFloat("Logo Scale", &logoScale.x, 0.3f, 2.0f, "%.2f")) {
+				logoScale.y = logoScale.x;
+				logoScale.z = logoScale.x;
+				titleLogo_->SetScale(logoScale);
+			}
+
+			Vector3 logoRot = titleLogo_->GetRotation();
+			if (ImGui::SliderFloat3("Logo 3D Rotation", &logoRot.x, -0.6f, 0.6f, "%.2f rad")) {
+				titleLogo_->SetRotation(logoRot);
+			}
+
+			bool hover = titleLogo_->IsHoverEnabled();
+			if (ImGui::Checkbox("Enable Floating Hover", &hover)) {
+				titleLogo_->SetHoverEnabled(hover);
+			}
+
+			Vector3 promptPos = titleLogo_->GetPromptPosition();
+			if (ImGui::SliderFloat3("Prompt Position", &promptPos.x, -5.0f, 5.0f, "%.2f")) {
+				titleLogo_->SetPromptPosition(promptPos);
 			}
 		}
 	}

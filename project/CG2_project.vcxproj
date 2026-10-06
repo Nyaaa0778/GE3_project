@@ -261,6 +261,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\WireframeObject.cpp" />
     <ClCompile Include="engine\3d\WireframeRenderer.cpp" />
     <ClCompile Include="game\scenes\CityBackground.cpp" />
+    <ClCompile Include="game\scenes\TitleLogo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl">
@@ -518,6 +519,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\WireframeObject.h" />
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
     <ClInclude Include="game\scenes\CityBackground.h" />
+    <ClInclude Include="game\scenes\TitleLogo.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

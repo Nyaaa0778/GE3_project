@@ -13,6 +13,7 @@ class DebugCamera;
 class Skybox;
 class WireframeObject;
 class CityBackground;
+class TitleLogo;
 #include "Plane.h"
 
 class TitleScene : public IScene {
@@ -31,6 +32,9 @@ public:
 private:
 	// サイバーパンク背景都市
 	std::unique_ptr<CityBackground> cityBackground_;
+
+	// サイバーパンクタイトルロゴ「CYBERAIL」
+	std::unique_ptr<TitleLogo> titleLogo_;
 
 	// スプライト
 	std::unique_ptr<Sprite> backgroundSprite_;
