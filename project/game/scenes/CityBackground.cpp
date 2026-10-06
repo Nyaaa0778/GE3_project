@@ -116,18 +116,20 @@ namespace {
 CityBackground::CityBackground() = default;
 CityBackground::~CityBackground() = default;
 
-void CityBackground::Initialize(Camera* camera, float minZ, float maxZ, int numBuildingsPerSide, float roadHalfWidth, float gridLength) {
+void CityBackground::Initialize(Camera* camera, float minZ, float maxZ, int numBuildingsPerSide, float roadHalfWidth, float gridLength, float fogNear, float fogFar) {
 	camera_ = camera;
 	minZ_ = minZ;
 	maxZ_ = maxZ;
 	numBuildingsPerSide_ = numBuildingsPerSide;
 	roadHalfWidth_ = roadHalfWidth;
 	gridLength_ = gridLength;
+	fogNear_ = fogNear;
+	fogFar_ = fogFar;
 
-	// 1. 地面のネオングリッド生成 (奥行き大きめの長方形マスでスピード感を演出)
-	float gridWidth = (std::max)(70.0f, roadHalfWidth_ * 4.0f + 30.0f);
-	uint32_t divX = 20; // 横幅分割
-	uint32_t divZ = 16; // 奥行き分割 (横幅に対して奥行きが約2.5〜4倍長い長方形マス)
+	// 1. 地面のネオングリッド生成 (奥まで視界をカバーする幅と奥行き長めの長方形マス)
+	float gridWidth = (std::max)(140.0f, roadHalfWidth_ * 6.0f + 60.0f);
+	uint32_t divX = 24; // 横幅分割
+	uint32_t divZ = 24; // 奥行き分割
 
 	groundGrid1_ = std::make_unique<WireframeObject>();
 	groundGrid1_->Initialize();
@@ -135,6 +137,7 @@ void CityBackground::Initialize(Camera* camera, float minZ, float maxZ, int numB
 	groundGrid1_->CreateGrid(gridWidth, gridLength_, divX, divZ);
 	groundGrid1_->SetPosition({0.0f, baseY_, minZ_ + gridLength_ * 0.5f});
 	groundGrid1_->SetColor({0.0f, 0.85f, 1.0f, 1.0f}); // ネオンシアン (不透明)
+	groundGrid1_->SetFog(fogNear_, fogFar_);
 
 	groundGrid2_ = std::make_unique<WireframeObject>();
 	groundGrid2_->Initialize();
@@ -142,19 +145,22 @@ void CityBackground::Initialize(Camera* camera, float minZ, float maxZ, int numB
 	groundGrid2_->CreateGrid(gridWidth, gridLength_, divX, divZ);
 	groundGrid2_->SetPosition({0.0f, baseY_, minZ_ + gridLength_ * 1.5f});
 	groundGrid2_->SetColor({0.0f, 0.85f, 1.0f, 1.0f});
+	groundGrid2_->SetFog(fogNear_, fogFar_);
 
 	// 3. サイバーパンクビル群の生成
 	GenerateCity();
 }
 
-void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vector3>& pathPoints, float roadHalfWidth, float buildingInterval, float extraEndMargin) {
+void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vector3>& pathPoints, float roadHalfWidth, float buildingInterval, float extraEndMargin, float fogNear, float fogFar) {
 	camera_ = camera;
 	roadHalfWidth_ = roadHalfWidth;
 	scrollSpeed_ = 0.0f; // レールに沿って静止配置
+	fogNear_ = fogNear;
+	fogFar_ = fogFar;
 
 	if (pathPoints.size() < 2) {
 		// 制御点が足りない場合は直線配置へフォールバック
-		Initialize(camera, -20.0f, 200.0f, 40, roadHalfWidth, 220.0f);
+		Initialize(camera, -20.0f, 320.0f, 65, roadHalfWidth, 200.0f, fogNear_, fogFar_);
 		return;
 	}
 
@@ -262,6 +268,7 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 	groundGrid1_->CreateGrid(spanX, spanZ, divX, divZ);
 	groundGrid1_->SetPosition({centerX, baseY_, centerZ});
 	groundGrid1_->SetColor({0.0f, 0.85f, 1.0f, 1.0f}); // シアン
+	groundGrid1_->SetFog(fogNear_, fogFar_);
 
 	groundGrid2_.reset(); // コース全体を1枚の広大なグリッドでカバーするため2枚目はリセット
 
@@ -326,6 +333,7 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 				b.wireObject->SetRotation({0.0f, yaw, 0.0f});
 				b.wireObject->SetPosition(b.basePosition);
 				b.wireObject->SetColor(b.baseColor);
+				b.wireObject->SetFog(fogNear_, fogFar_);
 
 				buildings_.push_back(std::move(b));
 			}
@@ -362,6 +370,7 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 				b2.wireObject->SetRotation({0.0f, yaw, 0.0f});
 				b2.wireObject->SetPosition(b2.basePosition);
 				b2.wireObject->SetColor(b2.baseColor);
+				b2.wireObject->SetFog(fogNear_, fogFar_);
 
 				buildings_.push_back(std::move(b2));
 			}
@@ -383,54 +392,99 @@ void CityBackground::GenerateCity() {
 
 	for (int side = -1; side <= 1; side += 2) { // -1: 左側, +1: 右側
 		for (int i = 0; i < numBuildingsPerSide_; ++i) {
-			Building b;
+			// === Layer 1: 道路沿いのビル ===
+			{
+				Building b;
 
-			// ビルのサイズ (幅・奥行きを大きめにして巨大なメガストラクチャー感を演出)
-			float w = 6.0f + rand01(rng) * 10.0f; // 幅を6.0m〜16.0mに拡大（従来の約2.5〜3倍）
-			float d = 6.0f + rand01(rng) * 10.0f; // 奥行きも6.0m〜16.0mに拡大
-			float h = 8.0f + std::pow(rand01(rng), 1.8f) * 32.0f; // べき乗で低層多め・時々超高層 (8m〜40m)
+				// ビルのサイズ (幅・奥行きを大きめにして巨大なメガストラクチャー感を演出)
+				float w = 6.0f + rand01(rng) * 10.0f; // 幅 6m〜16m
+				float d = 6.0f + rand01(rng) * 10.0f; // 奥行き 6m〜16m
+				float h = 8.0f + std::pow(rand01(rng), 1.8f) * 32.0f; // べき乗で低層多め・時々超高層 (8m〜40m)
 
-			// X位置: 道路の外側に多層的に配置
-			float layer = rand01(rng);
-			float x = side * (roadHalfWidth_ + w * 0.5f + layer * 35.0f);
+				// X位置: 道路の外側に配置
+				float layer = rand01(rng);
+				float x = side * (roadHalfWidth_ + w * 0.5f + layer * 12.0f);
 
-			// Z位置
-			float z = minZ_ + ((float)i / (float)numBuildingsPerSide_) * (maxZ_ - minZ_) + (randDist(rng) * 2.5f);
+				// Z位置: 奥行き方向に均等配置＋適度なジッター
+				float z = minZ_ + ((float)i / (float)numBuildingsPerSide_) * (maxZ_ - minZ_) + (randDist(rng) * 3.0f);
 
-			// Y位置 (底面が地面 Y=baseY_ に接するよう高さの半分を加算)
-			float y = baseY_ + h * 0.5f;
+				// Y位置 (底面が地面 Y=baseY_ に接するよう高さの半分を加算)
+				float y = baseY_ + h * 0.5f;
 
-			b.basePosition = {x, y, z};
-			b.scale = {w, h, d};
+				b.basePosition = {x, y, z};
+				b.scale = {w, h, d};
 
-			// 配色の決定: 高層ビル(h>16m)または約25%の確率でアクセント(マゼンタ)、残りはシアンで統一
-			float accentRoll = rand01(rng);
-			if (h > 16.0f || accentRoll > 0.75f) {
-				// アクセント（マゼンタ）
-				b.baseColor = kColorMagenta;
-			} else {
-				// 通常の街並み（約75%）はシアン基調で統一
-				b.baseColor = kColorCyan;
+				// 配色の決定: 高層ビル(h>16m)または約25%の確率でアクセント(マゼンタ)、残りはシアンで統一
+				float accentRoll = rand01(rng);
+				if (h > 16.0f || accentRoll > 0.75f) {
+					b.baseColor = kColorMagenta;
+				} else {
+					b.baseColor = kColorCyan;
+				}
+
+				b.pulsePhase = rand01(rng) * 6.28318f;
+				b.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
+
+				b.wireObject = std::make_unique<WireframeObject>();
+				b.wireObject->Initialize();
+				b.wireObject->SetCamera(camera_);
+				b.wireObject->CreateBox({1.0f, 1.0f, 1.0f}); // 単位立方体をスケールで拡大
+				b.wireObject->SetScale(b.scale);
+				b.wireObject->SetPosition(b.basePosition);
+				b.wireObject->SetColor(b.baseColor);
+				b.wireObject->SetFog(fogNear_, fogFar_);
+
+				buildings_.push_back(std::move(b));
 			}
 
-			b.pulsePhase = rand01(rng) * 6.28318f;
-			b.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
+			// === Layer 2: 外側の超高層メガストラクチャー (約55%の確率で配置し、摩天楼の奥行きを演出) ===
+			if (rand01(rng) < 0.55f) {
+				Building b2;
 
-			b.wireObject = std::make_unique<WireframeObject>();
-			b.wireObject->Initialize();
-			b.wireObject->SetCamera(camera_);
-			b.wireObject->CreateBox({1.0f, 1.0f, 1.0f}); // 単位立方体をスケールで拡大
-			b.wireObject->SetScale(b.scale);
-			b.wireObject->SetPosition(b.basePosition);
-			b.wireObject->SetColor(b.baseColor);
+				float w2 = 8.0f + rand01(rng) * 14.0f;  // 幅 8m〜22m
+				float d2 = 8.0f + rand01(rng) * 14.0f;  // 奥行き 8m〜22m
+				float h2 = 16.0f + std::pow(rand01(rng), 1.6f) * 38.0f; // より高層 (16m〜54m)
 
-			buildings_.push_back(std::move(b));
+				float x2 = side * (roadHalfWidth_ + 24.0f + rand01(rng) * 25.0f);
+				float z2 = minZ_ + ((float)i / (float)numBuildingsPerSide_) * (maxZ_ - minZ_) + (randDist(rng) * 4.0f);
+				float y2 = baseY_ + h2 * 0.5f;
+
+				b2.basePosition = {x2, y2, z2};
+				b2.scale = {w2, h2, d2};
+
+				float accentRoll = rand01(rng);
+				if (h2 > 24.0f || accentRoll > 0.70f) {
+					b2.baseColor = kColorMagenta;
+				} else {
+					b2.baseColor = kColorCyan;
+				}
+
+				b2.pulsePhase = rand01(rng) * 6.28318f;
+				b2.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
+
+				b2.wireObject = std::make_unique<WireframeObject>();
+				b2.wireObject->Initialize();
+				b2.wireObject->SetCamera(camera_);
+				b2.wireObject->CreateBox({1.0f, 1.0f, 1.0f});
+				b2.wireObject->SetScale(b2.scale);
+				b2.wireObject->SetPosition(b2.basePosition);
+				b2.wireObject->SetColor(b2.baseColor);
+				b2.wireObject->SetFog(fogNear_, fogFar_);
+
+				buildings_.push_back(std::move(b2));
+			}
 		}
 	}
 }
 
 void CityBackground::Update() {
 	time_ += 0.016f;
+
+	// ビル群の段階的形成アニメーション
+	if (buildAnimationEnabled_) {
+		buildAnimTime_ += 0.016f;
+		UpdateBuildAnimation();
+	}
 
 	// 1. 地面グリッドのスクロール
 	if (scrollSpeed_ > 0.0f) {
@@ -516,3 +570,223 @@ void CityBackground::SetCamera(Camera* camera) {
 		}
 	}
 }
+
+void CityBackground::SetFog(float fogNear, float fogFar) {
+	fogNear_ = fogNear;
+	fogFar_ = fogFar;
+	if (groundGrid1_) groundGrid1_->SetFog(fogNear_, fogFar_);
+	if (groundGrid2_) groundGrid2_->SetFog(fogNear_, fogFar_);
+	for (auto& b : buildings_) {
+		if (b.wireObject) {
+			b.wireObject->SetFog(fogNear_, fogFar_);
+		}
+	}
+}
+
+void CityBackground::SetBuildAnimationEnabled(bool enabled) {
+	buildAnimationEnabled_ = enabled;
+	if (buildAnimationEnabled_) {
+		SetupBuildAnimation();
+	}
+}
+
+void CityBackground::ResetBuildAnimation() {
+	buildAnimTime_ = 0.0f;
+	for (auto& b : buildings_) {
+		b.growth.isComplete = false;
+		if (b.wireObject) {
+			b.wireObject->UpdateDynamicLines({});
+		}
+	}
+}
+
+namespace {
+	// 直方体 (単位立方体) の8頂点
+	const Vector3 kBoxCorners[8] = {
+		{-0.5f, -0.5f, -0.5f}, // 0: 底面 手前左
+		{ 0.5f, -0.5f, -0.5f}, // 1: 底面 手前右
+		{ 0.5f, -0.5f,  0.5f}, // 2: 底面 奥右
+		{-0.5f, -0.5f,  0.5f}, // 3: 底面 奥左
+		{-0.5f,  0.5f, -0.5f}, // 4: 上面 手前左
+		{ 0.5f,  0.5f, -0.5f}, // 5: 上面 手前右
+		{ 0.5f,  0.5f,  0.5f}, // 6: 上面 奥右
+		{-0.5f,  0.5f,  0.5f}, // 7: 上面 奥左
+	};
+
+	struct BoxEdgeDef { int u; int v; };
+	const BoxEdgeDef kBoxEdges[12] = {
+		{0, 1}, {1, 2}, {2, 3}, {3, 0}, // 0..3: 地面底面の4辺
+		{0, 4}, {1, 5}, {2, 6}, {3, 7}, // 4..7: 垂直の柱4本
+		{4, 5}, {5, 6}, {6, 7}, {7, 4}  // 8..11: 屋根天面の4辺
+	};
+
+	const int kBoxVertexEdges[8][3] = {
+		{0, 3, 4},   // 0
+		{0, 1, 5},   // 1
+		{1, 2, 6},   // 2
+		{2, 3, 7},   // 3
+		{4, 8, 11},  // 4
+		{5, 8, 9},   // 5
+		{6, 9, 10},  // 6
+		{7, 10, 11}, // 7
+	};
+}
+
+void CityBackground::SetupBuildAnimation() {
+	buildAnimTime_ = 0.0f;
+	std::mt19937 rng(1337);
+	std::uniform_real_distribution<float> rand01(0.0f, 1.0f);
+	std::uniform_int_distribution<int> randSeedVertex(0, 3);
+
+	float zRange = (maxZ_ - minZ_ > 0.001f) ? (maxZ_ - minZ_) : 1.0f;
+
+	for (auto& b : buildings_) {
+		if (!b.wireObject) continue;
+
+		// 12本の動的ラインメッシュに切り替え
+		b.wireObject->CreateDynamicLineMesh(12);
+
+		// 手前から奥へのウェーブ伝播＋ランダムジッターによる開始時差
+		float zNorm = std::clamp((b.basePosition.z - minZ_) / zRange, 0.0f, 1.0f);
+		b.growth.startDelay = zNorm * 2.2f + rand01(rng) * 1.5f;
+		b.growth.isComplete = false;
+		b.growth.edges.clear();
+		b.growth.edges.reserve(12);
+
+		// 地面の4角 (0〜3) のいずれかからスタート
+		int seedVertex = randSeedVertex(rng);
+
+		bool edgeScheduled[12] = {false};
+		bool vertexReached[8] = {false};
+		float vertexReachedTime[8] = {0.0f};
+
+		vertexReached[seedVertex] = true;
+		vertexReachedTime[seedVertex] = 0.0f;
+
+		std::vector<int> frontier = {seedVertex};
+
+		while (!frontier.empty()) {
+			// 到達時刻が早い頂点から順に分岐を展開
+			std::sort(frontier.begin(), frontier.end(), [&](int v1, int v2) {
+				return vertexReachedTime[v1] < vertexReachedTime[v2];
+			});
+			int curr = frontier.front();
+			frontier.erase(frontier.begin());
+
+			// この頂点に繋がる3辺をランダム順にシャッフル
+			std::vector<int> incident = {
+				kBoxVertexEdges[curr][0],
+				kBoxVertexEdges[curr][1],
+				kBoxVertexEdges[curr][2]
+			};
+			std::shuffle(incident.begin(), incident.end(), rng);
+
+			for (int edgeIdx : incident) {
+				if (!edgeScheduled[edgeIdx]) {
+					edgeScheduled[edgeIdx] = true;
+					int nextVertex = (kBoxEdges[edgeIdx].u == curr) ? kBoxEdges[edgeIdx].v : kBoxEdges[edgeIdx].u;
+
+					// 辺の伸長にかかる時間 (0.28秒〜0.46秒)
+					float duration = 0.28f + rand01(rng) * 0.18f;
+					// 分岐発生時の微小な時差ジッター
+					float branchJitter = rand01(rng) * 0.06f;
+					float edgeStart = vertexReachedTime[curr] + branchJitter;
+					float edgeEnd = edgeStart + duration;
+
+					EdgeGrowth eg;
+					eg.fromVertex = curr;
+					eg.toVertex = nextVertex;
+					eg.startTime = edgeStart;
+					eg.duration = duration;
+					b.growth.edges.push_back(eg);
+
+					if (!vertexReached[nextVertex]) {
+						vertexReached[nextVertex] = true;
+						vertexReachedTime[nextVertex] = edgeEnd;
+						frontier.push_back(nextVertex);
+					}
+				}
+			}
+		}
+
+		// 閉路を構成する残り辺があれば、両端点が到達された後に開始
+		for (int e = 0; e < 12; ++e) {
+			if (!edgeScheduled[e]) {
+				edgeScheduled[e] = true;
+				int u = kBoxEdges[e].u;
+				int v = kBoxEdges[e].v;
+				int fromV = (vertexReachedTime[u] <= vertexReachedTime[v]) ? u : v;
+				int toV = (fromV == u) ? v : u;
+				float startBase = (std::max)(vertexReachedTime[u], vertexReachedTime[v]);
+				float edgeStart = startBase + rand01(rng) * 0.05f;
+				float duration = 0.28f + rand01(rng) * 0.18f;
+
+				EdgeGrowth eg;
+				eg.fromVertex = fromV;
+				eg.toVertex = toV;
+				eg.startTime = edgeStart;
+				eg.duration = duration;
+				b.growth.edges.push_back(eg);
+			}
+		}
+
+		// 初期状態は描画なし
+		b.wireObject->UpdateDynamicLines({});
+	}
+}
+
+void CityBackground::UpdateBuildAnimation() {
+	std::vector<std::pair<Vector3, Vector3>> activeLines;
+	activeLines.reserve(12);
+
+	for (auto& b : buildings_) {
+		if (b.growth.isComplete) {
+			continue;
+		}
+
+		float localTime = buildAnimTime_ - b.growth.startDelay;
+		if (localTime < 0.0f) {
+			continue;
+		}
+
+		activeLines.clear();
+		bool allEdgesDone = true;
+
+		for (const auto& eg : b.growth.edges) {
+			if (localTime < eg.startTime) {
+				allEdgesDone = false;
+				continue;
+			}
+
+			Vector3 p0 = kBoxCorners[eg.fromVertex];
+			Vector3 p1 = kBoxCorners[eg.toVertex];
+
+			if (localTime >= eg.startTime + eg.duration) {
+				// 完了した辺
+				activeLines.push_back({p0, p1});
+			} else {
+				// 現在伸長中の辺 (滑らかなEase-Out補間で先端が伸びる)
+				allEdgesDone = false;
+				float tNorm = (localTime - eg.startTime) / eg.duration;
+				tNorm = (std::max)(0.0f, (std::min)(1.0f, tNorm));
+				float progress = 1.0f - (1.0f - tNorm) * (1.0f - tNorm);
+				Vector3 currentEnd = MathUtility::Add(p0, MathUtility::Multiply(MathUtility::Subtract(p1, p0), progress));
+				activeLines.push_back({p0, currentEnd});
+			}
+		}
+
+		if (allEdgesDone) {
+			b.growth.isComplete = true;
+			activeLines.clear();
+			for (const auto& eg : b.growth.edges) {
+				activeLines.push_back({kBoxCorners[eg.fromVertex], kBoxCorners[eg.toVertex]});
+			}
+		}
+
+		if (b.wireObject) {
+			b.wireObject->UpdateDynamicLines(activeLines);
+		}
+	}
+}
+
+

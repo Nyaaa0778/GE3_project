@@ -109,6 +109,8 @@ public:
 	void SetAspectRatio(float aspectRatio) { aspectRatio_ = aspectRatio; }
 	// ニアクリップ距離
 	void SetNearClip(float nearClip) { nearClip_ = nearClip; }
+	float GetNearClip() const { return nearClip_; }
 	// ファークリップ距離
 	void SetFarClip(float farClip) { farClip_ = farClip; }
+	float GetFarClip() const { return farClip_; }
 };

@@ -10,6 +10,17 @@
 
 using namespace MathUtility;
 
+WireframeObject::~WireframeObject() {
+	if (mappedVertexData_ && vertexBuffer_) {
+		vertexBuffer_->Unmap(0, nullptr);
+		mappedVertexData_ = nullptr;
+	}
+	if (materialData_ && colorResource_) {
+		colorResource_->Unmap(0, nullptr);
+		materialData_ = nullptr;
+	}
+}
+
 void WireframeObject::Initialize() {
 	wireframeRenderer_ = WireframeRenderer::GetInstance();
 
@@ -17,14 +28,18 @@ void WireframeObject::Initialize() {
 	transform_.Initialize();
 	// デフォルトカメラの取得（設定されていれば）
 	camera_ = wireframeRenderer_->GetDefaultCamera();
-	// 色用定数バッファの作成 (PS b1)
+	// マテリアル用定数バッファの作成 (PS b1)
 	auto dxCommon = DirectXCommon::GetInstance();
-	colorResource_ = dxCommon->CreateBufferResource(sizeof(Vector4));
-	colorResource_->Map(0, nullptr, reinterpret_cast<void**>(&colorData_));
-	// デフォルトカラー（白）
-	if (colorData_)
+	colorResource_ = dxCommon->CreateBufferResource(sizeof(MaterialData));
+	colorResource_->Map(0, nullptr, reinterpret_cast<void**>(&materialData_));
+	// デフォルトカラー（白）、デフォルトはフォグなし (fogFar <= fogNear)
+	if (materialData_)
 	{
-		*colorData_ = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		materialData_->color = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		materialData_->fogNear = 0.0f;
+		materialData_->fogFar = 0.0f;
+		materialData_->pad[0] = 0.0f;
+		materialData_->pad[1] = 0.0f;
 	}
 }
 void WireframeObject::Update() {
@@ -54,18 +69,31 @@ void WireframeObject::Draw() {
 	commandList->IASetIndexBuffer(&indexBufferView_);
 	// b0: TransformMatrix
 	commandList->SetGraphicsRootConstantBufferView(0, transform_.constBuffer->GetGPUVirtualAddress());
-	// b1: Color
+	// b1: Material (Color + Fog)
 	commandList->SetGraphicsRootConstantBufferView(1, colorResource_->GetGPUVirtualAddress());
 	// 描画実行
 	commandList->DrawIndexedInstanced(indexCount_, 1, 0, 0, 0);
 }
 void WireframeObject::SetColor(const Vector4& color) {
-	if (colorData_)
+	if (materialData_)
 	{
-		*colorData_ = color;
+		materialData_->color = color;
+	}
+}
+void WireframeObject::SetFog(float fogNear, float fogFar) {
+	if (materialData_)
+	{
+		materialData_->fogNear = fogNear;
+		materialData_->fogFar = fogFar;
 	}
 }
 void WireframeObject::CreateMeshBuffers(const std::vector<Vector4>& vertices, const std::vector<uint32_t>& indices) {
+	if (mappedVertexData_ && vertexBuffer_) {
+		vertexBuffer_->Unmap(0, nullptr);
+		mappedVertexData_ = nullptr;
+		maxVertexCount_ = 0;
+	}
+
 	auto dxCommon = DirectXCommon::GetInstance();
 	// --- 頂点バッファ作成 ---
 	size_t vertexBufferSize = sizeof(Vector4) * vertices.size();
@@ -87,6 +115,56 @@ void WireframeObject::CreateMeshBuffers(const std::vector<Vector4>& vertices, co
 	std::memcpy(indexData, indices.data(), indexBufferSize);
 	indexCount_ = static_cast<uint32_t>(indices.size());
 }
+
+void WireframeObject::CreateDynamicLineMesh(uint32_t maxLines) {
+	if (mappedVertexData_ && vertexBuffer_) {
+		vertexBuffer_->Unmap(0, nullptr);
+		mappedVertexData_ = nullptr;
+	}
+
+	maxVertexCount_ = maxLines * 2;
+	auto dxCommon = DirectXCommon::GetInstance();
+
+	// 頂点バッファ作成 (Uploadヒープで常時マップ可能)
+	size_t vertexBufferSize = sizeof(Vector4) * maxVertexCount_;
+	vertexBuffer_ = dxCommon->CreateBufferResource(vertexBufferSize);
+	vertexBufferView_.BufferLocation = vertexBuffer_->GetGPUVirtualAddress();
+	vertexBufferView_.SizeInBytes = static_cast<UINT>(vertexBufferSize);
+	vertexBufferView_.StrideInBytes = sizeof(Vector4);
+
+	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&mappedVertexData_));
+
+	// インデックスバッファ作成 (0, 1, 2, 3, 4, 5, ...)
+	std::vector<uint32_t> indices(maxVertexCount_);
+	for (uint32_t i = 0; i < maxVertexCount_; ++i) {
+		indices[i] = i;
+	}
+	size_t indexBufferSize = sizeof(uint32_t) * indices.size();
+	indexBuffer_ = dxCommon->CreateBufferResource(indexBufferSize);
+	indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+	indexBufferView_.SizeInBytes = static_cast<UINT>(indexBufferSize);
+	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+	uint32_t* indexData = nullptr;
+	indexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexData));
+	std::memcpy(indexData, indices.data(), indexBufferSize);
+	indexBuffer_->Unmap(0, nullptr);
+
+	indexCount_ = 0; // 初期状態では描画ライン0
+}
+
+void WireframeObject::UpdateDynamicLines(const std::vector<std::pair<Vector3, Vector3>>& lines) {
+	if (!mappedVertexData_ || maxVertexCount_ == 0) {
+		return;
+	}
+
+	uint32_t lineCount = (std::min)(static_cast<uint32_t>(lines.size()), maxVertexCount_ / 2);
+	for (uint32_t i = 0; i < lineCount; ++i) {
+		mappedVertexData_[i * 2 + 0] = {lines[i].first.x, lines[i].first.y, lines[i].first.z, 1.0f};
+		mappedVertexData_[i * 2 + 1] = {lines[i].second.x, lines[i].second.y, lines[i].second.z, 1.0f};
+	}
+	indexCount_ = lineCount * 2;
+}
+
 // ------------------------------------------------------------
 // 斜線なし Cube の生成（12本のエッジ）
 // ------------------------------------------------------------

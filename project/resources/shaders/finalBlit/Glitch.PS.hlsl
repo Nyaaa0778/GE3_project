@@ -50,22 +50,27 @@ PixelShaderOutput main(VertexShaderOutput input)
     
     float shiftScale = max(gParams.shiftScale, 0.0);
     float shift = 0.0;
-    if (blockRand > 0.88)
+    if (gParams.glitchIntensity > 0.001)
     {
-        // 激しいラインズレ
-        shift = (rand(float2(blockY, t * 60.0)) - 0.5) * 0.07 * gParams.glitchIntensity * shiftScale;
-    }
-    else if (glitchPulse > 0.5 && blockRand > 0.65)
-    {
-        // パルス発生時の中程度のズレ
-        shift = (rand(float2(blockY, t * 30.0)) - 0.5) * 0.03 * gParams.glitchIntensity * shiftScale;
+        if (blockRand > 0.70)
+        {
+            // 激しいラインズレ
+            shift = (rand(float2(blockY, t * 60.0)) - 0.5) * 0.08 * gParams.glitchIntensity * shiftScale;
+        }
+        else if (blockRand > 0.38)
+        {
+            // 中程度のズレ
+            shift = (rand(float2(blockY, t * 30.0)) - 0.5) * 0.035 * gParams.glitchIntensity * shiftScale;
+        }
     }
     
     float2 shiftedUV = uv;
     shiftedUV.x = clamp(shiftedUV.x + shift, 0.0, 1.0);
     
-    // 2. 色収差 (Chromatic Aberration: 赤と青を逆方向にずらす)
-    float aberration = gParams.chromaticAberration * (1.0 + abs(shift) * 15.0);
+    // 2. 色収差 (Chromatic Aberration: グリッチ発生時のみ赤と青を逆方向にずらす)
+    float aberration = (gParams.glitchIntensity > 0.001)
+        ? (gParams.chromaticAberration * (1.0 + abs(shift) * 20.0))
+        : 0.0;
     
     float r = gTexture.Sample(gSampler, float2(clamp(shiftedUV.x + aberration, 0.0, 1.0), shiftedUV.y)).r;
     float g = gTexture.Sample(gSampler, shiftedUV).g;
@@ -78,9 +83,12 @@ PixelShaderOutput main(VertexShaderOutput input)
     float scanline = sin(uv.y * 700.0) * 0.5 + 0.5;
     col -= col * (scanline * gParams.scanlineIntensity);
     
-    // 4. 微小粒子グレイン (アナログ・ノイズ感)
-    float grain = (rand(uv + float2(t * 10.0, t * 10.0)) - 0.5) * 0.03 * gParams.glitchIntensity;
-    col += grain;
+    // 4. 微小粒子グレイン (グリッチ発生中のみアナログ・ノイズ感を付与)
+    if (gParams.glitchIntensity > 0.001)
+    {
+        float grain = (rand(uv + float2(t * 10.0, t * 10.0)) - 0.5) * 0.04 * gParams.glitchIntensity;
+        col += grain;
+    }
     
     output.color = float32_t4(col, a);
     return output;

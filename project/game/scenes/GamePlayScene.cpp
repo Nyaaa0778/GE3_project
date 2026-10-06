@@ -53,6 +53,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	level_->ApplyCameraParameters(camera_.get());
+	camera_->SetFarClip(600.0f); // 奥行きを出すためファークリップを大幅拡張 (100m -> 600m)
 	camera_->CalculateMatrix();
 	camera_->CreateConstantBuffer();
 
@@ -65,6 +66,7 @@ void GamePlayScene::Initialize() {
 	debugCamera_->Initialize();
 	debugCamera_->SetRotate(camera_->GetRotate());
 	debugCamera_->SetTranslate(camera_->GetTranslate());
+	debugCamera_->SetFarClip(600.0f);
 	debugCamera_->CalculateMatrix();
 	debugCamera_->CreateConstantBuffer();
 
@@ -133,10 +135,10 @@ void GamePlayScene::Initialize() {
 
 	cityBackground_ = std::make_unique<CityBackground>();
 	if (railCamera_ && !railCamera_->GetControlPoints().empty()) {
-		// コース（スプライン軌道）に沿ってゴール地点（＋奥の余白）までビル群を生成
-		cityBackground_->InitializeAlongPath(camera_.get(), railCamera_->GetControlPoints(), 10.0f, 8.0f, 60.0f);
+		// コース（スプライン軌道）に沿ってゴール地点（＋奥の余白150m）までビル群を生成、80m〜300mで奥へ向かって徐々にフェードアウト
+		cityBackground_->InitializeAlongPath(camera_.get(), railCamera_->GetControlPoints(), 10.0f, 8.0f, 150.0f, 80.0f, 300.0f);
 	} else {
-		cityBackground_->Initialize(camera_.get(), -20.0f, 220.0f, 50, 10.0f, 240.0f);
+		cityBackground_->Initialize(camera_.get(), -20.0f, 320.0f, 65, 10.0f, 200.0f, 80.0f, 300.0f);
 	}
 	cityBackground_->SetScrollSpeed(0.0f); // レール移動するため静止配置
 
@@ -706,6 +708,29 @@ void GamePlayScene::UpdateImGui() {
 			if (ImGui::SliderFloat("Base Y (Height)", &baseY, -50.0f, 10.0f, "%.1f"))
 			{
 				cityBackground_->SetBaseY(baseY);
+			}
+
+			float fogNear = cityBackground_->GetFogNear();
+			float fogFar = cityBackground_->GetFogFar();
+			bool fogChanged = false;
+			if (ImGui::SliderFloat("Depth Fade Near (Start)", &fogNear, 10.0f, 300.0f, "%.1f m")) {
+				fogChanged = true;
+			}
+			if (ImGui::SliderFloat("Depth Fade Far (End)", &fogFar, 50.0f, 600.0f, "%.1f m")) {
+				fogChanged = true;
+			}
+			if (fogChanged) {
+				cityBackground_->SetFog(fogNear, fogFar);
+			}
+
+			if (camera_) {
+				float farClip = camera_->GetFarClip();
+				if (ImGui::SliderFloat("Camera Far Clip", &farClip, 100.0f, 1000.0f, "%.0f m")) {
+					camera_->SetFarClip(farClip);
+					if (debugCamera_) {
+						debugCamera_->SetFarClip(farClip);
+					}
+				}
 			}
 		}
 	}
