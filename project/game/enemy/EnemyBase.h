@@ -40,6 +40,10 @@ public:
 	bool HasGivenScore() const { return hasGivenScore_; }
 	void SetScoreGiven(bool given) { hasGivenScore_ = given; }
 
+	// 弾による撃破フラグ
+	bool IsKilledByPlayerBullet() const { return isKilledByPlayerBullet_; }
+	void SetKilledByPlayerBullet(bool killed) { isKilledByPlayerBullet_ = killed; }
+
 	// スコア値取得
 	virtual int GetScore() const { return 100; }
 
@@ -60,6 +64,7 @@ protected:
 	// 状態
 	EnemyState state_ = EnemyState::kAlive;
 	bool hasGivenScore_ = false;
+	bool isKilledByPlayerBullet_ = false;
 
 	// 死亡演出用
 	float deathTimer_ = 0.0f;

@@ -136,7 +136,7 @@ void CityBackground::Initialize(Camera* camera, float minZ, float maxZ, int numB
 	groundGrid1_->SetCamera(camera_);
 	groundGrid1_->CreateGrid(gridWidth, gridLength_, divX, divZ);
 	groundGrid1_->SetPosition({0.0f, baseY_, minZ_ + gridLength_ * 0.5f});
-	groundGrid1_->SetColor({0.0f, 0.85f, 1.0f, 1.0f}); // ネオンシアン (不透明)
+	groundGrid1_->SetColor({0.0f, 0.40f, 0.50f, 0.70f}); // 落ち着いたディープシアン
 	groundGrid1_->SetFog(fogNear_, fogFar_);
 
 	groundGrid2_ = std::make_unique<WireframeObject>();
@@ -144,7 +144,7 @@ void CityBackground::Initialize(Camera* camera, float minZ, float maxZ, int numB
 	groundGrid2_->SetCamera(camera_);
 	groundGrid2_->CreateGrid(gridWidth, gridLength_, divX, divZ);
 	groundGrid2_->SetPosition({0.0f, baseY_, minZ_ + gridLength_ * 1.5f});
-	groundGrid2_->SetColor({0.0f, 0.85f, 1.0f, 1.0f});
+	groundGrid2_->SetColor({0.0f, 0.40f, 0.50f, 0.70f});
 	groundGrid2_->SetFog(fogNear_, fogFar_);
 
 	// 3. サイバーパンクビル群の生成
@@ -267,7 +267,7 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 	groundGrid1_->SetCamera(camera_);
 	groundGrid1_->CreateGrid(spanX, spanZ, divX, divZ);
 	groundGrid1_->SetPosition({centerX, baseY_, centerZ});
-	groundGrid1_->SetColor({0.0f, 0.85f, 1.0f, 1.0f}); // シアン
+	groundGrid1_->SetColor({0.0f, 0.40f, 0.50f, 0.70f}); // 落ち着いたディープシアン
 	groundGrid1_->SetFog(fogNear_, fogFar_);
 
 	groundGrid2_.reset(); // コース全体を1枚の広大なグリッドでカバーするため2枚目はリセット
@@ -277,9 +277,9 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 	std::uniform_real_distribution<float> randDist(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> rand01(0.0f, 1.0f);
 
-	// カラーパレット: シアン基調 (約75%) ＋ 高層アクセントにマゼンタ (約25%)、黄色なし
-	const Vector4 kColorCyan    = {0.0f, 0.90f, 1.0f, 1.0f};
-	const Vector4 kColorMagenta = {1.0f, 0.05f, 0.75f, 1.0f};
+	// カラーパレット: 背景として手前を邪魔しない落ち着いたダークネオントーン
+	const Vector4 kColorCyan    = {0.0f, 0.45f, 0.55f, 0.75f};  // 落ち着いたダークシアン
+	const Vector4 kColorMagenta = {0.55f, 0.03f, 0.40f, 0.75f}; // 落ち着いたダークマゼンタ
 
 	float startDist = -15.0f; // スタート手前からビルを配置
 	float endDist = totalCourseLength + extraEndMargin; // ゴール地点を越えて余白まで配置
@@ -386,9 +386,9 @@ void CityBackground::GenerateCity() {
 	std::uniform_real_distribution<float> randDist(-1.0f, 1.0f);
 	std::uniform_real_distribution<float> rand01(0.0f, 1.0f);
 
-	// カラーパレット: シアン基調 (約75%) ＋ 高層アクセントにマゼンタ (約25%)
-	const Vector4 kColorCyan    = {0.0f, 0.90f, 1.0f, 1.0f};  // ベース: ネオンシアン
-	const Vector4 kColorMagenta = {1.0f, 0.05f, 0.75f, 1.0f}; // アクセント: ネオンマゼンタ
+	// カラーパレット: 背景として手前を邪魔しない落ち着いたダークネオントーン
+	const Vector4 kColorCyan    = {0.0f, 0.45f, 0.55f, 0.75f};  // 落ち着いたダークシアン
+	const Vector4 kColorMagenta = {0.55f, 0.03f, 0.40f, 0.75f}; // 落ち着いたダークマゼンタ
 
 	for (int side = -1; side <= 1; side += 2) { // -1: 左側, +1: 右側
 		for (int i = 0; i < numBuildingsPerSide_; ++i) {

@@ -132,6 +132,17 @@ private:
 	static constexpr int kMaxScoreDigits = 5;
 	std::vector<std::unique_ptr<Sprite>> uiScoreDigits_;
 
+	// ------------------------------------
+	// フェードアウト
+	// ------------------------------------
+	std::unique_ptr<Sprite> fadeSprite_;
+	float fadeAlpha_ = 0.0f;
+	float gameOverWaitTimer_ = 0.0f;
+	float clearWaitTimer_ = 0.0f;
+	static constexpr float kGameOverFadeDuration = 1.0f; // 破壊演出後のフェードアウト時間（秒）
+	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
+	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
+
 
 private:
 	// ドローン編隊の生成

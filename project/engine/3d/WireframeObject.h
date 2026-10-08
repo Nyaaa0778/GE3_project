@@ -29,6 +29,26 @@ public:
 	void CreateGrid(float sizeX, float sizeZ, uint32_t divisionsX, uint32_t divisionsZ);
 
 	/// <summary>
+	/// 正二十面体（Icosahedron）メッシュの生成
+	/// </summary>
+	void CreateIcosahedron(float radius = 1.0f);
+
+	/// <summary>
+	/// 正十二面体（Dodecahedron）メッシュの生成
+	/// </summary>
+	void CreateDodecahedron(float radius = 1.0f);
+
+	/// <summary>
+	/// 正八面体（Octahedron）メッシュの生成
+	/// </summary>
+	void CreateOctahedron(float radius = 1.0f);
+
+	/// <summary>
+	/// 円環（Ring）メッシュの生成 (axis: 0=XY, 1=YZ, 2=XZ)
+	/// </summary>
+	void CreateRing(float radius = 1.0f, uint32_t subdivision = 32, int axis = 2);
+
+	/// <summary>
 	/// 動的ライン描画用のメッシュバッファを初期化
 	/// </summary>
 	/// <param name="maxLines">最大ライン本数</param>

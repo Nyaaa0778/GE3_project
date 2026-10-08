@@ -269,3 +269,149 @@ void WireframeObject::CreateSphere(float radius, uint32_t subdivision) {
 	CreateMeshBuffers(vertices, indices);
 }
 
+void WireframeObject::CreateIcosahedron(float radius) {
+	const float phi = (1.0f + std::sqrt(5.0f)) * 0.5f;
+	const float invLen = 1.0f / std::sqrt(1.0f + phi * phi);
+	const float a = radius * invLen;
+	const float b = radius * phi * invLen;
+
+	std::vector<Vector4> vertices = {
+		{-a,  b, 0.0f, 1.0f}, // 0
+		{ a,  b, 0.0f, 1.0f}, // 1
+		{-a, -b, 0.0f, 1.0f}, // 2
+		{ a, -b, 0.0f, 1.0f}, // 3
+
+		{0.0f, -a,  b, 1.0f}, // 4
+		{0.0f,  a,  b, 1.0f}, // 5
+		{0.0f, -a, -b, 1.0f}, // 6
+		{0.0f,  a, -b, 1.0f}, // 7
+
+		{ b, 0.0f, -a, 1.0f}, // 8
+		{ b, 0.0f,  a, 1.0f}, // 9
+		{-b, 0.0f, -a, 1.0f}, // 10
+		{-b, 0.0f,  a, 1.0f}  // 11
+	};
+
+	const float targetDistSq = (2.0f * a) * (2.0f * a);
+	const float epsilon = targetDistSq * 0.15f;
+
+	std::vector<uint32_t> indices;
+	for (size_t i = 0; i < vertices.size(); ++i) {
+		for (size_t j = i + 1; j < vertices.size(); ++j) {
+			float dx = vertices[i].x - vertices[j].x;
+			float dy = vertices[i].y - vertices[j].y;
+			float dz = vertices[i].z - vertices[j].z;
+			float distSq = dx * dx + dy * dy + dz * dz;
+			if (std::abs(distSq - targetDistSq) < epsilon) {
+				indices.push_back(static_cast<uint32_t>(i));
+				indices.push_back(static_cast<uint32_t>(j));
+			}
+		}
+	}
+
+	CreateMeshBuffers(vertices, indices);
+}
+
+void WireframeObject::CreateDodecahedron(float radius) {
+	const float phi = (1.0f + std::sqrt(5.0f)) * 0.5f;
+	const float invPhi = 1.0f / phi;
+	const float invSqrt3 = 1.0f / std::sqrt(3.0f);
+	const float a = radius * invSqrt3;
+	const float b = radius * invPhi * invSqrt3;
+	const float c = radius * phi * invSqrt3;
+
+	std::vector<Vector4> vertices;
+	vertices.reserve(20);
+
+	for (float x : {-a, a}) {
+		for (float y : {-a, a}) {
+			for (float z : {-a, a}) {
+				vertices.push_back({x, y, z, 1.0f});
+			}
+		}
+	}
+	for (float y : {-b, b}) {
+		for (float z : {-c, c}) {
+			vertices.push_back({0.0f, y, z, 1.0f});
+		}
+	}
+	for (float x : {-b, b}) {
+		for (float y : {-c, c}) {
+			vertices.push_back({x, y, 0.0f, 1.0f});
+		}
+	}
+	for (float x : {-c, c}) {
+		for (float z : {-b, b}) {
+			vertices.push_back({x, 0.0f, z, 1.0f});
+		}
+	}
+
+	const float edgeLen = 2.0f * b;
+	const float targetDistSq = edgeLen * edgeLen;
+	const float epsilon = targetDistSq * 0.15f;
+
+	std::vector<uint32_t> indices;
+	for (size_t i = 0; i < vertices.size(); ++i) {
+		for (size_t j = i + 1; j < vertices.size(); ++j) {
+			float dx = vertices[i].x - vertices[j].x;
+			float dy = vertices[i].y - vertices[j].y;
+			float dz = vertices[i].z - vertices[j].z;
+			float distSq = dx * dx + dy * dy + dz * dz;
+			if (std::abs(distSq - targetDistSq) < epsilon) {
+				indices.push_back(static_cast<uint32_t>(i));
+				indices.push_back(static_cast<uint32_t>(j));
+			}
+		}
+	}
+
+	CreateMeshBuffers(vertices, indices);
+}
+
+void WireframeObject::CreateOctahedron(float radius) {
+	std::vector<Vector4> vertices = {
+		{ radius,    0.0f,    0.0f, 1.0f},
+		{-radius,    0.0f,    0.0f, 1.0f},
+		{   0.0f,  radius,    0.0f, 1.0f},
+		{   0.0f, -radius,    0.0f, 1.0f},
+		{   0.0f,    0.0f,  radius, 1.0f},
+		{   0.0f,    0.0f, -radius, 1.0f}
+	};
+
+	std::vector<uint32_t> indices = {
+		0, 2,  2, 1,  1, 3,  3, 0, // XY
+		0, 4,  4, 1,  1, 5,  5, 0, // XZ
+		2, 4,  4, 3,  3, 5,  5, 2  // YZ
+	};
+
+	CreateMeshBuffers(vertices, indices);
+}
+
+void WireframeObject::CreateRing(float radius, uint32_t subdivision, int axis) {
+	std::vector<Vector4> vertices;
+	std::vector<uint32_t> indices;
+	vertices.reserve(subdivision);
+	indices.reserve(subdivision * 2);
+
+	float angleStep = 2.0f * std::numbers::pi_v<float> / static_cast<float>(subdivision);
+	for (uint32_t i = 0; i < subdivision; ++i) {
+		float angle = i * angleStep;
+		float c = std::cos(angle) * radius;
+		float s = std::sin(angle) * radius;
+
+		if (axis == 0) {
+			vertices.push_back({c, s, 0.0f, 1.0f});
+		} else if (axis == 1) {
+			vertices.push_back({0.0f, c, s, 1.0f});
+		} else {
+			vertices.push_back({c, 0.0f, s, 1.0f});
+		}
+
+		uint32_t next = (i + 1 == subdivision) ? 0 : i + 1;
+		indices.push_back(i);
+		indices.push_back(next);
+	}
+
+	CreateMeshBuffers(vertices, indices);
+}
+
+

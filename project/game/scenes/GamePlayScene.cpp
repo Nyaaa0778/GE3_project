@@ -166,6 +166,7 @@ void GamePlayScene::Initialize() {
 	goal_->Initialize(goalPos, camera_.get());
 
 	isGoalReached_ = false;
+	clearWaitTimer_ = 0.0f;
 
 	// パーティクルグループの作成と初期クリア
 	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
@@ -198,6 +199,18 @@ void GamePlayScene::Initialize() {
 		uiScoreDigits_[i]->SetSize({digitWidth, digitHeight});
 	}
 
+	// ------------------------------------
+	// フェードアウト用スプライト
+	// ------------------------------------
+	fadeSprite_ = std::make_unique<Sprite>();
+	fadeSprite_->Initialize("white.png", {0.0f, 0.0f}, {0.0f, 0.0f});
+	fadeSprite_->SetSize({static_cast<float>(WinApp::kClientWidth), static_cast<float>(WinApp::kClientHeight)});
+	fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
+	fadeAlpha_ = 0.0f;
+	gameOverWaitTimer_ = 0.0f;
+
+	phase_ = Phase::kPlay;
+
 }
 
 void GamePlayScene::Update() {
@@ -208,6 +221,10 @@ void GamePlayScene::Update() {
 	if (input->TriggerKey(DIK_T))
 	{
 		input->SetShake(0.0f, 0.0f);
+		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+		{
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		}
 		SceneManager::GetInstance()->ChangeScene("TITLE");
 		return;
 	}
@@ -226,7 +243,11 @@ void GamePlayScene::Update() {
 
 	if (railCamera_)
 	{
-		railCamera_->Update(!useDebugCamera_);
+		// ゲームオーバー時はカメラワークを停止する
+		if (phase_ != Phase::kGameOver)
+		{
+			railCamera_->Update(!useDebugCamera_);
+		}
 	}
 	if (useDebugCamera_)
 	{
@@ -234,7 +255,7 @@ void GamePlayScene::Update() {
 	}
 
 #ifdef USE_IMGUI
-	if (railCamera_)
+	if (railCamera_ && phase_ != Phase::kGameOver)
 	{
 		railCamera_->DrawDebugSpline();
 	}
@@ -244,7 +265,8 @@ void GamePlayScene::Update() {
 	if (shake_)
 	{
 		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
-		if (shake_->IsActive() && !useDebugCamera_)
+		// ゲームオーバー時はカメラの揺れも停止
+		if (phase_ != Phase::kGameOver && shake_->IsActive() && !useDebugCamera_)
 		{
 			Vector3 offset = shake_->GetOffset();
 			camera_->matWorld.m[3][0] += offset.x;
@@ -256,7 +278,13 @@ void GamePlayScene::Update() {
 		}
 	}
 
-	if (player_->IsAlive())
+	// プレイヤーが死亡している場合はゲームオーバーへ移行
+	if (phase_ == Phase::kPlay && player_ && !player_->IsAlive())
+	{
+		ChangePhase(Phase::kGameOver);
+	}
+
+	if (phase_ == Phase::kPlay)
 	{
 
 		// ------------------------------------
@@ -268,45 +296,37 @@ void GamePlayScene::Update() {
 		}
 
 		// ------------------------------------
-		// ゴール到達判定とシーン遷移
+		// ゴール到達判定（衝突判定またはレールカメラ末尾到達）
 		// ------------------------------------
-		if (isGoalReached_)
+		bool reachedGoal = false;
+		// 自機との衝突判定によるゴール到達チェック
+		if (player_ && goal_)
 		{
-			Input* input = Input::GetInstance();
-			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A))
+			if (Collision::CheckCollision(player_.get(), goal_.get()))
 			{
-				SceneManager::GetInstance()->ChangeScene("TITLE");
-				return;
-			}
-		} else
-		{
-			// 自機との衝突判定によるゴール到達チェック
-			if (player_ && goal_)
-			{
-				if (Collision::CheckCollision(player_.get(), goal_.get()))
-				{
-					isGoalReached_ = true;
-					if (railCamera_)
-					{
-						railCamera_->SetIsPlaying(false);
-					}
-				}
-			}
-
-			// カメラがレール末尾に到達したことによるゴール到達チェック
-			if (railCamera_ && !railCamera_->GetIsLoop())
-			{
-				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
-				if (railCamera_->GetSplineTime() >= maxTime)
-				{
-					isGoalReached_ = true;
-					railCamera_->SetIsPlaying(false);
-				}
+				reachedGoal = true;
 			}
 		}
 
+		// カメラがレール末尾に到達したことによるゴール到達チェック
+		if (railCamera_ && !railCamera_->GetIsLoop())
+		{
+			float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+			if (railCamera_->GetSplineTime() >= maxTime)
+			{
+				reachedGoal = true;
+			}
+		}
+
+		// ゴールに到達した場合はクリアフェーズへ移行（フェードアウト開始）
+		if (reachedGoal)
+		{
+			ChangePhase(Phase::kClear);
+			return;
+		}
+
 		// ------------------------------------
-		// 自機 & 敵 & 衝突判定 (ゴール未到達時のみ更新)
+		// 自機 & 敵 & 衝突判定
 		// ------------------------------------
 		if (!isGoalReached_)
 		{
@@ -374,6 +394,13 @@ void GamePlayScene::Update() {
 
 			CheckAllCollisions();
 
+			// 衝突判定によってプレイヤーが撃破された場合、直ちにゲームオーバーへ移行してフレームを終了
+			if (!player_->IsAlive())
+			{
+				ChangePhase(Phase::kGameOver);
+				return;
+			}
+
 			for (auto it = enemies_.begin(); it != enemies_.end(); )
 			{
 				// 撃破トリガー（演出開始時に1回だけ処理）
@@ -381,18 +408,22 @@ void GamePlayScene::Update() {
 				{
 					(*it)->SetScoreGiven(true);
 
-					// スコア加算
-					score_ += (*it)->GetScore();
-
-					// 敵撃破時の衝撃波エフェクト生成
-					auto shockwave = std::make_unique<Shockwave>();
-					shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
-					shockwaves_.push_back(std::move(shockwave));
-
-					// 撃破時のマイクロシェイク
-					if (shake_)
+					// PlayerBulletに当たって死んだときのみスコア加算および撃破演出を実行
+					if ((*it)->IsKilledByPlayerBullet())
 					{
-						shake_->Start(0.15f, 0.35f);
+						// スコア加算
+						score_ += (*it)->GetScore();
+
+						// 敵撃破時の衝撃波エフェクト生成
+						auto shockwave = std::make_unique<Shockwave>();
+						shockwave->Initialize(camera_.get(), (*it)->GetWorldPosition());
+						shockwaves_.push_back(std::move(shockwave));
+
+						// 撃破時のマイクロシェイク
+						if (shake_)
+						{
+							shake_->Start(0.15f, 0.35f);
+						}
 					}
 				}
 
@@ -452,8 +483,8 @@ void GamePlayScene::Update() {
 		// ------------------------------------
 		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
-		// HPが20以下の時に Vignetting 赤点滅を適用
-		if (player_->GetHP() <= 20.0f)
+		// 生存中かつHPが20以下の時に Vignetting 赤点滅を適用
+		if (player_->IsAlive() && player_->GetHP() <= 20.0f)
 		{
 			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
 
@@ -466,34 +497,133 @@ void GamePlayScene::Update() {
 			PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
 		} else
 		{
-			// HPが20より大きくなったら Vignetting モードを解除して通常状態にする
+			// HPが20より大きくなった、または死亡時は Vignetting モードを解除して通常状態にする
 			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
 			{
 				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 			}
 		}
 	}
-	else
+	else if (phase_ == Phase::kClear)
 	{
 		// ------------------------------------
-		// プレイヤー死亡時（ゲーム全体の動きを止め、プレイヤーをディゾルブ消滅させる）
+		// クリアフェーズ（ゴール到達・フェードアウト演出）
+		// レールカメラと敵の動きは停止
+		// ゴールや自機のアニメーション、背景、パーティクルは継続
 		// ------------------------------------
-		// レールカメラの動きを止める
-		if (railCamera_)
+
+		// ヴィネットが残っていれば確実に消去
+		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
 		{
-			railCamera_->SetIsPlaying(false);
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 		}
 
-		// プレイヤーの更新（ディゾルブを進行させる）
-		std::list<EnemyBase*> activeEnemies;
-		player_->Update(activeEnemies);
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-		// ディゾルブ消滅が完了したら、ENTERキー/Aボタンでタイトルへ戻れるようにする
-		if (player_->GetDissolveThreshold() >= 1.0f)
+		// 1. ゴールオブジェクトの更新（回転・UVアニメーション継続）
+		if (goal_)
 		{
-			Input* input = Input::GetInstance();
+			goal_->Update();
+		}
+
+		// 2. 自機の更新（操作や弾撃ちは行わず、アニメーションとトランスフォームのみ更新）
+		if (player_)
+		{
+			player_->UpdateAnimationOnly();
+		}
+
+		// 3. 背景都市・オブジェクト・パーティクルの更新
+		level_->Update();
+		if (backgroundSprite_)
+		{
+			backgroundSprite_->Update();
+		}
+		if (cityBackground_)
+		{
+			cityBackground_->SetCamera(camera_.get());
+			cityBackground_->Update();
+		}
+		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+
+		// 4. フェードアウトの進行
+		fadeAlpha_ += dt / kClearFadeDuration;
+		if (fadeAlpha_ >= 1.0f)
+		{
+			fadeAlpha_ = 1.0f;
+			clearWaitTimer_ += dt;
+		}
+
+		if (fadeSprite_)
+		{
+			fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, fadeAlpha_});
+			fadeSprite_->Update();
+		}
+
+		// 5. フェードアウト完了後、余韻待機時間経過（またはENTER / Aボタン入力）でタイトルシーンへ遷移
+		if (fadeAlpha_ >= 1.0f)
+		{
+			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A) || clearWaitTimer_ >= kClearWaitDuration)
+			{
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+				return;
+			}
+		}
+		else
+		{
+			// フェードアウト中もENTER / Aボタンで即座にタイトルへ戻れるようにする
 			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A))
 			{
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+				SceneManager::GetInstance()->ChangeScene("TITLE");
+				return;
+			}
+		}
+	}
+	else if (phase_ == Phase::kGameOver)
+	{
+		// ------------------------------------
+		// ゲームオーバーフェーズ
+		// カメラワークと敵の動きは停止（Updateを呼ばない）
+		// ヴィネットは即座に消去され、プレイヤーの破壊演出（ディゾルブ）が進行
+		// 破壊演出が完了した後にフェードアウトを開始する
+		// ------------------------------------
+
+		// ヴィネットが残っていれば確実に消去
+		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+		{
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		}
+
+		// 1. プレイヤーの更新（ディゾルブ消滅・破壊演出を進行させる）
+		std::list<EnemyBase*> emptyEnemies;
+		player_->Update(emptyEnemies);
+
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
+
+		// 2. プレイヤーの破壊演出（ディゾルブ）が完了してからフェードアウトを開始
+		if (player_->GetDissolveThreshold() >= 1.0f)
+		{
+			fadeAlpha_ += dt / kGameOverFadeDuration;
+			if (fadeAlpha_ >= 1.0f)
+			{
+				fadeAlpha_ = 1.0f;
+				gameOverWaitTimer_ += dt;
+			}
+		}
+
+		if (fadeSprite_)
+		{
+			fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, fadeAlpha_});
+			fadeSprite_->Update();
+		}
+
+		// 3. フェードアウト完了後、ENTERキー/Aボタン、もしくはフェードアウト完了後2秒経過でタイトルへ戻る
+		if (fadeAlpha_ >= 1.0f)
+		{
+			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A) || gameOverWaitTimer_ >= 2.0f)
+			{
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 				SceneManager::GetInstance()->ChangeScene("TITLE");
 				return;
 			}
@@ -601,12 +731,27 @@ void GamePlayScene::Draw() {
 	{
 		digitSprite->Draw();
 	}
+
+	// ------------------------------------
+	// フェードアウト (最前面に描画)
+	// ------------------------------------
+	if (fadeSprite_ && fadeAlpha_ > 0.0f)
+	{
+		fadeSprite_->Draw();
+	}
 }
 
 
 void GamePlayScene::Finalize() {
 	backgroundSprite_.reset();
 	cityBackground_.reset();
+	fadeSprite_.reset();
+
+	// シーン終了時にポストプロセスを通常状態に戻す
+	if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+	{
+		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+	}
 }
 
 void GamePlayScene::CheckAllCollisions() {
@@ -637,6 +782,7 @@ void GamePlayScene::CheckAllCollisions() {
 			{
 				bullet->OnCollision();
 				enemy->OnCollision();
+				enemy->SetKilledByPlayerBullet(true);
 			}
 		}
 	}
@@ -649,13 +795,43 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 	switch (phase_)
 	{
 	case Phase::kLeady:
-		//phase_
 		break;
 	case Phase::kPlay:
 		break;
 	case Phase::kClear:
+		isGoalReached_ = true;
+		// 1. レールカメラの動きを停止
+		if (railCamera_)
+		{
+			railCamera_->SetIsPlaying(false);
+		}
+		// 2. ヴィネットを確実に消去して通常描画に戻す
+		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		// 3. フェードアウトの初期化
+		fadeAlpha_ = 0.0f;
+		clearWaitTimer_ = 0.0f;
+		if (fadeSprite_)
+		{
+			fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
+			fadeSprite_->Update();
+		}
 		break;
 	case Phase::kGameOver:
+		// 1. レールカメラの動きを停止
+		if (railCamera_)
+		{
+			railCamera_->SetIsPlaying(false);
+		}
+		// 2. ヴィネットを確実に消去して通常描画に戻す
+		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		// 3. フェードアウトの初期化
+		fadeAlpha_ = 0.0f;
+		gameOverWaitTimer_ = 0.0f;
+		if (fadeSprite_)
+		{
+			fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
+			fadeSprite_->Update();
+		}
 		break;
 	}
 }
@@ -710,6 +886,21 @@ void GamePlayScene::UpdateImGui() {
 	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 	ImGui::Text("Score: %d", score_);
 	ImGui::Text("Active Enemies: %d", static_cast<int>(enemies_.size()));
+
+	const char* phaseStr = "Unknown";
+	switch (phase_) {
+	case Phase::kLeady: phaseStr = "Ready"; break;
+	case Phase::kPlay: phaseStr = "Play"; break;
+	case Phase::kClear: phaseStr = "Clear"; break;
+	case Phase::kGameOver: phaseStr = "GameOver"; break;
+	}
+	ImGui::Text("Phase: %s", phaseStr);
+	ImGui::Text("Fade Alpha: %.2f", fadeAlpha_);
+	if (phase_ == Phase::kPlay) {
+		if (ImGui::Button("Debug: Trigger Goal (Clear)")) {
+			ChangePhase(Phase::kClear);
+		}
+	}
 
 	if (ImGui::CollapsingHeader("City Background", ImGuiTreeNodeFlags_DefaultOpen))
 	{

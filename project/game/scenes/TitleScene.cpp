@@ -1,14 +1,8 @@
 #include "TitleScene.h"
 
 #include <MyEngine.h>
-#include "LightManager.h"
-#include <numbers>
 
-#include "Skybox.h"
 #include "DebugCamera.h"
-#include "Plane.h"
-#include "TextureManager.h"
-#include "WireframeObject.h"
 #include "CityBackground.h"
 #include "TitleLogo.h"
 #include "Sprite.h"

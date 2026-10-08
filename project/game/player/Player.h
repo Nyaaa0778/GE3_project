@@ -18,6 +18,7 @@ class Object3d;
 class Camera;
 class Primitive;
 class Sprite;
+class WireframeObject;
 
 class LockOn;
 class IPlayerState;
@@ -33,6 +34,9 @@ public:
 	void Initialize(const Vector3& InitialPos, Object3d* model, Camera* camera);
 	
 	void Update(const std::list<EnemyBase*>& enemies);
+	
+	// アニメーション・トランスフォームのみ更新（クリア演出用）
+	void UpdateAnimationOnly();
 	
 	void Draw();
 
@@ -168,5 +172,43 @@ private:
 	/// 攻撃処理
 	/// </summary>
 	void Attack();
+
+	// ------------------------------------
+	// 数式制御多面体ビジュアル専用関数
+	// ------------------------------------
+	void InitializeGeometricVisual();
+	void UpdateGeometricVisual(float deltaTime);
+	void DrawGeometricVisual();
+
+	// 幾何学多面体パーツ（数式描画プレイヤー）
+	// 外殻：正二十面体 (Icosahedron)
+	std::unique_ptr<WireframeObject> outerShell_;
+	// 中間層：正十二面体 (Dodecahedron)
+	std::unique_ptr<WireframeObject> middleShell_;
+	// ジャイロリング
+	std::unique_ptr<WireframeObject> gyroRingX_;
+	std::unique_ptr<WireframeObject> gyroRingY_;
+	// 内側中心核（高輝度当たり判定ビーコン）
+	std::unique_ptr<WireframeObject> centerCore_;
+	// 内側偏心公転光核：シアン光
+	std::unique_ptr<WireframeObject> cyanCore_;
+	// 内側偏心公転光核：マゼンタ光
+	std::unique_ptr<WireframeObject> magentaCore_;
+	// 前方幾何学ポインター（進行方向・照準用）
+	std::unique_ptr<WireframeObject> forwardPointer_;
+
+	// 各パーツの回転・アニメーション用パラメータ
+	Vector3 outerRotation_ = {0.0f, 0.0f, 0.0f};
+	Vector3 middleRotation_ = {0.0f, 0.0f, 0.0f};
+	Vector3 gyroRotationX_ = {0.0f, 0.0f, 0.0f};
+	Vector3 gyroRotationY_ = {0.0f, 0.0f, 0.0f};
+	Vector3 centerCoreRotation_ = {0.0f, 0.0f, 0.0f};
+
+	// 操作追従バンク・ティルト角
+	Vector3 currentTilt_ = {0.0f, 0.0f, 0.0f};
+	Vector3 targetTilt_ = {0.0f, 0.0f, 0.0f};
+
+	// ビジュアル用経過時間タイマー
+	float visualTime_ = 0.0f;
 };
 

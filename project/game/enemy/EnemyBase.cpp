@@ -18,6 +18,7 @@ void EnemyBase::Initialize(Object3d* model, Camera* camera, const Vector3& pos) 
 
 	state_ = EnemyState::kAlive;
 	hasGivenScore_ = false;
+	isKilledByPlayerBullet_ = false;
 	deathTimer_ = 0.0f;
 	glitchFrameCount_ = 0;
 

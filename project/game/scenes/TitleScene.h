@@ -11,10 +11,8 @@ class ParticleEmitter;
 class Camera;
 class DebugCamera;
 class Skybox;
-class WireframeObject;
 class CityBackground;
 class TitleLogo;
-#include "Plane.h"
 
 class TitleScene : public IScene {
 public:
