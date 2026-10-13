@@ -143,6 +143,13 @@ private:
 	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
 	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
 
+	// ------------------------------------
+	// テスト・確認用: タイトル自動帰還
+	// ------------------------------------
+	bool autoReturnToTitle_ = true;       // ゲームシーン切り替え後に自動でタイトルへ戻るフラグ
+	float autoReturnTimer_ = 0.0f;        // 経過時間タイマー
+	float autoReturnDuration_ = 3.0f;     // 自動帰還までの待機時間（秒、デフォルト3秒）
+
 private:
 
 	// ドローン編隊の生成

@@ -210,15 +210,38 @@ void GamePlayScene::Initialize() {
 	fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, 0.0f});
 	fadeAlpha_ = 0.0f;
 	gameOverWaitTimer_ = 0.0f;
+	autoReturnTimer_ = 0.0f;
 
 	phase_ = Phase::kPlay;
 }
 
 void GamePlayScene::Update() {
-	// ------------------------------------
-	// デバッグ・ショートカット: Tキーでタイトル画面へ遷移（CRT画面遷移演出）
-	// ------------------------------------
 	Input* input = Input::GetInstance();
+
+	// ------------------------------------
+	// ゲームシーンに切り替わってから数秒でタイトル画面へ自動遷移（CRT画面遷移演出）
+	// 画面遷移演出（再点灯）が完了してゲーム画面が表示されてからタイマーをカウント
+	// ------------------------------------
+	if (autoReturnToTitle_ && !CrtTransition::GetInstance()->IsTransitioning())
+	{
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
+		autoReturnTimer_ += dt;
+		if (autoReturnTimer_ >= autoReturnDuration_)
+		{
+			input->SetShake(0.0f, 0.0f);
+			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+			{
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+			}
+			// タイトルへ遷移（タイトル画面表示後はkGlitchに復帰）
+			CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kGlitch);
+			return;
+		}
+	}
+
+	// ------------------------------------
+	// デバッグ・ショートカット: Tキーでタイトル画面へ即時遷移（CRT画面遷移演出）
+	// ------------------------------------
 	if (input->TriggerKey(DIK_T))
 	{
 		if (!CrtTransition::GetInstance()->IsTransitioning())
@@ -302,32 +325,36 @@ void GamePlayScene::Update() {
 
 		// ------------------------------------
 		// ゴール到達判定（衝突判定またはレールカメラ末尾到達）
+		// 画面遷移中（CRT演出中）はクリアへの移行をブロック
 		// ------------------------------------
 		bool reachedGoal = false;
-		// 自機との衝突判定によるゴール到達チェック
-		if (player_ && goal_)
+		if (!CrtTransition::GetInstance()->IsTransitioning())
 		{
-			if (Collision::CheckCollision(player_.get(), goal_.get()))
+			// 自機との衝突判定によるゴール到達チェック
+			if (player_ && goal_)
 			{
-				reachedGoal = true;
+				if (Collision::CheckCollision(player_.get(), goal_.get()))
+				{
+					reachedGoal = true;
+				}
 			}
-		}
 
-		// カメラがレール末尾に到達したことによるゴール到達チェック
-		if (railCamera_ && !railCamera_->GetIsLoop())
-		{
-			float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
-			if (railCamera_->GetSplineTime() >= maxTime)
+			// カメラがレール末尾に到達したことによるゴール到達チェック
+			if (railCamera_ && !railCamera_->GetIsLoop())
 			{
-				reachedGoal = true;
+				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+				if (railCamera_->GetSplineTime() >= maxTime)
+				{
+					reachedGoal = true;
+				}
 			}
-		}
 
-		// ゴールに到達した場合はクリアフェーズへ移行（フェードアウト開始）
-		if (reachedGoal)
-		{
-			ChangePhase(Phase::kClear);
-			return;
+			// ゴールに到達した場合はクリアフェーズへ移行（フェードアウト開始）
+			if (reachedGoal)
+			{
+				ChangePhase(Phase::kClear);
+				return;
+			}
 		}
 
 		// ------------------------------------
@@ -397,13 +424,17 @@ void GamePlayScene::Update() {
 				enemy->Update();
 			}
 
-			CheckAllCollisions();
-
-			// 衝突判定によってプレイヤーが撃破された場合、直ちにゲームオーバーへ移行してフレームを終了
-			if (!player_->IsAlive())
+			// 画面遷移中（CRT演出中）でなければ衝突判定と死亡判定を行う（遷移中は無敵化してCRT演出を保証）
+			if (!CrtTransition::GetInstance()->IsTransitioning())
 			{
-				ChangePhase(Phase::kGameOver);
-				return;
+				CheckAllCollisions();
+
+				// 衝突判定によってプレイヤーが撃破された場合、直ちにゲームオーバーへ移行してフレームを終了
+				if (!player_->IsAlive())
+				{
+					ChangePhase(Phase::kGameOver);
+					return;
+				}
 			}
 
 			for (auto it = enemies_.begin(); it != enemies_.end(); )
@@ -488,24 +519,27 @@ void GamePlayScene::Update() {
 		// ------------------------------------
 		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
-		// 生存中かつHPが20以下の時に Vignetting 赤点滅を適用
-		if (player_->IsAlive() && player_->GetHP() <= 20.0f)
+		// 生存中かつHPが20以下の時に Vignetting 赤点滅を適用（画面遷移中でない場合のみ）
+		if (!CrtTransition::GetInstance()->IsTransitioning())
 		{
-			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
-
-			// 点滅の計算 (サイン波を用いて明滅)
-			static float vignetteTimer = 0.0f;
-			vignetteTimer += 0.1f; // 点滅スピード
-
-			float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
-			float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
-			PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
-		} else
-		{
-			// HPが20より大きくなった、または死亡時は Vignetting モードを解除して通常状態にする
-			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+			if (player_->IsAlive() && player_->GetHP() <= 20.0f)
 			{
-				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kVignetting);
+
+				// 点滅の計算 (サイン波を用いて明滅)
+				static float vignetteTimer = 0.0f;
+				vignetteTimer += 0.1f; // 点滅スピード
+
+				float t = (sinf(vignetteTimer) + 1.0f) * 0.5f; // 0.0f 〜 1.0f のサイン波
+				float red = 0.3f + t * 0.7f; // 最小0.3から最大1.0の赤さ
+				PostProcessRenderer::GetInstance()->SetVignetteColor({red, 0.0f, 0.0f, 1.0f});
+			} else
+			{
+				// HPが20より大きくなった、または死亡時は Vignetting モードを解除して通常状態にする
+				if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+				{
+					PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+				}
 			}
 		}
 	}
@@ -810,8 +844,11 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		{
 			railCamera_->SetIsPlaying(false);
 		}
-		// 2. ヴィネットを確実に消去して通常描画に戻す
-		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		// 2. ヴィネットを確実に消去して通常描画に戻す（画面遷移中はCrtTransitionを維持）
+		if (!CrtTransition::GetInstance()->IsTransitioning())
+		{
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		}
 		// 3. フェードアウトの初期化
 		fadeAlpha_ = 0.0f;
 		clearWaitTimer_ = 0.0f;
@@ -827,8 +864,11 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		{
 			railCamera_->SetIsPlaying(false);
 		}
-		// 2. ヴィネットを確実に消去して通常描画に戻す
-		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		// 2. ヴィネットを確実に消去して通常描画に戻す（画面遷移中はCrtTransitionを維持）
+		if (!CrtTransition::GetInstance()->IsTransitioning())
+		{
+			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+		}
 		// 3. フェードアウトの初期化
 		fadeAlpha_ = 0.0f;
 		gameOverWaitTimer_ = 0.0f;
@@ -968,6 +1008,16 @@ void GamePlayScene::UpdateImGui() {
 		{
 			SpawnDroneFormation(spawnFront, DroneFlightPattern::kFigureEight, 4);
 		}
+	}
+
+	// 自動タイトル帰還デバッグ
+	if (ImGui::CollapsingHeader("Auto Return to Title", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Enable Auto Return", &autoReturnToTitle_);
+		ImGui::SliderFloat("Return Delay", &autoReturnDuration_, 1.0f, 10.0f, "%.1f s");
+		float progress = (autoReturnDuration_ > 0.0f) ? (autoReturnTimer_ / autoReturnDuration_) : 0.0f;
+		ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
+		ImGui::Text("Timer: %.2f / %.2f s", autoReturnTimer_, autoReturnDuration_);
 	}
 
 	// CRT画面遷移デバッグ
