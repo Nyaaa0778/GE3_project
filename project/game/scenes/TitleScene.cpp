@@ -8,6 +8,7 @@
 #include "Sprite.h"
 #include "PostProcessRenderer.h"
 #include "PostProcessEffects.h"
+#include "CrtTransition.h"
 
 #ifdef USE_IMGUI
 #include "imgui.h"
@@ -49,8 +50,10 @@ void TitleScene::Initialize() {
 	titleLogo_ = std::make_unique<TitleLogo>();
 	titleLogo_->Initialize(); // nullptrで専用HUD正面カメラを生成
 
-	// 5. グリッチ・ポストプロセスの有効化
-	PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kGlitch);
+	// 5. グリッチ・ポストプロセスの有効化（画面遷移中でなければ有効化）
+	if (!CrtTransition::GetInstance()->IsTransitioning()) {
+		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kGlitch);
+	}
 }
 
 void TitleScene::Update() {
@@ -83,64 +86,69 @@ void TitleScene::Update() {
 		titleLogo_->Update();
 	}
 
-	// 間欠的グリッチ演出の制御（普段は静止・平穏、2.5〜5.5秒に1度だけ一瞬0.05〜0.10秒激しく乱れる）
-	float activeIntensity = 0.0f;
-	float activeAberration = 0.0f;
+	// 間欠的グリッチ演出の制御（通常待機中のみ。画面遷移中はCrtTransitionで制御）
+	if (!CrtTransition::GetInstance()->IsTransitioning()) {
+		float activeIntensity = 0.0f;
+		float activeAberration = 0.0f;
 
-	if (enableGlitch_) {
-		const float dt = 0.016f;
-		if (!isGlitching_) {
-			glitchTimer_ += dt;
-			if (glitchTimer_ >= glitchNextInterval_) {
-				isGlitching_ = true;
-				glitchBurstTimer_ = 0.0f;
-				// 一瞬の持続時間: 0.05秒〜0.10秒 (数フレーム程度)
-				glitchBurstDuration_ = 0.05f + (static_cast<float>(rand()) / RAND_MAX) * 0.05f;
-				// 約20%の確率で二連撃
-				if ((static_cast<float>(rand()) / RAND_MAX) < 0.20f && glitchSubBurstCount_ == 0) {
-					glitchSubBurstCount_ = 1;
-				} else {
-					glitchSubBurstCount_ = 0;
+		if (enableGlitch_) {
+			const float dt = 0.016f;
+			if (!isGlitching_) {
+				glitchTimer_ += dt;
+				if (glitchTimer_ >= glitchNextInterval_) {
+					isGlitching_ = true;
+					glitchBurstTimer_ = 0.0f;
+					// 一瞬の持続時間: 0.05秒〜0.10秒 (数フレーム程度)
+					glitchBurstDuration_ = 0.05f + (static_cast<float>(rand()) / RAND_MAX) * 0.05f;
+					// 約20%の確率で二連撃
+					if ((static_cast<float>(rand()) / RAND_MAX) < 0.20f && glitchSubBurstCount_ == 0) {
+						glitchSubBurstCount_ = 1;
+					} else {
+						glitchSubBurstCount_ = 0;
+					}
 				}
-			}
-		} else {
-			glitchBurstTimer_ += dt;
-			activeIntensity = glitchIntensity_;
-			activeAberration = chromaticAberration_;
+			} else {
+				glitchBurstTimer_ += dt;
+				activeIntensity = glitchIntensity_;
+				activeAberration = chromaticAberration_;
 
-			if (glitchBurstTimer_ >= glitchBurstDuration_) {
-				isGlitching_ = false;
-				glitchTimer_ = 0.0f;
-				if (glitchSubBurstCount_ > 0) {
-					// 二連撃の第2波は0.06秒〜0.12秒後の直後に発生
-					glitchNextInterval_ = 0.06f + (static_cast<float>(rand()) / RAND_MAX) * 0.06f;
-					glitchSubBurstCount_ = 0;
-				} else {
-					// 通常の静寂インターバル (2.5秒〜5.5秒)
-					glitchNextInterval_ = 2.5f + (static_cast<float>(rand()) / RAND_MAX) * 3.0f;
+				if (glitchBurstTimer_ >= glitchBurstDuration_) {
+					isGlitching_ = false;
+					glitchTimer_ = 0.0f;
+					if (glitchSubBurstCount_ > 0) {
+						// 二連撃の第2波は0.06秒〜0.12秒後の直後に発生
+						glitchNextInterval_ = 0.06f + (static_cast<float>(rand()) / RAND_MAX) * 0.06f;
+						glitchSubBurstCount_ = 0;
+					} else {
+						// 通常の静寂インターバル (2.5秒〜5.5秒)
+						glitchNextInterval_ = 2.5f + (static_cast<float>(rand()) / RAND_MAX) * 3.0f;
+					}
 				}
 			}
 		}
-	}
 
-	// グリッチエフェクトパラメータの反映
-	if (auto* glitch = PostProcessRenderer::GetInstance()->GetEffect<GlitchEffect>(PostProcessRenderer::PostProcessMode::kGlitch)) {
-		glitch->SetIntensity(activeIntensity);
-		glitch->SetChromaticAberration(activeAberration);
-		glitch->SetScanlineIntensity(scanlineIntensity_);
-		glitch->SetSpeed(30.0f);
-		glitch->SetFrequency(1.0f);
-		glitch->SetBlockCount(glitchBlockCount_);
-		glitch->SetShiftScale(glitchShiftScale_);
+		// グリッチエフェクトパラメータの反映
+		if (auto* glitch = PostProcessRenderer::GetInstance()->GetEffect<GlitchEffect>(PostProcessRenderer::PostProcessMode::kGlitch)) {
+			glitch->SetIntensity(activeIntensity);
+			glitch->SetChromaticAberration(activeAberration);
+			glitch->SetScanlineIntensity(scanlineIntensity_);
+			glitch->SetSpeed(30.0f);
+			glitch->SetFrequency(1.0f);
+			glitch->SetBlockCount(glitchBlockCount_);
+			glitch->SetShiftScale(glitchShiftScale_);
+		}
 	}
 
 	UpdateImGui();
 
 	// --- シーン遷移判定 (Space / Aボタン) ---
-	if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
-		input->SetShake(0.0f, 0.0f);
-		SceneManager::GetInstance()->ChangeScene("GAMEPLAY");
-		return;
+	if (!CrtTransition::GetInstance()->IsTransitioning()) {
+		if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
+			input->SetShake(0.0f, 0.0f);
+			// CRTグリッチ画面遷移演出の開始（完了後はkNormalに戻す）
+			CrtTransition::GetInstance()->StartTransition("GAMEPLAY", PostProcessRenderer::PostProcessMode::kNormal);
+			return;
+		}
 	}
 }
 
@@ -162,8 +170,10 @@ void TitleScene::Draw() {
 }
 
 void TitleScene::Finalize() {
-	// 次のシーンのためにポストプロセスを通常に戻す
-	PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+	// 遷移中でない場合のみポストプロセスを通常に戻す
+	if (!CrtTransition::GetInstance()->IsTransitioning()) {
+		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+	}
 
 	backgroundSprite_.reset();
 	cityBackground_.reset();
@@ -292,6 +302,9 @@ void TitleScene::UpdateImGui() {
 			}
 		}
 	}
+
+	// CRT遷移マネージャーのImGuiを描画
+	CrtTransition::GetInstance()->UpdateImGui();
 
 	if (ImGui::CollapsingHeader("Cyber Title Logo (CYBERAIL)", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if (titleLogo_) {

@@ -29,6 +29,7 @@ public:
 		kDissolve,
 		kRandomNoise,
 		kGlitch,
+		kCrtTransition,
 	};
 
 public:

@@ -2,6 +2,8 @@
 
 #include <MyEngine.h>
 #include "PostProcessRenderer.h"
+#include "PostProcessEffects.h"
+#include "CrtTransition.h"
 #include "TextureManager.h"
 #include "Input.h"
 
@@ -210,23 +212,26 @@ void GamePlayScene::Initialize() {
 	gameOverWaitTimer_ = 0.0f;
 
 	phase_ = Phase::kPlay;
-
 }
 
 void GamePlayScene::Update() {
 	// ------------------------------------
-	// デバッグ・ショートカット: Tキーでタイトル画面へ遷移
+	// デバッグ・ショートカット: Tキーでタイトル画面へ遷移（CRT画面遷移演出）
 	// ------------------------------------
 	Input* input = Input::GetInstance();
 	if (input->TriggerKey(DIK_T))
 	{
-		input->SetShake(0.0f, 0.0f);
-		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+		if (!CrtTransition::GetInstance()->IsTransitioning())
 		{
-			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+			input->SetShake(0.0f, 0.0f);
+			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+			{
+				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+			}
+			// タイトルへ遷移（タイトル画面完了後はkGlitchに復帰）
+			CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kGlitch);
+			return;
 		}
-		SceneManager::GetInstance()->ChangeScene("TITLE");
-		return;
 	}
 
 	// ------------------------------------
@@ -964,6 +969,9 @@ void GamePlayScene::UpdateImGui() {
 			SpawnDroneFormation(spawnFront, DroneFlightPattern::kFigureEight, 4);
 		}
 	}
+
+	// CRT画面遷移デバッグ
+	CrtTransition::GetInstance()->UpdateImGui();
 
 	ImGui::End();
 #endif

@@ -87,3 +87,4 @@ private:
 	bool isGlitching_ = false;
 	int glitchSubBurstCount_ = 0;        // たまに「パパッ」と二連撃を起こす用
 };
+

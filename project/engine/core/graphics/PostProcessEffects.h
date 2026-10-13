@@ -274,3 +274,67 @@ private:
 	void CreateRootSignature();
 	void CreatePipelineState();
 };
+
+//================================================================================
+// 11. CRT・グリッチ画面遷移エフェクト（RGBグリッチ＆ブラウン管シャットダウン/再点灯）
+//================================================================================
+class CrtTransitionEffect : public IPostProcessEffect
+{
+public:
+	struct CrtTransitionParams {
+		float time;
+		float glitchIntensity;     // RGBグリッチ強度 (0.0 ~ 1.0)
+		float chromaticAberration; // 色収差量 (0.0 ~ 0.1)
+		float scanlineIntensity;   // 走査線強度 (0.0 ~ 1.0)
+
+		float collapseX;           // 水平スケール (1.0 = 全画面, 0.0 = 収縮)
+		float collapseY;           // 垂直スケール (1.0 = 全画面, 0.0 = 収縮)
+		float flashIntensity;      // 白熱・発光強度 (0.0 ~ 2.0)
+		float screenCurvature;     // ブラウン管歪み (0.0 ~ 0.1)
+	};
+
+public:
+	void Initialize(DirectXCommon* dxCommon) override;
+	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+
+	void SetGlitchIntensity(float val) { glitchIntensity_ = val; }
+	float GetGlitchIntensity() const { return glitchIntensity_; }
+
+	void SetChromaticAberration(float val) { chromaticAberration_ = val; }
+	float GetChromaticAberration() const { return chromaticAberration_; }
+
+	void SetScanlineIntensity(float val) { scanlineIntensity_ = val; }
+	float GetScanlineIntensity() const { return scanlineIntensity_; }
+
+	void SetCollapseX(float val) { collapseX_ = val; }
+	float GetCollapseX() const { return collapseX_; }
+
+	void SetCollapseY(float val) { collapseY_ = val; }
+	float GetCollapseY() const { return collapseY_; }
+
+	void SetFlashIntensity(float val) { flashIntensity_ = val; }
+	float GetFlashIntensity() const { return flashIntensity_; }
+
+	void SetScreenCurvature(float val) { screenCurvature_ = val; }
+	float GetScreenCurvature() const { return screenCurvature_; }
+
+private:
+	DirectXCommon* dxCommon_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
+	CrtTransitionParams* paramsData_ = nullptr;
+
+	float time_ = 0.0f;
+	float glitchIntensity_ = 0.0f;
+	float chromaticAberration_ = 0.0f;
+	float scanlineIntensity_ = 0.25f;
+	float collapseX_ = 1.0f;
+	float collapseY_ = 1.0f;
+	float flashIntensity_ = 0.0f;
+	float screenCurvature_ = 0.04f;
+
+	void CreateRootSignature();
+	void CreatePipelineState();
+};
+

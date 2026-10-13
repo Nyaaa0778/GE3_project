@@ -161,6 +161,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BlendMode.cpp" />
     <ClCompile Include="engine\effects\primitive\Ring.cpp" />
     <ClCompile Include="game\collider\Collider.cpp" />
     <ClCompile Include="game\enemy\EnemyBase.cpp" />
@@ -237,6 +238,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effects\particle\ParticleEmitter.cpp" />
     <ClCompile Include="game\scenes\TitleScene.cpp" />
     <ClCompile Include="engine\framework\scene\SceneManager.cpp" />
+    <ClCompile Include="engine\framework\scene\CrtTransition.cpp" />
     <ClCompile Include="engine\3d\Skybox.cpp" />
     <ClCompile Include="engine\3d\SkyboxRenderer.cpp" />
     <ClCompile Include="engine\effects\primitive\Plane.cpp" />
@@ -262,6 +264,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\WireframeRenderer.cpp" />
     <ClCompile Include="game\scenes\CityBackground.cpp" />
     <ClCompile Include="game\scenes\TitleLogo.cpp" />
+    <ClCompile Include="PipelineStateCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl">
@@ -429,8 +432,17 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
+    <FxCompile Include="resources\shaders\finalBlit\CrtTransition.PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Development|x64'">Pixel</ShaderType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlendMode.h" />
     <ClInclude Include="engine\effects\primitive\Ring.h" />
     <ClInclude Include="game\collider\Collider.h" />
     <ClInclude Include="game\enemy\EnemyBase.h" />
@@ -485,6 +497,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="game\scenes\TitleScene.h" />
     <ClInclude Include="engine\framework\scene\IScene.h" />
     <ClInclude Include="engine\framework\scene\SceneManager.h" />
+    <ClInclude Include="engine\framework\scene\CrtTransition.h" />
     <ClInclude Include="engine\framework\scene\ISceneFactory.h" />
     <ClInclude Include="engine\core\MyEngine.h" />
     <ClInclude Include="engine\3d\LightManager.h" />
@@ -520,6 +533,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
     <ClInclude Include="game\scenes\CityBackground.h" />
     <ClInclude Include="game\scenes\TitleLogo.h" />
+    <ClInclude Include="PipelineStateCache.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

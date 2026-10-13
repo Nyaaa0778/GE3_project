@@ -143,8 +143,8 @@ private:
 	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
 	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
 
-
 private:
+
 	// ドローン編隊の生成
 	void SpawnDroneFormation(const Vector3& basePos, DroneFlightPattern pattern, int count = 4);
 
@@ -157,3 +157,4 @@ private:
 	// ImGuiの更新
 	void UpdateImGui();
 };
+

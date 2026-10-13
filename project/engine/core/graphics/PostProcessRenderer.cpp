@@ -34,6 +34,7 @@ void PostProcessRenderer::Initialize(DirectXCommon* dxCommon) {
 	effects_[PostProcessMode::kDissolve] = std::make_unique<DissolveEffect>();
 	effects_[PostProcessMode::kRandomNoise] = std::make_unique<RandomNoiseEffect>();
 	effects_[PostProcessMode::kGlitch] = std::make_unique<GlitchEffect>();
+	effects_[PostProcessMode::kCrtTransition] = std::make_unique<CrtTransitionEffect>();
 
 	// 一括初期化
 	for (auto& pair : effects_) {
