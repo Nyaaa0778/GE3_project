@@ -129,7 +129,7 @@ void Sprite::Draw() {
 	}
 	DirectXCommon::GetInstance()
 		->GetCommandList()
-		->SetGraphicsRootDescriptorTable(2, srvHandle);
+		->SetGraphicsRootDescriptorTable(4, srvHandle);
 
 	// 描画
 	DirectXCommon::GetInstance()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,

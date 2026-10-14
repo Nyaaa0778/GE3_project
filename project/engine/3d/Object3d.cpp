@@ -64,7 +64,7 @@ void Object3d::Update(WorldTransform* worldTransform) {
 /// </summary>
 void Object3d::Draw(WorldTransform* worldTransform) {
 
-	object3dRenderer_->SetupCommonRenderState();
+	object3dRenderer_->SetupCommonRenderState(blendMode_);
 
 	WorldTransform* wt = worldTransform;
 	if (!wt) {
@@ -118,30 +118,6 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 		model_->Draw();
 	}
 }
-
-//================================================================================
-// データ作成処理
-//================================================================================
-
-// (座標変換行列データの作成はWorldTransformに移管したため削除)
-///// <summary>
-///// 平行光源データの作成
-///// </summary>
-//void Object3d::CreateDirectionalLightData() {
-//	// 平行光源リソースを作成
-//	directionalLightBuffer_ =
-//		object3dRenderer_->GetDxCommon()->CreateBufferResource(
-//			sizeof(DirectionalLight));
-//
-//	// directionalLightResourceに平行光源データを書き込む
-//	directionalLightBuffer_->Map(
-//		0, nullptr, reinterpret_cast<void**>(&directionalLightData_));
-//
-//	// 平行光源データの初期値を書き込む
-//	directionalLightData_->color = {1.0f, 1.0f, 1.0f, 1.0f};
-//	directionalLightData_->direction = {0.0f, -1.0f, 0.5f};
-//	directionalLightData_->intensity = 1.5f;
-//}
 
 //================================================================================
 // Getter

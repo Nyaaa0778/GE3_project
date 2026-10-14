@@ -161,7 +161,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BlendMode.cpp" />
+    <ClCompile Include="engine\graphics\BlendMode.cpp" />
     <ClCompile Include="engine\effects\primitive\Ring.cpp" />
     <ClCompile Include="game\collider\Collider.cpp" />
     <ClCompile Include="game\enemy\EnemyBase.cpp" />
@@ -264,7 +264,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\WireframeRenderer.cpp" />
     <ClCompile Include="game\scenes\CityBackground.cpp" />
     <ClCompile Include="game\scenes\TitleLogo.cpp" />
-    <ClCompile Include="PipelineStateCache.cpp" />
+    <ClCompile Include="engine\graphics\PipelineStateCache.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl">
@@ -442,7 +442,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BlendMode.h" />
+    <ClInclude Include="engine\graphics\BlendMode.h" />
     <ClInclude Include="engine\effects\primitive\Ring.h" />
     <ClInclude Include="game\collider\Collider.h" />
     <ClInclude Include="game\enemy\EnemyBase.h" />
@@ -533,7 +533,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
     <ClInclude Include="game\scenes\CityBackground.h" />
     <ClInclude Include="game\scenes\TitleLogo.h" />
-    <ClInclude Include="PipelineStateCache.h" />
+    <ClInclude Include="engine\graphics\PipelineStateCache.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

@@ -56,14 +56,14 @@ struct LightData
     SpotLight spotLights[4];
 };
 
-ConstantBuffer<LightData> gLightData : register(b1);
+ConstantBuffer<LightData> gLightData : register(b2);
 
 // ----- カメラ -----
 struct Camera
 {
     float32_t3 worldPosition;
 };
-ConstantBuffer<Camera> gCamera : register(b2);
+ConstantBuffer<Camera> gCamera : register(b1);
 
 Texture2D<float32_t4> gTexture : register(t0);
 TextureCube<float32_t4> gEnvironmentTexture : register(t1);

@@ -3,14 +3,14 @@
 #include <d3d12.h>
 #include <memory>
 #include <wrl.h>
-#include "BlendMode.h"
+#include <dxcapi.h>
+
+#include <BlendMode.h>
 
 class DirectXCommon;
 class Camera;
 
 class Object3dRenderer {
-public:
-	using BlendMode = ::BlendMode;
 public:
 	//================================================================================
 	// シングルトン
@@ -69,7 +69,7 @@ public:
 	/// <summary>
 	/// 共通描画設定
 	/// </summary>
-	void SetupCommonRenderState();
+	void SetupCommonRenderState(BlendMode blendMode);
 
 	//================================================================================
 	// Getter
@@ -111,28 +111,7 @@ private:
 	// デフォルトカメラ
 	Camera* defaultCamera_ = nullptr;
 
-	//================================================================================
-	// GPU リソース
-	//================================================================================
-
-	// ルートシグネチャ
-	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-
-	// グラフィックスパイプラインステート
-	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
-
-private:
-	//================================================================================
-	// パイプライン構築（RootSignature / PSO）
-	//================================================================================
-
-	/// <summary>
-	/// ルートシグネチャを作成
-	/// </summary>
-	void CreateRootSignature();
-	/// <summary>
-	/// グラフィックスパイプラインの生成
-	/// </summary>
-	void CreateGraphicsPipeline();
-	
+	ComPtr<IDxcBlob> vsBlob_;
+	ComPtr<IDxcBlob> psBlob_;
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[3] = {};
 };

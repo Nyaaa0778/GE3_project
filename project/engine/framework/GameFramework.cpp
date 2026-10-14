@@ -18,6 +18,7 @@
 #include "PrimitiveRenderer.h"
 #include "PostProcessRenderer.h"
 #include "WireframeRenderer.h"
+#include "PipelineStateCache.h"
 
 #include <dbghelp.h>
 #include <strsafe.h>
@@ -126,6 +127,9 @@ void GameFramework::Initialize() {
 	camera_->SetTranslate({0.0f, 6.0f, -10.0f});
 	camera_->CalculateMatrix();
 	camera_->CreateConstantBuffer();
+
+	// PipelineStateCache の初期化
+	PipelineStateCache::GetInstance()->Initialize(DirectXCommon::GetInstance());
 
 	// SpriteRenderer の初期化
 	SpriteRenderer::GetInstance()->Initialize(DirectXCommon::GetInstance());
@@ -245,6 +249,9 @@ void GameFramework::Finalize() {
 
 	// LightManagerを解放
 	LightManager::GetInstance()->Finalize();
+
+	// PipelineStateCache を解放
+	PipelineStateCache::GetInstance()->Finalize();
 
 	// カメラを解放
 	camera_.reset();

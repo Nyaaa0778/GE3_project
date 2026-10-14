@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "RailCameraController.h"
 
 #include <MyEngine.h>

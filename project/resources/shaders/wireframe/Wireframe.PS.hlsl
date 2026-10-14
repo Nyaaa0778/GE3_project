@@ -7,7 +7,7 @@ struct WireframeMaterial
     float fogFar;
     float2 pad;
 };
-ConstantBuffer<WireframeMaterial> gMaterial : register(b1);
+ConstantBuffer<WireframeMaterial> gMaterial : register(b0);
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {

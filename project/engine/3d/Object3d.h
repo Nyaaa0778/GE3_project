@@ -7,6 +7,7 @@
 #include <Vector2.h>
 #include <Vector3.h>
 #include <Vector4.h>
+#include <BlendMode.h>
 
 struct ModelData;
 
@@ -15,7 +16,6 @@ struct ModelData;
 #include <wrl.h>
 
 #include "LightingType.h"
-#include "Model.h"
 
 class Model;
 class Camera;
@@ -65,7 +65,7 @@ public:
 	// 色
 	const Vector4& GetColor() const;
 	// BlendMode
-	Object3dRenderer::BlendMode GetBlendMode() const { return blendMode_; }
+	BlendMode GetBlendMode() const { return blendMode_; }
 	// ライティングの種類
 	void SetLightingType(LightingType type);
 
@@ -112,26 +112,13 @@ public:
 	// 色
 	void SetColor(const Vector4& color);
 	// BlendMode
-	void SetBlendMode(Object3dRenderer::BlendMode blendMode) {
+	void SetBlendMode(BlendMode blendMode) {
 		blendMode_ = blendMode;
 	}
 	// モデル
 	void SetModel(const std::string& modelName, const std::string& extension = "obj");
 
 	float GetEnvironmentCoefficient();
-
-	//// ライトの色
-	//void SetLightColor(const Vector4& color) {
-	//	directionalLightData_->color = color;
-	//}
-	//// ライトの向き
-	//void SetLightDirection(const Vector3& direction) {
-	//	directionalLightData_->direction = direction;
-	//}
-	//// ライトの輝度
-	//void SetLightIntensity(float intensity) {
-	//	directionalLightData_->intensity = intensity;
-	//}
 
 	// カメラ
 	void SetCamera(Camera* camera) { camera_ = camera; }
@@ -147,20 +134,6 @@ public:
 	void SetDissolveEdgeWidth(float width) { dissolveEdgeWidth_ = width; }
 	void SetDissolveEdgeColor(const Vector4& color) { dissolveEdgeColor_ = color; }
 	void SetDissolveNoiseTexture(const std::string& filePath) { dissolveMaskTexturePath_ = filePath; }
-
-private:
-	//================================================================================
-	// 内部構造体
-	//================================================================================
-
-	// (座標変換行列データはWorldTransformに移管)
-
-	//// 平行光源
-	//struct DirectionalLight {
-	//	Vector4 color;     // ライトの色
-	//	Vector3 direction; // ライトの向き
-	//	float intensity;   // 輝度
-	//};
 
 private:
 	//================================================================================
@@ -195,7 +168,7 @@ private:
 	WorldTransform* externalWorldTransform_ = nullptr;
 
 	// BlendMode
-	Object3dRenderer::BlendMode blendMode_ = Object3dRenderer::BlendMode::kNone;
+	BlendMode blendMode_ = BlendMode::kNone;
 
 	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_ {};
 
@@ -206,14 +179,4 @@ private:
 	Vector4 dissolveEdgeColor_ = { 1.0f, 0.5f, 0.0f, 1.0f };
 	std::string dissolveMaskTexturePath_ = "";
 
-private:
-	//================================================================================
-	// データ作成処理
-	//================================================================================
-
-	// (初期化はworldTransform_.Initialize()にて行うため削除)
-	/*/// <summary>
-	/// 平行光源データの作成
-	/// </summary>
-	void CreateDirectionalLightData();*/
 };

@@ -4,18 +4,52 @@
 #include <memory>
 #include <wrl.h>
 
+#include <dxcapi.h>
+
+#include <BlendMode.h>
+
 class DirectXCommon;
 
 class SkyboxRenderer {
 public:
 	//================================================================================
-	// シングルトン管理
+	// シングルトン
 	//================================================================================
+
+	// 唯一のインスタンス取得
 	static SkyboxRenderer* GetInstance();
+
+	/// <summary>
+	/// コンストラクタ
+	/// </summary>
+	SkyboxRenderer() = default;
+	/// <summary>
+	/// デストラクタ
+	/// </summary>
+	~SkyboxRenderer() = default;
+
+	/// <summary>
+	/// 終了
+	/// </summary>
 	static void Finalize();
 
-	SkyboxRenderer() = default;
-	~SkyboxRenderer() = default;
+	// unique_ptrからの削除を許可
+	friend std::default_delete<SkyboxRenderer>;
+
+private:
+	static std::unique_ptr<SkyboxRenderer> instance;
+
+	/// <summary>
+	/// コピーコンストラクタ禁止
+	/// </summary>
+	/// <param name="">コピー元（使用不可）</param>
+	SkyboxRenderer(SkyboxRenderer&) = delete;
+	/// <summary>
+	/// 代入演算子禁止
+	/// </summary>
+	/// <param name="">代入元（使用不可）</param>
+	/// <returns>このオブジェクトを返す</returns>
+	SkyboxRenderer& operator=(SkyboxRenderer&) = delete;
 
 public:
 	//================================================================================
@@ -33,28 +67,22 @@ public:
 
 private:
 	//================================================================================
-	// プライベート関数
+	// 型エイリアス
 	//================================================================================
-	SkyboxRenderer(const SkyboxRenderer&) = delete;
-	SkyboxRenderer& operator=(const SkyboxRenderer&) = delete;
 
-	// パイプラインの構成要素生成
-	void CreateRootSignature();
-	void CreateGraphicsPipeline();
+	// namespace
+	template <class InterfaceType>
+	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
 private:
 	//================================================================================
 	// メンバ変数
 	//================================================================================
-	static std::unique_ptr<SkyboxRenderer> instance;
-
-	template <class InterfaceType>
-	using ComPtr = Microsoft::WRL::ComPtr<InterfaceType>;
 
 	// 共通基盤
 	DirectXCommon* dxCommon_ = nullptr;
 
-	// パイプラインステート
-	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
+	ComPtr<IDxcBlob> vsBlob_;
+	ComPtr<IDxcBlob> psBlob_;
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[1] = {};
 };

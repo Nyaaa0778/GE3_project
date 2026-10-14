@@ -5,6 +5,7 @@
 #include <Vector2.h>
 #include <Vector3.h>
 #include <Vector4.h>
+#include <BlendMode.h>
 
 #include "SpriteRenderer.h"
 
@@ -51,7 +52,7 @@ public:
 	// サイズ
 	const Vector2& GetSize() const { return size_; }
 	// BlendMode
-	SpriteRenderer::BlendMode GetBlendMode() const { return blendMode_; }
+	BlendMode GetBlendMode() const { return blendMode_; }
 
 	// アンカーポイント
 	const Vector2& GetAnchorPoint() const { return anchorPoint_; }
@@ -79,7 +80,7 @@ public:
 	// サイズ
 	void SetSize(const Vector2& size);
 	// BlendMode
-	void SetBlendMode(SpriteRenderer::BlendMode blendMode) { blendMode_ = blendMode; }
+	void SetBlendMode(BlendMode blendMode) { blendMode_ = blendMode; }
 
 	// テクスチャ
 	void SetTexture(const std::string& filePath);
@@ -187,7 +188,7 @@ private:
 	// 上下反転フラグ
 	bool isFlipY_ = false;
 	// BlendMode
-	SpriteRenderer::BlendMode blendMode_ = SpriteRenderer::BlendMode::kNormal;
+	BlendMode blendMode_ = BlendMode::kNormal;
 
 private:
 	//================================================================================

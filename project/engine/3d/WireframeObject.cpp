@@ -67,10 +67,10 @@ void WireframeObject::Draw() {
 	// 頂点バッファ・インデックスバッファをセット
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 	commandList->IASetIndexBuffer(&indexBufferView_);
-	// b0: TransformMatrix
-	commandList->SetGraphicsRootConstantBufferView(0, transform_.constBuffer->GetGPUVirtualAddress());
-	// b1: Material (Color + Fog)
-	commandList->SetGraphicsRootConstantBufferView(1, colorResource_->GetGPUVirtualAddress());
+	// b1: TransformMatrix
+	commandList->SetGraphicsRootConstantBufferView(1, transform_.constBuffer->GetGPUVirtualAddress());
+	// b0: Material (Color + Fog)
+	commandList->SetGraphicsRootConstantBufferView(0, colorResource_->GetGPUVirtualAddress());
 	// 描画実行
 	commandList->DrawIndexedInstanced(indexCount_, 1, 0, 0, 0);
 }

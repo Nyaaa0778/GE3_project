@@ -88,6 +88,9 @@ public:
 	// キーに対応するPSOを取得（未作成なら生成してキャッシュ）
 	ID3D12PipelineState* GetOrCreate(const PipelineDescKey& key);
 
+	// 共通ルートシグネチャの取得
+	ID3D12RootSignature* GetCommonRootSignature() const { return commonRootSignature_.Get(); }
+
 private:
 	//================================================================================
 	// 型エイリアス
@@ -99,5 +102,11 @@ private:
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
+
 	std::unordered_map<PipelineDescKey, ComPtr<ID3D12PipelineState>, PipelineDescKeyHash> psoCache_;
+
+	ComPtr<ID3D12RootSignature> commonRootSignature_;
+
+private:
+	void CreateCommonRootSignature();
 };

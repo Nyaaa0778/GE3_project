@@ -105,7 +105,7 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 			newInfo.effectSprite->Initialize("shockwave.png", {640.0f, 360.0f}, {0.5f, 0.5f});
 			newInfo.effectSprite->SetScale({0.0f, 0.0f});
 			newInfo.effectSprite->SetColor({1.0f, 0.5f, 0.1f, 0.8f}); // オレンジ色の光
-			newInfo.effectSprite->SetBlendMode(SpriteRenderer::BlendMode::kAdd); // 加算合成で発光
+			newInfo.effectSprite->SetBlendMode(BlendMode::kAdd); // 加算合成で発光
 			newInfo.effectTime = 0.0f;
 
 			newInfo.lockOnTime = 0.0f;

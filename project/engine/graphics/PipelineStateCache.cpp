@@ -31,6 +31,8 @@ void PipelineStateCache::Finalize() { instance.reset(); }
 void PipelineStateCache::Initialize(DirectXCommon* dxCommon) {
 	assert(dxCommon);
 	dxCommon_ = dxCommon;
+
+	CreateCommonRootSignature();
 }
 
 // キーの比較
@@ -84,10 +86,13 @@ ID3D12PipelineState* PipelineStateCache::GetOrCreate(const PipelineDescKey& key)
 	assert(key.psBlob != nullptr && "PixelShader is required");
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
-	desc.pRootSignature = key.rootSignature;
+	desc.pRootSignature = commonRootSignature_.Get();
 
 	desc.VS = {key.vsBlob->GetBufferPointer(), key.vsBlob->GetBufferSize()};
 	desc.PS = {key.psBlob->GetBufferPointer(), key.psBlob->GetBufferSize()};
+
+	desc.InputLayout.pInputElementDescs = key.inputElements;
+	desc.InputLayout.NumElements = key.numInputElements;
 
 	desc.BlendState = BlendModeHelper::MakeBlendDesc(key.blendMode);
 
@@ -114,4 +119,74 @@ ID3D12PipelineState* PipelineStateCache::GetOrCreate(const PipelineDescKey& key)
 	psoCache_[key] = std::move(newPso);
 
 	return result;
+}
+
+void PipelineStateCache::CreateCommonRootSignature() {
+	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
+	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+	D3D12_ROOT_PARAMETER rootParameters[7] = {};
+
+	// [0] Material（PS b0）
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[0].Descriptor.ShaderRegister = 0;
+
+	// [1] Transform（VS b0）
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[1].Descriptor.ShaderRegister = 0;
+
+	// [2] Camera（VS / PS b1）
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameters[2].Descriptor.ShaderRegister = 1;
+
+	// [3] Light（PS b2）
+	rootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	rootParameters[3].Descriptor.ShaderRegister = 2;
+
+	D3D12_DESCRIPTOR_RANGE ranges[3] = {};
+	for (int i = 0; i < 3; ++i)
+	{
+		// [4] Texture SRV（t0）
+		// [5] Environment SRV（t1）
+		// [6] Dissolve SRV（t2）
+		ranges[i].BaseShaderRegister = i;
+		ranges[i].NumDescriptors = 1;
+		ranges[i].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		ranges[i].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+		rootParameters[4 + i].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameters[4 + i].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+		rootParameters[4 + i].DescriptorTable.pDescriptorRanges = &ranges[i];
+		rootParameters[4 + i].DescriptorTable.NumDescriptorRanges = 1;
+	}
+
+	descriptionRootSignature.pParameters = rootParameters;
+	descriptionRootSignature.NumParameters = _countof(rootParameters);
+
+	// Static Sampler
+	D3D12_STATIC_SAMPLER_DESC staticSampler[1] = {};
+	staticSampler[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	staticSampler[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSampler[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSampler[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSampler[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSampler[0].MaxLOD = D3D12_FLOAT32_MAX;
+	staticSampler[0].ShaderRegister = 0;
+	staticSampler[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	descriptionRootSignature.pStaticSamplers = staticSampler;
+	descriptionRootSignature.NumStaticSamplers = _countof(staticSampler);
+
+	ComPtr<ID3DBlob> signatureBlob;
+	ComPtr<ID3DBlob> errorBlob;
+	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &signatureBlob, &errorBlob);
+	assert(SUCCEEDED(hr));
+
+	hr = dxCommon_->GetDevice()->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&commonRootSignature_));
+	assert(SUCCEEDED(hr));
+
 }

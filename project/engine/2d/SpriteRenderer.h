@@ -3,6 +3,9 @@
 #include <d3d12.h>
 #include <memory>
 #include <wrl.h>
+#include <dxcapi.h>
+
+#include <BlendMode.h>
 
 class DirectXCommon;
 
@@ -49,21 +52,6 @@ private:
 
 public:
 	//================================================================================
-	// Blend Mode
-	//================================================================================
-
-	enum class BlendMode {
-		kNone,             // なし
-		kNormal,           // 通常
-		kAdd,              // 加算
-		kSubtract,         // 減算
-		kMultiply,         // 乗算
-		kScreen,           // スクリーン
-		kCountOfBlendMode, // カウント用
-	};
-
-public:
-	//================================================================================
 	// 初期化 / 描画設定
 	//================================================================================
 
@@ -94,32 +82,7 @@ private:
 	// DirectXCommonのポインタ
 	DirectXCommon* dxCommon_ = nullptr;
 
-	//================================================================================
-	// GPU リソース
-	//================================================================================
-
-	// ルートシグネチャ
-	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	// グラフィックスパイプラインステート (BlendModeごとに保持)
-	ComPtr<ID3D12PipelineState> graphicsPipelineStates_[static_cast<size_t>(BlendMode::kCountOfBlendMode)];
-
-private:
-	//================================================================================
-	// パイプライン構築（RootSignature / PSO）
-	//================================================================================
-
-	/// <summary>
-	/// ルートシグネチャの生成
-	/// </summary>
-	void CreateRootSignature();
-
-	/// <summary>
-	/// グラフィックスパイプラインの生成
-	/// </summary>
-	void CreateGraphicsPipeline();
-
-	/// <summary>
-	/// 指定したブレンドモードに対応する設定を返す
-	/// </summary>
-	D3D12_BLEND_DESC MakeBlendDesc(BlendMode mode);
+	ComPtr<IDxcBlob> vsBlob_;
+	ComPtr<IDxcBlob> psBlob_;
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[2] = {};
 };

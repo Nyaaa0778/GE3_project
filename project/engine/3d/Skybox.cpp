@@ -71,8 +71,8 @@ void Skybox::Draw() {
 
     SkyboxRenderer::GetInstance()->PreDraw();
 
-    commandList->SetGraphicsRootConstantBufferView(0, constBuffer_->GetGPUVirtualAddress());
-    commandList->SetGraphicsRootDescriptorTable(1, textureSrvHandleGPU_);
+    commandList->SetGraphicsRootConstantBufferView(1, constBuffer_->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootDescriptorTable(4, textureSrvHandleGPU_);
 
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
     commandList->IASetIndexBuffer(&indexBufferView_);

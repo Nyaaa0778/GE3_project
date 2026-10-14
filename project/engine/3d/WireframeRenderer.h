@@ -3,6 +3,9 @@
 #include <d3d12.h>
 #include <memory>
 #include <wrl.h>
+#include <dxcapi.h>
+
+#include <BlendMode.h>
 
 class DirectXCommon;
 class Camera;
@@ -52,16 +55,6 @@ public:
 	//================================================================================
 	// Blend Mode
 	//================================================================================
-
-	enum class BlendMode {
-		kNone,             // なし
-		kNormal,           // 通常
-		kAdd,              // 加算
-		kSubtract,         // 減算
-		kMultiply,         // 乗算
-		kScreen,           // スクリーン
-		kCountOfBlendMode, // カウント用
-	};
 
 private:
 	BlendMode blendMode_ = BlendMode::kNormal;
@@ -122,38 +115,7 @@ private:
 	// デフォルトカメラ
 	Camera* defaultCamera_ = nullptr;
 
-	//================================================================================
-	// GPU リソース
-	//================================================================================
-
-	// ルートシグネチャ
-	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-
-	// グラフィックスパイプラインステート
-	ComPtr<ID3D12PipelineState> graphicsPipelineState_ = nullptr;
-
-private:
-	//================================================================================
-	// パイプライン構築（RootSignature / PSO）
-	//================================================================================
-
-	/// <summary>
-	/// ルートシグネチャを作成
-	/// </summary>
-	void CreateRootSignature();
-	/// <summary>
-	/// グラフィックスパイプラインの生成
-	/// </summary>
-	void CreateGraphicsPipeline();
-
-	//================================================================================
-	// BlendMode
-	//================================================================================
-
-	/// <summary>
-	/// 指定したブレンドモードに対応
-	/// </summary>
-	/// <param name="mode">使いたいBlendMode</param>
-	/// <returns>ブレンド設定を格納したD3D12_BLEND_DESC</returns>
-	D3D12_BLEND_DESC MakeBlendDesc(BlendMode mode);
+	ComPtr<IDxcBlob> vsBlob_;
+	ComPtr<IDxcBlob> psBlob_;
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[1] = {};
 };
