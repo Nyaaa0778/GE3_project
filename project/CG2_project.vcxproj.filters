@@ -667,6 +667,9 @@
     <ClInclude Include="engine\graphics\BlendMode.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="engine\graphics\RootParameter.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
     <ClInclude Include="engine\graphics\PipelineStateCache.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

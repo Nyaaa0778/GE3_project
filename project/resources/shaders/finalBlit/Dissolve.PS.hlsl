@@ -10,7 +10,7 @@ ConstantBuffer<DissolveParams> gDissolveParams : register(b0);
 
 Texture2D<float32_t4> gTexture : register(t0);
 Texture2D<float32_t> gMaskTexture : register(t1);
-SamplerState gSampler : register(s0);
+SamplerState gSampler : register(s1);
 
 struct PixelShaderOutput
 {

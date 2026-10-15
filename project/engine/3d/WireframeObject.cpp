@@ -7,6 +7,7 @@
 #include "DirectXCommon.h"
 #include "Camera.h"
 #include "MathUtility.h"
+#include <RootParameter.h>
 
 using namespace MathUtility;
 
@@ -68,9 +69,9 @@ void WireframeObject::Draw() {
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 	commandList->IASetIndexBuffer(&indexBufferView_);
 	// b1: TransformMatrix
-	commandList->SetGraphicsRootConstantBufferView(1, transform_.constBuffer->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(kRootParamTransform, transform_.constBuffer->GetGPUVirtualAddress());
 	// b0: Material (Color + Fog)
-	commandList->SetGraphicsRootConstantBufferView(0, colorResource_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(kRootParamMaterialOrParams, colorResource_->GetGPUVirtualAddress());
 	// 描画実行
 	commandList->DrawIndexedInstanced(indexCount_, 1, 0, 0, 0);
 }

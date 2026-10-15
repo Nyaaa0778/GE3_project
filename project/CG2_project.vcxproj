@@ -443,6 +443,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\graphics\BlendMode.h" />
+    <ClInclude Include="engine\graphics\RootParameter.h" />
     <ClInclude Include="engine\effects\primitive\Ring.h" />
     <ClInclude Include="game\collider\Collider.h" />
     <ClInclude Include="game\enemy\EnemyBase.h" />

@@ -7,7 +7,7 @@ struct VignetteParams
 ConstantBuffer<VignetteParams> gVignetteParams : register(b0);
 
 Texture2D<float32_t4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
+SamplerState gSampler : register(s1);
 
 struct PixelShaderOutput
 {

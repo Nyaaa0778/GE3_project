@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "TextureManager.h"
 #include "SkyboxRenderer.h"
+#include <RootParameter.h>
 #include <cassert>
 
 using namespace MathUtility;
@@ -71,8 +72,8 @@ void Skybox::Draw() {
 
     SkyboxRenderer::GetInstance()->PreDraw();
 
-    commandList->SetGraphicsRootConstantBufferView(1, constBuffer_->GetGPUVirtualAddress());
-    commandList->SetGraphicsRootDescriptorTable(4, textureSrvHandleGPU_);
+    commandList->SetGraphicsRootConstantBufferView(kRootParamTransform, constBuffer_->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootDescriptorTable(kRootParamMainTexture, textureSrvHandleGPU_);
 
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
     commandList->IASetIndexBuffer(&indexBufferView_);

@@ -3,6 +3,7 @@
 #include "MathUtility.h"
 #include "ModelCommon.h"
 #include "TextureManager.h"
+#include <RootParameter.h>
 
 #include <cassert>
 #include <fstream>
@@ -58,11 +59,11 @@ void Model::Draw() {
 	modelCommon_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			0, materialBuffer_->GetGPUVirtualAddress());
+			kRootParamMaterialOrParams, materialBuffer_->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableの先頭を設定
 	modelCommon_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(
-		4, TextureManager::GetInstance()->GetSrvHandleGPU(
+		kRootParamMainTexture, TextureManager::GetInstance()->GetSrvHandleGPU(
 			modelData_.material.textureFilePath));
 
 	// 描画

@@ -1,7 +1,7 @@
 #include "FinalBlit.hlsli"
 
 Texture2D<float32_t4> gTexture : register(t0);
-SamplerState gSampler : register(s0);
+SamplerState gSampler : register(s1);
 
 static const float32_t2 kIndex3x3[3][3] =
 {

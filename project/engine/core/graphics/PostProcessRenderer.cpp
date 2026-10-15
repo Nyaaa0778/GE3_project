@@ -2,6 +2,9 @@
 #include "PostProcessEffects.h"
 #include "DirectXCommon.h"
 #include "ShaderResourceViewManager.h"
+#include "PipelineStateCache.h"
+#include <BlendMode.h>
+#include <RootParameter.h>
 #include <cassert>
 
 std::unique_ptr<PostProcessRenderer> PostProcessRenderer::instance = nullptr;
@@ -23,6 +26,10 @@ void PostProcessRenderer::Initialize(DirectXCommon* dxCommon) {
 	// アクティブモードの初期値
 	activeModes_ = { PostProcessMode::kNormal };
 
+	// 共通頂点シェーダのコンパイル（1回のみ）
+	vsBlob_ = dxCommon_->CompileShader(L"resources/shaders/finalBlit/FinalBlit.VS.hlsl", L"vs_6_0");
+	assert(vsBlob_);
+
 	// 各種エフェクトインスタンスの作成
 	effects_[PostProcessMode::kNormal] = std::make_unique<NormalEffect>();
 	effects_[PostProcessMode::kRadialBlur] = std::make_unique<RadialBlurEffect>();
@@ -36,7 +43,7 @@ void PostProcessRenderer::Initialize(DirectXCommon* dxCommon) {
 	effects_[PostProcessMode::kGlitch] = std::make_unique<GlitchEffect>();
 	effects_[PostProcessMode::kCrtTransition] = std::make_unique<CrtTransitionEffect>();
 
-	// 一括初期化
+	// 一括初期化（各エフェクトはPSとバッファを準備）
 	for (auto& pair : effects_) {
 		pair.second->Initialize(dxCommon_);
 	}
@@ -110,6 +117,56 @@ void PostProcessRenderer::Initialize(DirectXCommon* dxCommon) {
 	}
 }
 
+void PostProcessRenderer::RenderEffect(IPostProcessEffect* effect, D3D12_GPU_DESCRIPTOR_HANDLE inputTexture) {
+	assert(effect != nullptr);
+
+	// 描画直前のパラメータ更新
+	effect->PreDraw();
+
+	auto* psoCache = PipelineStateCache::GetInstance();
+	ID3D12RootSignature* rootSig = psoCache->GetCommonRootSignature();
+
+	// 1. PipelineDescKey の構築 (Renderer側で一元管理)
+	PipelineDescKey key{};
+	key.rootSignature = rootSig;
+	key.vsBlob = vsBlob_.Get();
+	key.psBlob = effect->GetPixelShader();
+	key.inputElements = nullptr;
+	key.numInputElements = 0;
+	key.blendMode = BlendMode::kNone; // ポストプロセスは上書き合成
+	key.cullMode = D3D12_CULL_MODE_BACK;
+	key.fillMode = D3D12_FILL_MODE_SOLID;
+	key.depthEnable = false;
+	key.depthWrite = false;
+	key.topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+	// 2. PipelineStateCache から PSO を取得
+	ID3D12PipelineState* pso = psoCache->GetOrCreate(key);
+
+	// 3. パイプライン設定
+	auto* cmdList = dxCommon_->GetCommandList();
+	cmdList->SetGraphicsRootSignature(rootSig);
+	cmdList->SetPipelineState(pso);
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// 4. メイン入力テクスチャ (t0 -> kRootParamMainTexture: スロット4)
+	cmdList->SetGraphicsRootDescriptorTable(kRootParamMainTexture, inputTexture);
+
+	// 5. エフェクトの定数バッファ (b0 -> kRootParamMaterialOrParams: スロット0)
+	D3D12_GPU_VIRTUAL_ADDRESS cbvAddress = effect->GetConstantBufferAddress();
+	if (cbvAddress != 0) {
+		cmdList->SetGraphicsRootConstantBufferView(kRootParamMaterialOrParams, cbvAddress);
+	}
+
+	// 6. 追加テクスチャ (t1 -> kRootParamEnvironmentOrExtra: スロット5, ディゾルブ用ノイズなど)
+	if (effect->HasExtraTexture()) {
+		cmdList->SetGraphicsRootDescriptorTable(kRootParamEnvironmentOrExtra, effect->GetExtraTextureHandle());
+	}
+
+	// 7. フルスクリーントライアングルの描画
+	cmdList->DrawInstanced(3, 1, 0, 0);
+}
+
 void PostProcessRenderer::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) {
 	// 適用するエフェクトのリストを整理
 	std::vector<PostProcessMode> modesToRun;
@@ -128,10 +185,10 @@ void PostProcessRenderer::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) {
 	size_t numPasses = modesToRun.size();
 
 	if (numPasses == 1) {
-		// 単一パスの場合は、従来通り直接バックバッファに描画
+		// 単一パスの場合は、直接バックバッファに描画
 		auto it = effects_.find(modesToRun[0]);
 		if (it != effects_.end()) {
-			it->second->Draw(dxCommon_->GetCommandList(), srvHandle);
+			RenderEffect(it->second.get(), srvHandle);
 		}
 	} else {
 		// 複数エフェクト（マルチパス）のチェイニング描画
@@ -159,7 +216,7 @@ void PostProcessRenderer::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) {
 				// エフェクト描画
 				auto it = effects_.find(modesToRun[i]);
 				if (it != effects_.end()) {
-					it->second->Draw(cmdList, currentInput);
+					RenderEffect(it->second.get(), currentInput);
 				}
 
 				// 次のパスでサンプリングできるようにリソースバリアを PIXEL_SHADER_RESOURCE に戻す
@@ -177,7 +234,7 @@ void PostProcessRenderer::Draw(D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) {
 
 				auto it = effects_.find(modesToRun[i]);
 				if (it != effects_.end()) {
-					it->second->Draw(cmdList, currentInput);
+					RenderEffect(it->second.get(), currentInput);
 				}
 			}
 		}
@@ -225,4 +282,4 @@ Vector4 PostProcessRenderer::GetVignetteColor() const {
 		return vignette->GetColor();
 	}
 	return {0.0f, 0.0f, 0.0f, 1.0f};
-}
+}

@@ -14,15 +14,11 @@ class NormalEffect : public IPostProcessEffect
 {
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 };
 
 //================================================================================
@@ -32,15 +28,11 @@ class RadialBlurEffect : public IPostProcessEffect
 {
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 };
 
 //================================================================================
@@ -50,15 +42,11 @@ class BoxFilterEffect : public IPostProcessEffect
 {
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 };
 
 //================================================================================
@@ -68,15 +56,11 @@ class GaussianFilterEffect : public IPostProcessEffect
 {
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 };
 
 //================================================================================
@@ -86,15 +70,11 @@ class GrayscaleEffect : public IPostProcessEffect
 {
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 };
 
 //================================================================================
@@ -104,15 +84,11 @@ class OutlineEffect : public IPostProcessEffect
 {
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 };
 
 //================================================================================
@@ -127,22 +103,23 @@ public:
 
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	void PreDraw() override;
+
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferAddress() const override {
+		return constantBuffer_ ? constantBuffer_->GetGPUVirtualAddress() : 0;
+	}
 
 	void SetColor(const Vector4& color);
 	const Vector4& GetColor() const { return color_; }
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
 	VignetteParams* paramsData_ = nullptr;
 
 	Vector4 color_ = {0.0f, 0.0f, 0.0f, 1.0f}; // デフォルトは黒
-
-	void CreateRootSignature();
-	void CreatePipelineState();
 };
 
 //================================================================================
@@ -160,7 +137,15 @@ public:
 
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	void PreDraw() override;
+
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferAddress() const override {
+		return constantBuffer_ ? constantBuffer_->GetGPUVirtualAddress() : 0;
+	}
+
+	bool HasExtraTexture() const override { return true; }
+	D3D12_GPU_DESCRIPTOR_HANDLE GetExtraTextureHandle() const override;
 
 	void SetThreshold(float threshold);
 	float GetThreshold() const { return threshold_; }
@@ -170,16 +155,12 @@ public:
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
 	DissolveParams* paramsData_ = nullptr;
 
 	float threshold_ = 0.0f;
 	std::string noiseTextureFilePath_ = "resources/sprites/noise0.png";
-
-	void CreateRootSignature();
-	void CreatePipelineState();
 };
 
 //================================================================================
@@ -194,18 +175,19 @@ public:
 
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	void PreDraw() override;
+
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferAddress() const override {
+		return constantBuffer_ ? constantBuffer_->GetGPUVirtualAddress() : 0;
+	}
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
 	RandomNoiseParams* paramsData_ = nullptr;
 	float time_ = 0.0f;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
 };
 
 //================================================================================
@@ -228,7 +210,12 @@ public:
 
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	void PreDraw() override;
+
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferAddress() const override {
+		return constantBuffer_ ? constantBuffer_->GetGPUVirtualAddress() : 0;
+	}
 
 	void SetIntensity(float intensity) { intensity_ = intensity; }
 	float GetIntensity() const { return intensity_; }
@@ -257,8 +244,7 @@ public:
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
 	GlitchParams* paramsData_ = nullptr;
 
@@ -270,9 +256,6 @@ private:
 	float glitchFrequency_ = 0.35f;
 	float blockCount_ = 35.0f;
 	float shiftScale_ = 1.0f;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
 };
 
 //================================================================================
@@ -295,7 +278,12 @@ public:
 
 public:
 	void Initialize(DirectXCommon* dxCommon) override;
-	void Draw(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE srvHandle) override;
+	void PreDraw() override;
+
+	IDxcBlob* GetPixelShader() const override { return psBlob_.Get(); }
+	D3D12_GPU_VIRTUAL_ADDRESS GetConstantBufferAddress() const override {
+		return constantBuffer_ ? constantBuffer_->GetGPUVirtualAddress() : 0;
+	}
 
 	void SetGlitchIntensity(float val) { glitchIntensity_ = val; }
 	float GetGlitchIntensity() const { return glitchIntensity_; }
@@ -320,8 +308,7 @@ public:
 
 private:
 	DirectXCommon* dxCommon_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_ = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> psBlob_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> constantBuffer_ = nullptr;
 	CrtTransitionParams* paramsData_ = nullptr;
 
@@ -333,8 +320,4 @@ private:
 	float collapseY_ = 1.0f;
 	float flashIntensity_ = 0.0f;
 	float screenCurvature_ = 0.04f;
-
-	void CreateRootSignature();
-	void CreatePipelineState();
 };
-

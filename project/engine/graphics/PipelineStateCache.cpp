@@ -68,46 +68,54 @@ size_t PipelineDescKeyHash::operator()(const PipelineDescKey& key) const {
 	hashCombine(key.depthEnable);
 	hashCombine(key.depthWrite);
 	hashCombine(static_cast<int>(key.depthFunc));
+	hashCombine(static_cast<int>(key.topologyType));
 
 	return seed;
 }
 
 ID3D12PipelineState* PipelineStateCache::GetOrCreate(const PipelineDescKey& key) {
+	// ルートシグネチャが未指定なら共通のものを補完
+	PipelineDescKey actualKey = key;
+	if (actualKey.rootSignature == nullptr)
+	{
+		actualKey.rootSignature = commonRootSignature_.Get();
+	}
+
 	// キャッシュの中から探す
-	auto it = psoCache_.find(key);
+	auto it = psoCache_.find(actualKey);
 	if (it != psoCache_.end())
 	{
 		return it->second.Get();
 	}
 
 	// キャッシュになければ新規生成
-	assert(key.rootSignature != nullptr && "RootSignature is required");
-	assert(key.vsBlob != nullptr && "VertexShader is required");
-	assert(key.psBlob != nullptr && "PixelShader is required");
+	assert(actualKey.rootSignature != nullptr && "RootSignature is required");
+	assert(actualKey.vsBlob != nullptr && "VertexShader is required");
+	assert(actualKey.psBlob != nullptr && "PixelShader is required");
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
-	desc.pRootSignature = commonRootSignature_.Get();
+	desc.pRootSignature = actualKey.rootSignature;
 
-	desc.VS = {key.vsBlob->GetBufferPointer(), key.vsBlob->GetBufferSize()};
-	desc.PS = {key.psBlob->GetBufferPointer(), key.psBlob->GetBufferSize()};
+	desc.VS = {actualKey.vsBlob->GetBufferPointer(), actualKey.vsBlob->GetBufferSize()};
+	desc.PS = {actualKey.psBlob->GetBufferPointer(), actualKey.psBlob->GetBufferSize()};
 
-	desc.InputLayout.pInputElementDescs = key.inputElements;
-	desc.InputLayout.NumElements = key.numInputElements;
+	desc.InputLayout.pInputElementDescs = actualKey.inputElements;
+	desc.InputLayout.NumElements = actualKey.numInputElements;
 
-	desc.BlendState = BlendModeHelper::MakeBlendDesc(key.blendMode);
+	desc.BlendState = BlendModeHelper::MakeBlendDesc(actualKey.blendMode);
 
-	desc.RasterizerState.CullMode = key.cullMode;
-	desc.RasterizerState.FillMode = key.fillMode;
+	desc.RasterizerState.CullMode = actualKey.cullMode;
+	desc.RasterizerState.FillMode = actualKey.fillMode;
 
-	desc.DepthStencilState.DepthEnable = key.depthEnable ? TRUE : FALSE;
-	desc.DepthStencilState.DepthWriteMask = key.depthWrite ?
+	desc.DepthStencilState.DepthEnable = actualKey.depthEnable ? TRUE : FALSE;
+	desc.DepthStencilState.DepthWriteMask = actualKey.depthWrite ?
 		D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-	desc.DepthStencilState.DepthFunc = key.depthFunc;
+	desc.DepthStencilState.DepthFunc = actualKey.depthFunc;
 
 	desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	desc.NumRenderTargets = 1;
 	desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	desc.PrimitiveTopologyType = key.topologyType;
+	desc.PrimitiveTopologyType = actualKey.topologyType;
 	desc.SampleDesc.Count = 1;
 	desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 
@@ -116,7 +124,7 @@ ID3D12PipelineState* PipelineStateCache::GetOrCreate(const PipelineDescKey& key)
 	assert(SUCCEEDED(hr) && "Failed to create PipelineState");
 
 	ID3D12PipelineState* result = newPso.Get();
-	psoCache_[key] = std::move(newPso);
+	psoCache_[actualKey] = std::move(newPso);
 
 	return result;
 }
@@ -167,19 +175,31 @@ void PipelineStateCache::CreateCommonRootSignature() {
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);
 
-	// Static Sampler
-	D3D12_STATIC_SAMPLER_DESC staticSampler[1] = {};
-	staticSampler[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-	staticSampler[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	staticSampler[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	staticSampler[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	staticSampler[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-	staticSampler[0].MaxLOD = D3D12_FLOAT32_MAX;
-	staticSampler[0].ShaderRegister = 0;
-	staticSampler[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	// Static Samplers (s0: Wrap for 3D/Sprite, s1: Clamp for PostProcess)
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[2] = {};
 
-	descriptionRootSignature.pStaticSamplers = staticSampler;
-	descriptionRootSignature.NumStaticSamplers = _countof(staticSampler);
+	// s0: Linear Wrap
+	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;
+	staticSamplers[0].ShaderRegister = 0; // s0
+	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	// s1: Linear Clamp
+	staticSamplers[1].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	staticSamplers[1].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	staticSamplers[1].AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	staticSamplers[1].AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	staticSamplers[1].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSamplers[1].MaxLOD = D3D12_FLOAT32_MAX;
+	staticSamplers[1].ShaderRegister = 1; // s1
+	staticSamplers[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	descriptionRootSignature.pStaticSamplers = staticSamplers;
+	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
 	ComPtr<ID3DBlob> signatureBlob;
 	ComPtr<ID3DBlob> errorBlob;

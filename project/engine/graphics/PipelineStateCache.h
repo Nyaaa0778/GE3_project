@@ -9,6 +9,7 @@
 #include <wrl.h>
 
 #include <BlendMode.h>
+#include <RootParameter.h>
 
 class DirectXCommon;
 

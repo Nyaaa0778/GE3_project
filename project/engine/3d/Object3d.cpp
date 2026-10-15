@@ -6,6 +6,7 @@
 #include "ModelManager.h"
 #include "TextureManager.h"
 #include "LightManager.h"
+#include <RootParameter.h>
 
 using namespace MathUtility;
 
@@ -75,22 +76,22 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			1, wt->constBuffer->GetGPUVirtualAddress());
+			kRootParamTransform, wt->constBuffer->GetGPUVirtualAddress());
 
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			2, camera_->GetConstantBufferVideoAddress());
+			kRootParamCamera, camera_->GetConstantBufferVideoAddress());
 
 	// ライトCBufferの場所を設定
 	object3dRenderer_->GetDxCommon()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			3, LightManager::GetInstance()->GetConstantBufferVideoAddress());
+			kRootParamLight, LightManager::GetInstance()->GetConstantBufferVideoAddress());
 
 	if (environmentTextureSrvHandleGPU_.ptr != 0) {
 		object3dRenderer_->GetDxCommon()->GetCommandList()
-			->SetGraphicsRootDescriptorTable(5, environmentTextureSrvHandleGPU_);
+			->SetGraphicsRootDescriptorTable(kRootParamEnvironmentOrExtra, environmentTextureSrvHandleGPU_);
 	}
 
 	// 3Dモデルが割り当てられていれば描画する
@@ -105,13 +106,13 @@ void Object3d::Draw(WorldTransform* worldTransform) {
 		if (isDissolveEnabled_ && !dissolveMaskTexturePath_.empty()) {
 			auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU(dissolveMaskTexturePath_);
 			if (srvHandle.ptr != 0) {
-				object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, srvHandle);
+				object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(kRootParamDissolveMask, srvHandle);
 			}
 		} else {
 			// ディゾルブ無効時も、何かダミーテクスチャを割り当てておく（未割り当てによるバグ防止）
 			auto dummyHandle = TextureManager::GetInstance()->GetSrvHandleGPU(model_->GetModelData().material.textureFilePath);
 			if (dummyHandle.ptr != 0) {
-				object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(6, dummyHandle);
+				object3dRenderer_->GetDxCommon()->GetCommandList()->SetGraphicsRootDescriptorTable(kRootParamDissolveMask, dummyHandle);
 			}
 		}
 

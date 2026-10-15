@@ -5,6 +5,7 @@
 #include "SpriteRenderer.h"
 #include "TextureManager.h"
 #include "WinApp.h"
+#include <RootParameter.h>
 
 using namespace MathUtility;
 
@@ -114,13 +115,13 @@ void Sprite::Draw() {
 	DirectXCommon::GetInstance()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			0, materialBuffer_->GetGPUVirtualAddress());
+			kRootParamMaterialOrParams, materialBuffer_->GetGPUVirtualAddress());
 
 	// 座標変換行列のCBufferの場所を設定
 	DirectXCommon::GetInstance()
 		->GetCommandList()
 		->SetGraphicsRootConstantBufferView(
-			1, worldTransform_.constBuffer->GetGPUVirtualAddress());
+			kRootParamTransform, worldTransform_.constBuffer->GetGPUVirtualAddress());
 
 	// SRVのDescriptorTableの先頭を設定
 	auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU(filePath_);
@@ -129,7 +130,7 @@ void Sprite::Draw() {
 	}
 	DirectXCommon::GetInstance()
 		->GetCommandList()
-		->SetGraphicsRootDescriptorTable(4, srvHandle);
+		->SetGraphicsRootDescriptorTable(kRootParamMainTexture, srvHandle);
 
 	// 描画
 	DirectXCommon::GetInstance()->GetCommandList()->DrawIndexedInstanced(6, 1, 0,
