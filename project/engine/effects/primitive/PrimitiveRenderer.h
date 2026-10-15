@@ -1,10 +1,13 @@
 #pragma once
 
 #include <d3d12.h>
+#include <dxcapi.h>
 #include <memory>
-#include <wrl.h>
 #include <string>
 #include <unordered_map>
+#include <wrl.h>
+
+#include "BlendMode.h"
 
 class DirectXCommon;
 
@@ -33,15 +36,7 @@ public:
 	// Blend Mode
 	//================================================================================
 
-	enum class BlendMode {
-		kNone,
-		kNormal,
-		kAdd,
-		kSubtract,
-		kMultiply,
-		kScreen,
-		kCountOfBlendMode,
-	};
+	using BlendMode = ::BlendMode;
 
 	//================================================================================
 	// 共有ジオメトリ (Flyweightパターン用)
@@ -83,12 +78,7 @@ private:
 
 	DirectXCommon* dxCommon_ = nullptr;
 
-	ComPtr<ID3D12RootSignature> rootSignature_ = nullptr;
-	
-	// BlendModeごと、かつSolid設定(0=Effects, 1=Solid)のPSOを保持
-	ComPtr<ID3D12PipelineState> graphicsPipelineStates_[static_cast<size_t>(BlendMode::kCountOfBlendMode)][2];
-
-	void CreateRootSignature();
-	void CreateGraphicsPipelines();
-	D3D12_BLEND_DESC MakeBlendDesc(BlendMode mode);
+	ComPtr<IDxcBlob> vsBlob_;
+	ComPtr<IDxcBlob> psBlob_;
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[3] = {};
 };

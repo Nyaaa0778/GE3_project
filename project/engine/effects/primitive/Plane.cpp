@@ -6,6 +6,7 @@
 #include "MathUtility.h"
 #include "Object3dRenderer.h" // GetDefaultCamera()を取得するための一時的な対応
 #include "ImGuiManager.h"
+#include "RootParameter.h"
 
 using namespace MathUtility;
 
@@ -73,14 +74,14 @@ void Plane::Draw()
 	commandList->IASetIndexBuffer(&indexBufferView_);
 
 	// b0: Material
-	commandList->SetGraphicsRootConstantBufferView(0, materialBuffer_->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootConstantBufferView(kRootParamMaterialOrParams, materialBuffer_->GetGPUVirtualAddress());
 
-	// b1 (VS): TransformationMatrix
-	commandList->SetGraphicsRootConstantBufferView(1, worldTransform_.constBuffer->GetGPUVirtualAddress());
+	// b0 (VS): TransformationMatrix
+	commandList->SetGraphicsRootConstantBufferView(kRootParamTransform, worldTransform_.constBuffer->GetGPUVirtualAddress());
 
 	// t0: Texture
 	auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("resources/sprites/" + textureFilePath_);
-	commandList->SetGraphicsRootDescriptorTable(2, srvHandle);
+	commandList->SetGraphicsRootDescriptorTable(kRootParamMainTexture, srvHandle);
 
 	// 描画コマンド (インデックスを使用)
 	commandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
