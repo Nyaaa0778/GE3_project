@@ -13,6 +13,14 @@
 
 class DirectXCommon;
 
+// 頂点入力レイアウトの種類
+enum class InputLayoutType {
+	kNone,                   // 入力要素なし（PostProcess等）
+	kPosition,               // POSITION のみ（Wireframe, Skybox等）
+	kPositionTexcoord,       // POSITION, TEXCOORD（Sprite等）
+	kPositionTexcoordNormal, // POSITION, TEXCOORD, NORMAL（Object3d, Primitive等）
+};
+
 // PSO を識別するための設定キー
 struct PipelineDescKey {
 	ID3D12RootSignature* rootSignature = nullptr; // ルートシグネチャ
@@ -20,8 +28,7 @@ struct PipelineDescKey {
 	IDxcBlob* psBlob = nullptr;                   // ピクセルシェーダ
 
 	// インプットレイアウト
-	const D3D12_INPUT_ELEMENT_DESC* inputElements = nullptr;
-	uint32_t numInputElements = 0;
+	InputLayoutType inputLayout = InputLayoutType::kNone;
 
 	// ステートの設定
 	BlendMode blendMode = BlendMode::kNormal;

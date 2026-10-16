@@ -45,9 +45,6 @@ void WireframeRenderer::Initialize(DirectXCommon* dxCommon) {
 	// シェーダコンパイル
 	vsBlob_ = dxCommon_->CompileShader(L"resources/shaders/wireframe/Wireframe.VS.hlsl", L"vs_6_0");
 	psBlob_ = dxCommon_->CompileShader(L"resources/shaders/wireframe/Wireframe.PS.hlsl", L"ps_6_0");
-
-	// InputLayout 設定
-	inputElementDescs_[0] = {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
 }
 
 /// <summary>
@@ -60,8 +57,7 @@ void WireframeRenderer::SetupCommonRenderState() {
 	PipelineDescKey key{};
 	key.vsBlob = vsBlob_.Get();
 	key.psBlob = psBlob_.Get();
-	key.inputElements = inputElementDescs_;
-	key.numInputElements = _countof(inputElementDescs_);
+	key.inputLayout = InputLayoutType::kPosition;
 	key.blendMode = blendMode_;
 	key.cullMode = D3D12_CULL_MODE_NONE;
 	key.fillMode = D3D12_FILL_MODE_SOLID;

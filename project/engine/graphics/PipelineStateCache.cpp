@@ -35,13 +35,54 @@ void PipelineStateCache::Initialize(DirectXCommon* dxCommon) {
 	CreateCommonRootSignature();
 }
 
+namespace {
+	// 各種頂点入力レイアウト定義
+	const D3D12_INPUT_ELEMENT_DESC kDescPosition[] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	};
+
+	const D3D12_INPUT_ELEMENT_DESC kDescPositionTexcoord[] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	};
+
+	const D3D12_INPUT_ELEMENT_DESC kDescPositionTexcoordNormal[] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	};
+
+	D3D12_INPUT_LAYOUT_DESC GetInputLayoutDesc(InputLayoutType layoutType) {
+		D3D12_INPUT_LAYOUT_DESC desc{};
+		switch (layoutType) {
+		case InputLayoutType::kPosition:
+			desc.pInputElementDescs = kDescPosition;
+			desc.NumElements = _countof(kDescPosition);
+			break;
+		case InputLayoutType::kPositionTexcoord:
+			desc.pInputElementDescs = kDescPositionTexcoord;
+			desc.NumElements = _countof(kDescPositionTexcoord);
+			break;
+		case InputLayoutType::kPositionTexcoordNormal:
+			desc.pInputElementDescs = kDescPositionTexcoordNormal;
+			desc.NumElements = _countof(kDescPositionTexcoordNormal);
+			break;
+		case InputLayoutType::kNone:
+		default:
+			desc.pInputElementDescs = nullptr;
+			desc.NumElements = 0;
+			break;
+		}
+		return desc;
+	}
+}
+
 // キーの比較
 bool PipelineDescKey::operator==(const PipelineDescKey& other) const {
 	return rootSignature == other.rootSignature &&
 		vsBlob == other.vsBlob &&
 		psBlob == other.psBlob &&
-		inputElements == other.inputElements &&
-		numInputElements == other.numInputElements &&
+		inputLayout == other.inputLayout &&
 		blendMode == other.blendMode &&
 		cullMode == other.cullMode &&
 		fillMode == other.fillMode &&
@@ -61,7 +102,7 @@ size_t PipelineDescKeyHash::operator()(const PipelineDescKey& key) const {
 	hashCombine(key.rootSignature);
 	hashCombine(key.vsBlob);
 	hashCombine(key.psBlob);
-	hashCombine(key.inputElements);
+	hashCombine(static_cast<int>(key.inputLayout));
 	hashCombine(static_cast<int>(key.blendMode));
 	hashCombine(static_cast<int>(key.cullMode));
 	hashCombine(static_cast<int>(key.fillMode));
@@ -99,8 +140,7 @@ ID3D12PipelineState* PipelineStateCache::GetOrCreate(const PipelineDescKey& key)
 	desc.VS = {actualKey.vsBlob->GetBufferPointer(), actualKey.vsBlob->GetBufferSize()};
 	desc.PS = {actualKey.psBlob->GetBufferPointer(), actualKey.psBlob->GetBufferSize()};
 
-	desc.InputLayout.pInputElementDescs = actualKey.inputElements;
-	desc.InputLayout.NumElements = actualKey.numInputElements;
+	desc.InputLayout = GetInputLayoutDesc(actualKey.inputLayout);
 
 	desc.BlendState = BlendModeHelper::MakeBlendDesc(actualKey.blendMode);
 

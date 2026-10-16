@@ -80,5 +80,4 @@ private:
 
 	ComPtr<IDxcBlob> vsBlob_;
 	ComPtr<IDxcBlob> psBlob_;
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs_[3] = {};
 };

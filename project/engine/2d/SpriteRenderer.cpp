@@ -42,10 +42,6 @@ void SpriteRenderer::Initialize(DirectXCommon* dxCommon) {
 	// シェーダコンパイル
 	vsBlob_ = dxCommon_->CompileShader(L"resources/shaders/sprite/Sprite.VS.hlsl", L"vs_6_0");
 	psBlob_ = dxCommon_->CompileShader(L"resources/shaders/sprite/Sprite.PS.hlsl", L"ps_6_0");
-
-	// InputLayout 設定
-	inputElementDescs_[0] = {"POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
-	inputElementDescs_[1] = {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
 }
 
 /// <summary>
@@ -58,8 +54,7 @@ void SpriteRenderer::SetupCommonRenderState(BlendMode blendMode) {
 	PipelineDescKey key{};
 	key.vsBlob = vsBlob_.Get();
 	key.psBlob = psBlob_.Get();
-	key.inputElements = inputElementDescs_;
-	key.numInputElements = _countof(inputElementDescs_);
+	key.inputLayout = InputLayoutType::kPositionTexcoord;
 	key.blendMode = blendMode;
 	key.cullMode = D3D12_CULL_MODE_NONE;
 	key.depthEnable = false;

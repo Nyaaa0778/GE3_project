@@ -131,8 +131,7 @@ void PostProcessRenderer::RenderEffect(IPostProcessEffect* effect, D3D12_GPU_DES
 	key.rootSignature = rootSig;
 	key.vsBlob = vsBlob_.Get();
 	key.psBlob = effect->GetPixelShader();
-	key.inputElements = nullptr;
-	key.numInputElements = 0;
+	key.inputLayout = InputLayoutType::kNone;
 	key.blendMode = BlendMode::kNone; // ポストプロセスは上書き合成
 	key.cullMode = D3D12_CULL_MODE_BACK;
 	key.fillMode = D3D12_FILL_MODE_SOLID;
