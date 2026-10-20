@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <numbers>
+#include <algorithm>
 
 #include "WireframeRenderer.h"
 #include "DirectXCommon.h"
@@ -56,7 +57,15 @@ void WireframeObject::Update() {
 	}
 }
 void WireframeObject::Draw() {
-	if (indexCount_ == 0 || !vertexBuffer_ || !indexBuffer_)
+	if (indexCount_ == 0 || !vertexBuffer_ || !indexBuffer_ || drawRatio_ <= 0.0001f)
+	{
+		return;
+	}
+
+	uint32_t activeIndices = static_cast<uint32_t>(static_cast<float>(indexCount_) * (std::clamp)(drawRatio_, 0.0f, 1.0f));
+	// 2頂点（1ライン）単位にアライン
+	activeIndices = (activeIndices / 2) * 2;
+	if (activeIndices == 0)
 	{
 		return;
 	}
@@ -73,7 +82,7 @@ void WireframeObject::Draw() {
 	// b0: Material (Color + Fog)
 	commandList->SetGraphicsRootConstantBufferView(kRootParamMaterialOrParams, colorResource_->GetGPUVirtualAddress());
 	// 描画実行
-	commandList->DrawIndexedInstanced(indexCount_, 1, 0, 0, 0);
+	commandList->DrawIndexedInstanced(activeIndices, 1, 0, 0, 0);
 }
 void WireframeObject::SetColor(const Vector4& color) {
 	if (materialData_)

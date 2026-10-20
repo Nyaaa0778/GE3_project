@@ -500,26 +500,31 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	currentTilt_.z += (targetTilt_.z - currentTilt_.z) * (std::min)(1.0f, tiltLerpSpeed * deltaTime);
 
 	// ----------------------------------------------------
-	// 2. 数式制御の非同期回転（プログラミング駆動アニメーション）
+	// 2. 数式制御の非同期回転（マテリアライズ高速スピンアップ対応）
 	// ----------------------------------------------------
+	float spinBoost = 1.0f;
+	if (materializeProgress_ < 1.0f && materializeProgress_ > 0.0f) {
+		spinBoost = 1.0f + (1.0f - materializeProgress_) * 7.5f; // 最大8.5倍の超高速スピン
+	}
+
 	// 外殻二十面体：ゆったりとした2軸回転
-	outerRotation_.y += 0.35f * deltaTime;
-	outerRotation_.x += 0.22f * deltaTime;
+	outerRotation_.y += 0.35f * spinBoost * deltaTime;
+	outerRotation_.x += 0.22f * spinBoost * deltaTime;
 
 	// 中間十二面体：外殻とは逆回転＋別軸の角速度
-	middleRotation_.y -= 0.50f * deltaTime;
-	middleRotation_.z += 0.32f * deltaTime;
-	middleRotation_.x -= 0.15f * deltaTime;
+	middleRotation_.y -= 0.50f * spinBoost * deltaTime;
+	middleRotation_.z += 0.32f * spinBoost * deltaTime;
+	middleRotation_.x -= 0.15f * spinBoost * deltaTime;
 
 	// ジャイロリング：軌道回転
-	gyroRotationX_.z += 0.75f * deltaTime;
-	gyroRotationX_.x += 0.30f * deltaTime;
-	gyroRotationY_.y -= 0.65f * deltaTime;
-	gyroRotationY_.z -= 0.25f * deltaTime;
+	gyroRotationX_.z += 0.75f * spinBoost * deltaTime;
+	gyroRotationX_.x += 0.30f * spinBoost * deltaTime;
+	gyroRotationY_.y -= 0.65f * spinBoost * deltaTime;
+	gyroRotationY_.z -= 0.25f * spinBoost * deltaTime;
 
 	// 中心核：微細なスピン
-	centerCoreRotation_.y += 0.90f * deltaTime;
-	centerCoreRotation_.x += 0.45f * deltaTime;
+	centerCoreRotation_.y += 0.90f * spinBoost * deltaTime;
+	centerCoreRotation_.x += 0.45f * spinBoost * deltaTime;
 
 	// ----------------------------------------------------
 	// 3. 幾何学的呼吸パルス（Mathematical Breathing Pulse）
@@ -548,22 +553,23 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	};
 
 	// ----------------------------------------------------
-	// 5. 各パーツのトランスフォーム設定・更新 (マテリアライズ段階的形成対応)
+	// 5. 各パーツのトランスフォーム設定・更新 (ライン単位の漸進的形成 drawRatio_ 対応)
 	// ----------------------------------------------------
 	float coreProg = (std::clamp)((materializeProgress_ - 0.0f) / 0.40f, 0.0f, 1.0f);
-	float midProg  = (std::clamp)((materializeProgress_ - 0.25f) / 0.45f, 0.0f, 1.0f);
-	float outerProg= (std::clamp)((materializeProgress_ - 0.50f) / 0.50f, 0.0f, 1.0f);
+	float midProg  = (std::clamp)((materializeProgress_ - 0.20f) / 0.50f, 0.0f, 1.0f);
+	float outerProg= (std::clamp)((materializeProgress_ - 0.45f) / 0.55f, 0.0f, 1.0f);
 
-	auto EaseOutBack = [](float x) {
-		const float c1 = 1.70158f;
-		const float c3 = c1 + 1.0f;
-		return 1.0f + c3 * std::pow(x - 1.0f, 3.0f) + c1 * std::pow(x - 1.0f, 2.0f);
+	// ポンっと拡大するのではなく、線が描画される間は 0.85f -> 1.0f で自然に安定
+	auto MaterializeScale = [](float prog) {
+		if (prog <= 0.0f) return 0.0f;
+		if (prog >= 1.0f) return 1.0f;
+		return 0.82f + 0.18f * (prog * prog * (3.0f - 2.0f * prog));
 	};
-	float scaleCoreMult = (coreProg > 0.0f) ? (coreProg < 1.0f ? (std::max)(0.0f, EaseOutBack(coreProg)) : 1.0f) : 0.0f;
-	float scaleMidMult  = (midProg > 0.0f)  ? (midProg < 1.0f  ? (std::max)(0.0f, EaseOutBack(midProg))  : 1.0f) : 0.0f;
-	float scaleOuterMult= (outerProg > 0.0f)? (outerProg < 1.0f? (std::max)(0.0f, EaseOutBack(outerProg)): 1.0f) : 0.0f;
+	float scaleCoreMult = (coreProg >= 1.0f) ? 1.0f : MaterializeScale(coreProg);
+	float scaleMidMult  = (midProg >= 1.0f)  ? 1.0f : MaterializeScale(midProg);
+	float scaleOuterMult= (outerProg >= 1.0f)? 1.0f : MaterializeScale(outerProg);
 
-	// 外殻二十面体
+	// 外殻二十面体（エッジが1本ずつ順番に描画されて形成）
 	if (outerShell_) {
 		auto& tf = outerShell_->GetWorldTransform();
 		tf.rotation = {
@@ -573,10 +579,11 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		};
 		float s = pulseOuter * scaleOuterMult;
 		tf.scale = {s, s, s};
+		outerShell_->SetDrawRatio(outerProg);
 		outerShell_->Update();
 	}
 
-	// 中間十二面体
+	// 中間十二面体（エッジが1本ずつ順番に描画されて形成）
 	if (middleShell_) {
 		auto& tf = middleShell_->GetWorldTransform();
 		tf.rotation = {
@@ -586,6 +593,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		};
 		float s = pulseMiddle * scaleMidMult;
 		tf.scale = {s, s, s};
+		middleShell_->SetDrawRatio(midProg);
 		middleShell_->Update();
 	}
 
@@ -598,6 +606,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			gyroRotationX_.z + currentTilt_.z
 		};
 		tf.scale = {scaleMidMult, scaleMidMult, scaleMidMult};
+		gyroRingX_->SetDrawRatio(midProg);
 		gyroRingX_->Update();
 	}
 
@@ -609,6 +618,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			gyroRotationY_.z + currentTilt_.z
 		};
 		tf.scale = {scaleMidMult, scaleMidMult, scaleMidMult};
+		gyroRingY_->SetDrawRatio(midProg);
 		gyroRingY_->Update();
 	}
 
@@ -622,6 +632,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		};
 		float s = pulseCore * scaleCoreMult;
 		tf.scale = {s, s, s};
+		centerCore_->SetDrawRatio(coreProg);
 		centerCore_->Update();
 	}
 
@@ -631,6 +642,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		tf.translation = cyanPos * scaleCoreMult;
 		tf.rotation = {centerCoreRotation_.y * 1.5f, centerCoreRotation_.x * 1.5f, 0.0f};
 		tf.scale = {scaleCoreMult, scaleCoreMult, scaleCoreMult};
+		cyanCore_->SetDrawRatio(coreProg);
 		cyanCore_->Update();
 	}
 
@@ -640,6 +652,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		tf.translation = magentaPos * scaleCoreMult;
 		tf.rotation = {-centerCoreRotation_.y * 1.5f, -centerCoreRotation_.x * 1.5f, 0.0f};
 		tf.scale = {scaleCoreMult, scaleCoreMult, scaleCoreMult};
+		magentaCore_->SetDrawRatio(coreProg);
 		magentaCore_->Update();
 	}
 
@@ -648,6 +661,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		auto& tf = forwardPointer_->GetWorldTransform();
 		tf.rotation = currentTilt_;
 		tf.scale = {scaleOuterMult, scaleOuterMult, scaleOuterMult};
+		forwardPointer_->SetDrawRatio(outerProg);
 		forwardPointer_->Update();
 	}
 
@@ -659,38 +673,44 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 		alphaMul = (std::max)(0.0f, 1.0f - dissolveThreshold_);
 	}
 
+	// 形成中の激しいエネルギー明滅ストロボ (サイバー過電圧グロー)
+	float matGlow = 1.0f;
+	if (materializeProgress_ < 1.0f && materializeProgress_ > 0.0f) {
+		matGlow = 1.0f + 0.5f * std::sin(visualTime_ * 32.0f);
+	}
+
 	// 外殻：まばゆいピュアホワイト
 	if (outerShell_) {
-		float shimmer = 0.90f + 0.10f * std::sin(visualTime_ * 3.0f);
+		float shimmer = (0.90f + 0.10f * std::sin(visualTime_ * 3.0f)) * matGlow;
 		outerShell_->SetColor({1.0f * shimmer, 1.0f * shimmer, 1.0f * shimmer, outerProg * alphaMul});
 	}
 	// 中間層：ビビッドマゼンタ
 	if (middleShell_) {
-		float shimmer = 0.85f + 0.15f * std::cos(visualTime_ * 3.0f);
+		float shimmer = (0.85f + 0.15f * std::cos(visualTime_ * 3.0f)) * matGlow;
 		middleShell_->SetColor({1.0f * shimmer, 0.05f * shimmer, 0.80f * shimmer, 0.85f * midProg * alphaMul});
 	}
 	if (gyroRingX_) {
-		gyroRingX_->SetColor({0.3f, 0.9f, 1.0f, 0.75f * midProg * alphaMul});
+		gyroRingX_->SetColor({0.3f * matGlow, 0.9f * matGlow, 1.0f * matGlow, 0.75f * midProg * alphaMul});
 	}
 	if (gyroRingY_) {
-		gyroRingY_->SetColor({1.0f, 0.3f, 0.9f, 0.75f * midProg * alphaMul});
+		gyroRingY_->SetColor({1.0f * matGlow, 0.3f * matGlow, 0.9f * matGlow, 0.75f * midProg * alphaMul});
 	}
 	// 中心核：超高輝度ゴールド
 	if (centerCore_) {
-		float pulse = 0.90f + 0.10f * std::sin(visualTime_ * 5.0f);
+		float pulse = (0.90f + 0.10f * std::sin(visualTime_ * 5.0f)) * matGlow;
 		centerCore_->SetColor({1.0f * pulse, 0.92f * pulse, 0.20f * pulse, coreProg * alphaMul});
 	}
 	// シアン光核：高彩度ネオンシアン
 	if (cyanCore_) {
-		cyanCore_->SetColor({0.0f, 1.0f, 1.0f, coreProg * alphaMul});
+		cyanCore_->SetColor({0.0f, 1.0f * matGlow, 1.0f * matGlow, coreProg * alphaMul});
 	}
 	// マゼンタ光核：高彩度ネオンマゼンタ
 	if (magentaCore_) {
-		magentaCore_->SetColor({1.0f, 0.0f, 0.85f, coreProg * alphaMul});
+		magentaCore_->SetColor({1.0f * matGlow, 0.0f, 0.85f * matGlow, coreProg * alphaMul});
 	}
 	// 前方ポインター：ゴールドポインター
 	if (forwardPointer_) {
-		forwardPointer_->SetColor({1.0f, 0.90f, 0.30f, 0.95f * outerProg * alphaMul});
+		forwardPointer_->SetColor({1.0f * matGlow, 0.90f * matGlow, 0.30f * matGlow, 0.95f * outerProg * alphaMul});
 	}
 }
 

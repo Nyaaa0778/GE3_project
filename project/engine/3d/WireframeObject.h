@@ -75,6 +75,10 @@ public:
 	void SetFog(float fogNear, float fogFar);
 	void SetCamera(Camera* camera) { camera_ = camera; }
 
+	// 描画するラインの比率 (0.0f: 0本 〜 1.0f: 全ライン描画、徐々に形成される演出用)
+	void SetDrawRatio(float ratio) { drawRatio_ = ratio; }
+	float GetDrawRatio() const { return drawRatio_; }
+
 	WorldTransform& GetWorldTransform() { return transform_; }
 
 private:
@@ -98,6 +102,7 @@ private:
 	ComPtr<ID3D12Resource> indexBuffer_;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_{};
 	uint32_t indexCount_ = 0;
+	float drawRatio_ = 1.0f;
 
 	ComPtr<ID3D12Resource> colorResource_;
 	MaterialData* materialData_ = nullptr;

@@ -147,12 +147,17 @@ private:
 	// ステージ開始カメラ演出 (Phase::kLeady)
 	// ------------------------------------
 	float introCameraTimer_ = 0.0f;
-	float introCameraDuration_ = 4.5f; // 演出時間（秒）
+	float introCameraDuration_ = 3.8f; // カメラ移動時間（秒）
+	float playerMaterializeLeadTime_ = 1.2f; // カメラ移動完了の何秒前にPlayer生成を開始するか（秒）
+	float playerMaterializeTimer_ = 0.0f; // プレイヤー出現・形成タイマー
+	float playerMaterializeDuration_ = 1.4f; // プレイヤー形成時間（秒）
+	static constexpr float kPlayerMaterializePostWait = 0.25f; // 形成完了後の余韻待機時間（秒）
 	Vector3 introStartOffset_ = { 65.0f, 55.0f, 45.0f }; // ゴールからのオフセット（ゴール斜め右上空から全景を俯瞰）
 	Vector3 introSideOffset_ = { 80.0f, 40.0f, 20.0f };  // ステージ中央横の旋回オフセット
 	Vector3 introApproachOffset_ = { 35.0f, 15.0f, -25.0f }; // スタート後方アプローチオフセット
 	float introStartFov_ = 0.65f; // 開始時FOV（広角）
 	float introEndFov_ = 0.45f;   // 通常時FOV
+	bool playerMaterializedEffectTriggered_ = false; // 形成完了エフェクト発生済みフラグ
 
 private:
 
