@@ -143,7 +143,21 @@ private:
 	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
 	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
 
+	// ------------------------------------
+	// ステージ開始カメラ演出 (Phase::kLeady)
+	// ------------------------------------
+	float introCameraTimer_ = 0.0f;
+	float introCameraDuration_ = 4.5f; // 演出時間（秒）
+	Vector3 introStartOffset_ = { 65.0f, 55.0f, 45.0f }; // ゴールからのオフセット（ゴール斜め右上空から全景を俯瞰）
+	Vector3 introSideOffset_ = { 80.0f, 40.0f, 20.0f };  // ステージ中央横の旋回オフセット
+	Vector3 introApproachOffset_ = { 35.0f, 15.0f, -25.0f }; // スタート後方アプローチオフセット
+	float introStartFov_ = 0.65f; // 開始時FOV（広角）
+	float introEndFov_ = 0.45f;   // 通常時FOV
+
 private:
+
+	// ステージ開始時のイントロカメラ演出更新
+	void UpdateIntroCamera();
 
 	// ドローン編隊の生成
 	void SpawnDroneFormation(const Vector3& basePos, DroneFlightPattern pattern, int count = 4);

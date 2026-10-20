@@ -204,8 +204,8 @@ void Player::Draw() {
 	// ------------------------------------
 	// 本体（数式制御多面体ビジュアル）
 	// ------------------------------------
-	// 完全にディゾルブしきるまでは描画する
-	if (isAlive_ || dissolveThreshold_ < 1.0f) {
+	// 完全にディゾルブしきるまでは描画する（マテリアライズ未形成時は非表示）
+	if ((isAlive_ || dissolveThreshold_ < 1.0f) && materializeProgress_ > 0.001f) {
 		DrawGeometricVisual();
 	}
 
@@ -548,8 +548,21 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	};
 
 	// ----------------------------------------------------
-	// 5. 各パーツのトランスフォーム設定・更新
+	// 5. 各パーツのトランスフォーム設定・更新 (マテリアライズ段階的形成対応)
 	// ----------------------------------------------------
+	float coreProg = (std::clamp)((materializeProgress_ - 0.0f) / 0.40f, 0.0f, 1.0f);
+	float midProg  = (std::clamp)((materializeProgress_ - 0.25f) / 0.45f, 0.0f, 1.0f);
+	float outerProg= (std::clamp)((materializeProgress_ - 0.50f) / 0.50f, 0.0f, 1.0f);
+
+	auto EaseOutBack = [](float x) {
+		const float c1 = 1.70158f;
+		const float c3 = c1 + 1.0f;
+		return 1.0f + c3 * std::pow(x - 1.0f, 3.0f) + c1 * std::pow(x - 1.0f, 2.0f);
+	};
+	float scaleCoreMult = (coreProg > 0.0f) ? (coreProg < 1.0f ? (std::max)(0.0f, EaseOutBack(coreProg)) : 1.0f) : 0.0f;
+	float scaleMidMult  = (midProg > 0.0f)  ? (midProg < 1.0f  ? (std::max)(0.0f, EaseOutBack(midProg))  : 1.0f) : 0.0f;
+	float scaleOuterMult= (outerProg > 0.0f)? (outerProg < 1.0f? (std::max)(0.0f, EaseOutBack(outerProg)): 1.0f) : 0.0f;
+
 	// 外殻二十面体
 	if (outerShell_) {
 		auto& tf = outerShell_->GetWorldTransform();
@@ -558,7 +571,8 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			outerRotation_.y + currentTilt_.y,
 			outerRotation_.z + currentTilt_.z
 		};
-		tf.scale = {pulseOuter, pulseOuter, pulseOuter};
+		float s = pulseOuter * scaleOuterMult;
+		tf.scale = {s, s, s};
 		outerShell_->Update();
 	}
 
@@ -570,7 +584,8 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			middleRotation_.y + currentTilt_.y,
 			middleRotation_.z + currentTilt_.z
 		};
-		tf.scale = {pulseMiddle, pulseMiddle, pulseMiddle};
+		float s = pulseMiddle * scaleMidMult;
+		tf.scale = {s, s, s};
 		middleShell_->Update();
 	}
 
@@ -582,6 +597,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			gyroRotationX_.y + currentTilt_.y,
 			gyroRotationX_.z + currentTilt_.z
 		};
+		tf.scale = {scaleMidMult, scaleMidMult, scaleMidMult};
 		gyroRingX_->Update();
 	}
 
@@ -592,6 +608,7 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			gyroRotationY_.y + currentTilt_.y,
 			gyroRotationY_.z + currentTilt_.z
 		};
+		tf.scale = {scaleMidMult, scaleMidMult, scaleMidMult};
 		gyroRingY_->Update();
 	}
 
@@ -603,23 +620,26 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 			centerCoreRotation_.y + currentTilt_.y,
 			centerCoreRotation_.z + currentTilt_.z
 		};
-		tf.scale = {pulseCore, pulseCore, pulseCore};
+		float s = pulseCore * scaleCoreMult;
+		tf.scale = {s, s, s};
 		centerCore_->Update();
 	}
 
 	// シアン光核
 	if (cyanCore_) {
 		auto& tf = cyanCore_->GetWorldTransform();
-		tf.translation = cyanPos;
+		tf.translation = cyanPos * scaleCoreMult;
 		tf.rotation = {centerCoreRotation_.y * 1.5f, centerCoreRotation_.x * 1.5f, 0.0f};
+		tf.scale = {scaleCoreMult, scaleCoreMult, scaleCoreMult};
 		cyanCore_->Update();
 	}
 
 	// マゼンタ光核
 	if (magentaCore_) {
 		auto& tf = magentaCore_->GetWorldTransform();
-		tf.translation = magentaPos;
+		tf.translation = magentaPos * scaleCoreMult;
 		tf.rotation = {-centerCoreRotation_.y * 1.5f, -centerCoreRotation_.x * 1.5f, 0.0f};
+		tf.scale = {scaleCoreMult, scaleCoreMult, scaleCoreMult};
 		magentaCore_->Update();
 	}
 
@@ -627,43 +647,50 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	if (forwardPointer_) {
 		auto& tf = forwardPointer_->GetWorldTransform();
 		tf.rotation = currentTilt_;
+		tf.scale = {scaleOuterMult, scaleOuterMult, scaleOuterMult};
 		forwardPointer_->Update();
 	}
 
 	// ----------------------------------------------------
-	// 6. ディゾルブ・アルファフェード制御
+	// 6. ディゾルブ・アルファフェード制御 (マテリアライズ段階別アルファ)
 	// ----------------------------------------------------
 	float alphaMul = 1.0f;
 	if (useDissolve_ || dissolveThreshold_ > 0.0f) {
 		alphaMul = (std::max)(0.0f, 1.0f - dissolveThreshold_);
 	}
 
-	// 外殻：まばゆいピュアホワイト（背景の都市シアン・マゼンタからくっきり浮き立つ）
+	// 外殻：まばゆいピュアホワイト
 	if (outerShell_) {
 		float shimmer = 0.90f + 0.10f * std::sin(visualTime_ * 3.0f);
-		outerShell_->SetColor({1.0f * shimmer, 1.0f * shimmer, 1.0f * shimmer, 1.0f * alphaMul});
+		outerShell_->SetColor({1.0f * shimmer, 1.0f * shimmer, 1.0f * shimmer, outerProg * alphaMul});
 	}
 	// 中間層：ビビッドマゼンタ
 	if (middleShell_) {
 		float shimmer = 0.85f + 0.15f * std::cos(visualTime_ * 3.0f);
-		middleShell_->SetColor({1.0f * shimmer, 0.05f * shimmer, 0.80f * shimmer, 0.85f * alphaMul});
+		middleShell_->SetColor({1.0f * shimmer, 0.05f * shimmer, 0.80f * shimmer, 0.85f * midProg * alphaMul});
 	}
-	// 中心核：超高輝度ゴールド（背景の街にない色で当たり判定中心を完璧に認識）
+	if (gyroRingX_) {
+		gyroRingX_->SetColor({0.3f, 0.9f, 1.0f, 0.75f * midProg * alphaMul});
+	}
+	if (gyroRingY_) {
+		gyroRingY_->SetColor({1.0f, 0.3f, 0.9f, 0.75f * midProg * alphaMul});
+	}
+	// 中心核：超高輝度ゴールド
 	if (centerCore_) {
 		float pulse = 0.90f + 0.10f * std::sin(visualTime_ * 5.0f);
-		centerCore_->SetColor({1.0f * pulse, 0.92f * pulse, 0.20f * pulse, 1.0f * alphaMul});
+		centerCore_->SetColor({1.0f * pulse, 0.92f * pulse, 0.20f * pulse, coreProg * alphaMul});
 	}
 	// シアン光核：高彩度ネオンシアン
 	if (cyanCore_) {
-		cyanCore_->SetColor({0.0f, 1.0f, 1.0f, 1.0f * alphaMul});
+		cyanCore_->SetColor({0.0f, 1.0f, 1.0f, coreProg * alphaMul});
 	}
 	// マゼンタ光核：高彩度ネオンマゼンタ
 	if (magentaCore_) {
-		magentaCore_->SetColor({1.0f, 0.0f, 0.85f, 1.0f * alphaMul});
+		magentaCore_->SetColor({1.0f, 0.0f, 0.85f, coreProg * alphaMul});
 	}
 	// 前方ポインター：ゴールドポインター
 	if (forwardPointer_) {
-		forwardPointer_->SetColor({1.0f, 0.90f, 0.30f, 0.95f * alphaMul});
+		forwardPointer_->SetColor({1.0f, 0.90f, 0.30f, 0.95f * outerProg * alphaMul});
 	}
 }
 
@@ -671,21 +698,31 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 /// 幾何学多面体パーツの描画
 /// </summary>
 void Player::DrawGeometricVisual() {
+	if (materializeProgress_ <= 0.001f) return;
+
+	float coreProg = (std::clamp)((materializeProgress_ - 0.0f) / 0.40f, 0.0f, 1.0f);
+	float midProg  = (std::clamp)((materializeProgress_ - 0.25f) / 0.45f, 0.0f, 1.0f);
+	float outerProg= (std::clamp)((materializeProgress_ - 0.50f) / 0.50f, 0.0f, 1.0f);
+
 	// 内側コア（シアン＆マゼンタ＆中心ビーコン）
-	if (cyanCore_) cyanCore_->Draw();
-	if (magentaCore_) magentaCore_->Draw();
-	if (centerCore_) centerCore_->Draw();
+	if (coreProg > 0.001f) {
+		if (cyanCore_) cyanCore_->Draw();
+		if (magentaCore_) magentaCore_->Draw();
+		if (centerCore_) centerCore_->Draw();
+	}
 
 	// 中間層（十二面体マゼンタ＆ジャイロリング）
-	if (middleShell_) middleShell_->Draw();
-	if (gyroRingX_) gyroRingX_->Draw();
-	if (gyroRingY_) gyroRingY_->Draw();
+	if (midProg > 0.001f) {
+		if (middleShell_) middleShell_->Draw();
+		if (gyroRingX_) gyroRingX_->Draw();
+		if (gyroRingY_) gyroRingY_->Draw();
+	}
 
-	// 外殻（二十面体シアン）
-	if (outerShell_) outerShell_->Draw();
-
-	// 前方エイミングポインター
-	if (forwardPointer_) forwardPointer_->Draw();
+	// 外殻（二十面体シアン）＆前方ポインター
+	if (outerProg > 0.001f) {
+		if (outerShell_) outerShell_->Draw();
+		if (forwardPointer_) forwardPointer_->Draw();
+	}
 }
 
 

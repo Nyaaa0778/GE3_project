@@ -211,7 +211,21 @@ void GamePlayScene::Initialize() {
 	fadeAlpha_ = 0.0f;
 	gameOverWaitTimer_ = 0.0f;
 
-	phase_ = Phase::kPlay;
+	// ------------------------------------
+	// ステージ開始演出の初期化 (Phase::kLeady)
+	// ------------------------------------
+	introCameraTimer_ = 0.0f;
+	if (railCamera_)
+	{
+		railCamera_->SetIsPlaying(false);
+		railCamera_->SetSplineTime(0.0f);
+	}
+	if (player_)
+	{
+		player_->SetMaterializeProgress(0.0f);
+	}
+	phase_ = Phase::kLeady;
+	UpdateIntroCamera();
 }
 
 void GamePlayScene::Update() {
@@ -248,8 +262,8 @@ void GamePlayScene::Update() {
 
 	if (railCamera_)
 	{
-		// ゲームオーバー時はカメラワークを停止する
-		if (phase_ != Phase::kGameOver)
+		// イントロ中やゲームオーバー時はレールカメラの自動進行を停止
+		if (phase_ != Phase::kGameOver && phase_ != Phase::kLeady)
 		{
 			railCamera_->Update(!useDebugCamera_);
 		}
@@ -270,8 +284,8 @@ void GamePlayScene::Update() {
 	if (shake_)
 	{
 		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
-		// ゲームオーバー時はカメラの揺れも停止
-		if (phase_ != Phase::kGameOver && shake_->IsActive() && !useDebugCamera_)
+		// ゲームオーバー時やイントロ時はカメラの揺れも停止
+		if (phase_ != Phase::kGameOver && phase_ != Phase::kLeady && shake_->IsActive() && !useDebugCamera_)
 		{
 			Vector3 offset = shake_->GetOffset();
 			camera_->matWorld.m[3][0] += offset.x;
@@ -289,7 +303,47 @@ void GamePlayScene::Update() {
 		ChangePhase(Phase::kGameOver);
 	}
 
-	if (phase_ == Phase::kPlay)
+	if (phase_ == Phase::kLeady)
+	{
+		// ------------------------------------
+		// ステージ開始演出フェーズ (kLeady)
+		// ゴール手前・高所からスタート地点を見下ろすカメラワーク
+		// ------------------------------------
+		UpdateIntroCamera();
+
+		// 自機はアニメーションのみ更新
+		if (player_)
+		{
+			player_->UpdateAnimationOnly();
+		}
+
+		// ゴールのアニメーション更新
+		if (goal_)
+		{
+			goal_->Update();
+		}
+
+		// 背景とレベルオブジェクトの更新
+		level_->Update();
+		if (backgroundSprite_)
+		{
+			backgroundSprite_->Update();
+		}
+		if (cityBackground_)
+		{
+			cityBackground_->SetCamera(camera_.get());
+			cityBackground_->Update();
+		}
+		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
+
+		// SPACEキーまたはゲームパッドAボタンで演出スキップ
+		if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A))
+		{
+			ChangePhase(Phase::kPlay);
+			return;
+		}
+	}
+	else if (phase_ == Phase::kPlay)
 	{
 
 		// ------------------------------------
@@ -718,7 +772,10 @@ void GamePlayScene::Draw() {
 	// ロックオン
 	// ------------------------------------
 
-	lockOn_->Draw();
+	if (phase_ == Phase::kPlay)
+	{
+		lockOn_->Draw();
+	}
 
 	// ------------------------------------
 	// パーティクル描画
@@ -726,15 +783,18 @@ void GamePlayScene::Draw() {
 	ParticleManager::GetInstance()->Draw();
 
 	// ------------------------------------
-	// UI
+	// UI (イントロ演出中は非表示にしてパノラマ映像に没入させる)
 	// ------------------------------------
 
-	uiPlayerHp_->Draw();
-
-	// スコアUIの描画
-	for (auto& digitSprite : uiScoreDigits_)
+	if (phase_ != Phase::kLeady)
 	{
-		digitSprite->Draw();
+		uiPlayerHp_->Draw();
+
+		// スコアUIの描画
+		for (auto& digitSprite : uiScoreDigits_)
+		{
+			digitSprite->Draw();
+		}
 	}
 
 	// ------------------------------------
@@ -800,8 +860,37 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 	switch (phase_)
 	{
 	case Phase::kLeady:
+		introCameraTimer_ = 0.0f;
+		if (railCamera_)
+		{
+			railCamera_->SetIsPlaying(false);
+			railCamera_->SetSplineTime(0.0f);
+		}
+		if (player_)
+		{
+			player_->SetMaterializeProgress(0.0f);
+		}
+		UpdateIntroCamera();
 		break;
 	case Phase::kPlay:
+		if (camera_)
+		{
+			camera_->SetFovY(introEndFov_);
+		}
+		if (player_)
+		{
+			player_->SetMaterializeProgress(1.0f);
+		}
+		// レールカメラの再生を開始
+		if (railCamera_)
+		{
+			railCamera_->SetIsPlaying(true);
+			railCamera_->SetSplineTime(0.0f);
+			if (!useDebugCamera_)
+			{
+				railCamera_->Update(true);
+			}
+		}
 		break;
 	case Phase::kClear:
 		isGoalReached_ = true;
@@ -838,6 +927,156 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 			fadeSprite_->Update();
 		}
 		break;
+	}
+}
+
+void GamePlayScene::UpdateIntroCamera() {
+	if (!railCamera_ || !camera_) return;
+
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+	introCameraTimer_ += dt;
+
+	// コースの始点・終点（ゴール）を取得
+	const auto& controlPoints = railCamera_->GetControlPoints();
+	Vector3 startPos = controlPoints.empty() ? Vector3{ 0.0f, 0.0f, 0.0f } : controlPoints.front();
+	Vector3 goalPos = controlPoints.empty() ? Vector3{ 0.0f, 0.0f, 150.0f } : controlPoints.back();
+	Vector3 stageCenter = (startPos + goalPos) * 0.5f;
+
+	// 通常プレイ時の初期カメラ座標・回転（スタート位置）
+	Vector3 playCamPos = startPos;
+	Vector3 playCamRot = { 0.0f, 0.0f, 0.0f };
+
+	// 演出の進行度 (0.0f 〜 1.0f)
+	float rawT = (std::min)(1.0f, introCameraTimer_ / (std::max)(0.01f, introCameraDuration_));
+
+	// 演出終了判定
+	if (introCameraTimer_ >= introCameraDuration_) {
+		camera_->SetFovY(introEndFov_);
+		camera_->CalculateMatrix();
+		ChangePhase(Phase::kPlay);
+		return;
+	}
+
+	// 緩やかな加減速（Cubic Ease In-Out）
+	float t = (rawT < 0.5f)
+		? 4.0f * rawT * rawT * rawT
+		: 1.0f - std::pow(-2.0f * rawT + 2.0f, 3.0f) / 2.0f;
+
+	// ----------------------------------------------------
+	// 1. FOV（視野角）の補間: 開始時は広角でステージ全体を捉え、接近とともに通常へ
+	// ----------------------------------------------------
+	float currentFov = introStartFov_ * (1.0f - t) + introEndFov_ * t;
+	camera_->SetFovY(currentFov);
+
+	// ----------------------------------------------------
+	// 2. カメラ座標（3次ベジェ曲線による外側旋回オービット軌道）
+	// ----------------------------------------------------
+	// p0: ゴール地点を手前に、スタート地点を奥に望む斜め上空位置（手前ゴール、奥スタートの全体俯瞰）
+	Vector3 p0 = {
+		goalPos.x + introStartOffset_.x,
+		goalPos.y + introStartOffset_.y,
+		goalPos.z + introStartOffset_.z
+	};
+	// p1: 旋回前半（ステージ横の外側上空をダイナミックに通過）
+	Vector3 p1 = {
+		stageCenter.x + introSideOffset_.x,
+		stageCenter.y + introSideOffset_.y,
+		stageCenter.z + introSideOffset_.z
+	};
+	// p2: 旋回後半（スタート地点の斜め後方・低空から自機背後へアプローチ）
+	Vector3 p2 = {
+		startPos.x + introApproachOffset_.x,
+		startPos.y + introApproachOffset_.y,
+		startPos.z + introApproachOffset_.z
+	};
+	// p3: 通常プレイ時のカメラ位置（自機の真後ろ）
+	Vector3 p3 = playCamPos;
+
+	// 3次ベジェ補間: B(t) = (1-t)^3 * p0 + 3(1-t)^2 * t * p1 + 3(1-t) * t^2 * p2 + t^3 * p3
+	float omt = 1.0f - t;
+	Vector3 camPos = p0 * (omt * omt * omt)
+		+ p1 * (3.0f * omt * omt * t)
+		+ p2 * (3.0f * omt * t * t)
+		+ p3 * (t * t * t);
+
+	// ----------------------------------------------------
+	// 3. 注視点（Look Target）の補間
+	// ----------------------------------------------------
+	// 初期: ゴールからスタートまでステージ全体が見えるようステージ中央を見下ろす
+	Vector3 targetStage = { stageCenter.x, stageCenter.y + 4.0f, stageCenter.z + 10.0f };
+	// 終期: 自機前方の進行方向
+	Vector3 targetPlay = { startPos.x, startPos.y, startPos.z + 80.0f };
+
+	// 前半（rawT < 0.35）はステージ中央を注視、0.35〜0.9 でプレイ注視点へスムーズに移行
+	float targetT = (std::clamp)((rawT - 0.35f) / 0.55f, 0.0f, 1.0f);
+	float targetEase = targetT * targetT * (3.0f - 2.0f * targetT); // Smoothstep
+	Vector3 lookTarget = targetStage * (1.0f - targetEase) + targetPlay * targetEase;
+
+	Vector3 toTarget = lookTarget - camPos;
+	float distXZ = std::sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+	float lookPitch = std::atan2(-toTarget.y, (std::max)(0.001f, distXZ));
+	float lookYaw = std::atan2(toTarget.x, toTarget.z);
+
+	// 終盤（rawT >= 0.8f）で最終的なプレイ姿勢（正面）へ完全同期
+	Vector3 finalRot;
+	if (rawT < 0.8f) {
+		finalRot = { lookPitch, lookYaw, 0.0f };
+	} else {
+		float blendRaw = (rawT - 0.8f) / 0.2f;
+		float blendT = blendRaw * blendRaw * (3.0f - 2.0f * blendRaw);
+
+		float currentPitch = lookPitch * (1.0f - blendT) + playCamRot.x * blendT;
+
+		float diffYaw = playCamRot.y - lookYaw;
+		while (diffYaw < -3.14159265f) diffYaw += 6.2831853f;
+		while (diffYaw > 3.14159265f) diffYaw -= 6.2831853f;
+		float currentYaw = lookYaw + diffYaw * blendT;
+
+		finalRot = { currentPitch, currentYaw, 0.0f };
+	}
+
+	// ----------------------------------------------------
+	// 4. カメラへ座標と回転を反映・行列更新
+	// ----------------------------------------------------
+	if (!useDebugCamera_) {
+		camera_->SetTranslate(camPos);
+		camera_->SetRotate(finalRot);
+		camera_->CalculateMatrix();
+	}
+
+	// ----------------------------------------------------
+	// 5. プレイヤーのマテリアライズ（徐々に形成される出現演出）
+	// カメラがスタート地点へ回り込んでくるタイミング（rawT >= 0.50f）で実体化を開始
+	// ----------------------------------------------------
+	if (player_) {
+		float matProgress = (std::clamp)((rawT - 0.50f) / 0.42f, 0.0f, 1.0f);
+		player_->SetMaterializeProgress(matProgress);
+
+		// 形成途中のデジタルグリッチ粒子エフェクト（中心への粒子収束）
+		if (matProgress > 0.01f && matProgress < 0.98f) {
+			Vector3 playerPos = player_->GetWorldPosition();
+			for (int i = 0; i < 2; ++i) {
+				Vector3 randOffset = {
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 2.5f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 2.5f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 2.5f
+				};
+				Vector3 pPos = playerPos + randOffset;
+				Vector3 pVel = randOffset * -2.0f; // 中心へ光が収束する動き
+				Vector4 color = ((rand() % 2) == 0)
+					? Vector4{ 0.0f, 1.0f, 1.0f, 0.85f }   // ネオンシアン
+					: Vector4{ 1.0f, 0.1f, 0.85f, 0.85f }; // ネオンマゼンタ
+				ParticleManager::GetInstance()->Emit("CircleParticle", pPos, pVel, color, { 0.15f, 0.15f, 0.15f }, 0.4f, 1);
+			}
+			if (rand() % 3 == 0) {
+				Vector3 randOffset = {
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f
+				};
+				ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos + randOffset, { 0.0f, 0.4f, 0.0f }, { 1.0f, 0.9f, 0.2f, 0.9f }, { 0.15f, 0.15f, 0.15f }, 0.3f, 1);
+			}
+		}
 	}
 }
 
@@ -904,6 +1143,20 @@ void GamePlayScene::UpdateImGui() {
 	if (phase_ == Phase::kPlay) {
 		if (ImGui::Button("Debug: Trigger Goal (Clear)")) {
 			ChangePhase(Phase::kClear);
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Stage Intro Camera", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::SliderFloat("Duration (s)", &introCameraDuration_, 1.0f, 10.0f, "%.1f");
+		ImGui::SliderFloat("Start FOV", &introStartFov_, 0.3f, 1.2f, "%.2f rad");
+		ImGui::DragFloat3("p0: Start (Goal Offset)", &introStartOffset_.x, 0.5f, -200.0f, 200.0f);
+		ImGui::DragFloat3("p1: Side (Mid Offset)", &introSideOffset_.x, 0.5f, -200.0f, 200.0f);
+		ImGui::DragFloat3("p2: Approach (Start Offset)", &introApproachOffset_.x, 0.5f, -200.0f, 200.0f);
+
+		if (ImGui::Button("Replay Intro Camera"))
+		{
+			ChangePhase(Phase::kLeady);
 		}
 	}
 

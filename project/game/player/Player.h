@@ -73,6 +73,10 @@ public:
 	void SetDissolveThreshold(float dissolveThreshold) { dissolveThreshold_ = dissolveThreshold; }
 	float GetDissolveThreshold() const { return dissolveThreshold_; }
 
+	// マテリアライズ（出現形成演出）制御 (0.0f: 完全未形成 〜 1.0f: 完全形成)
+	void SetMaterializeProgress(float progress) { materializeProgress_ = progress; }
+	float GetMaterializeProgress() const { return materializeProgress_; }
+
 	// HPのゲッター・セッター
 	float GetHP() const { return hp_; }
 	void SetHP(float hp) { hp_ = hp; }
@@ -104,6 +108,9 @@ private:
 	// ディゾルブ用パラメータ
 	float dissolveThreshold_ = 0.0f;
 	bool useDissolve_ = false;
+
+	// マテリアライズ（出現形成演出）進行度 (0.0f: 未形成, 1.0f: 通常)
+	float materializeProgress_ = 1.0f;
 
 public:
 	// 生存フラグのゲッター
