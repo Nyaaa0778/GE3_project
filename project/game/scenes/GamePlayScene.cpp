@@ -224,6 +224,7 @@ void GamePlayScene::Initialize() {
 	{
 		player_->SetMaterializeProgress(0.0f);
 	}
+	autoReturnTitleTimer_ = 0.0f;
 	phase_ = Phase::kLeady;
 	UpdateIntroCamera();
 }
@@ -345,6 +346,26 @@ void GamePlayScene::Update() {
 	}
 	else if (phase_ == Phase::kPlay)
 	{
+		// ------------------------------------
+		// スタート後3秒でタイトルへ自動遷移
+		// ------------------------------------
+		if (enableAutoReturnTitle_)
+		{
+			autoReturnTitleTimer_ += TimeManager::GetInstance()->GetDeltaTime();
+			if (autoReturnTitleTimer_ >= autoReturnTitleDuration_)
+			{
+				if (!CrtTransition::GetInstance()->IsTransitioning())
+				{
+					input->SetShake(0.0f, 0.0f);
+					if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+					{
+						PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
+					}
+					CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kGlitch);
+					return;
+				}
+			}
+		}
 
 		// ------------------------------------
 		// ゴールの更新・アニメーション
@@ -881,6 +902,7 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		{
 			player_->SetMaterializeProgress(1.0f);
 		}
+		autoReturnTitleTimer_ = 0.0f;
 		// レールカメラの再生を開始
 		if (railCamera_)
 		{
@@ -1157,6 +1179,16 @@ void GamePlayScene::UpdateImGui() {
 		if (ImGui::Button("Replay Intro Camera"))
 		{
 			ChangePhase(Phase::kLeady);
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Auto Return to Title", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Enable Auto Return", &enableAutoReturnTitle_);
+		ImGui::SliderFloat("Return Delay (s)", &autoReturnTitleDuration_, 0.5f, 10.0f, "%.1f");
+		if (phase_ == Phase::kPlay)
+		{
+			ImGui::ProgressBar(autoReturnTitleTimer_ / autoReturnTitleDuration_, ImVec2(0.0f, 0.0f));
 		}
 	}
 

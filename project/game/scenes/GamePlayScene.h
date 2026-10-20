@@ -154,6 +154,11 @@ private:
 	float introStartFov_ = 0.65f; // 開始時FOV（広角）
 	float introEndFov_ = 0.45f;   // 通常時FOV
 
+	// スタート後の自動タイトル遷移タイマー (3秒)
+	float autoReturnTitleTimer_ = 0.0f;
+	float autoReturnTitleDuration_ = 3.0f; // 3秒
+	bool enableAutoReturnTitle_ = true;
+
 private:
 
 	// ステージ開始時のイントロカメラ演出更新
