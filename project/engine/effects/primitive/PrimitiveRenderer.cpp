@@ -44,8 +44,8 @@ void PrimitiveRenderer::SetupCommonRenderState(BlendMode blendMode, bool isSolid
 	ID3D12PipelineState* pso = psoCache->GetOrCreate(key);
 
 	auto commandList = dxCommon_->GetCommandList();
-	commandList->SetGraphicsRootSignature(psoCache->GetCommonRootSignature());
-	commandList->SetPipelineState(pso);
+	psoCache->SetGraphicsRootSignature(commandList, psoCache->GetCommonRootSignature());
+	psoCache->SetGraphicsPipelineState(commandList, pso);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 

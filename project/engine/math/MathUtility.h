@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <Matrix4x4.h>
 #include <Vector2.h>
 #include <Vector3.h>
@@ -11,37 +12,50 @@ namespace MathUtility {
 	//================================================================================
 
 	// 加算
-	Vector2 Add(const Vector2& v1, const Vector2& v2);
-	Vector3 Add(const Vector3& v1, const Vector3& v2);
+	inline Vector2 Add(const Vector2& v1, const Vector2& v2) { return {v1.x + v2.x, v1.y + v2.y}; }
+	inline Vector3 Add(const Vector3& v1, const Vector3& v2) { return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z}; }
 
 	// 減算
-	Vector2 Subtract(const Vector2& v1, const Vector2& v2);
-	Vector3 Subtract(const Vector3& v1, const Vector3& v2);
+	inline Vector2 Subtract(const Vector2& v1, const Vector2& v2) { return {v1.x - v2.x, v1.y - v2.y}; }
+	inline Vector3 Subtract(const Vector3& v1, const Vector3& v2) { return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z}; }
 
 	// 乗算
-	Vector2 Multiply(const Vector2& v1, const Vector2& v2);
-	Vector2 Multiply(float s, const Vector2& v);
-	Vector2 Multiply(const Vector2& v, float s);
+	inline Vector2 Multiply(const Vector2& v1, const Vector2& v2) { return {v1.x * v2.x, v1.y * v2.y}; }
+	inline Vector2 Multiply(float s, const Vector2& v) { return {s * v.x, s * v.y}; }
+	inline Vector2 Multiply(const Vector2& v, float s) { return {s * v.x, s * v.y}; }
 
-	Vector3 Multiply(const Vector3& v1, const Vector3& v2);
-	Vector3 Multiply(const Vector3& v, float s);
-	Vector3 Multiply(float s, const Vector3& v);
+	inline Vector3 Multiply(const Vector3& v1, const Vector3& v2) { return {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z}; }
+	inline Vector3 Multiply(const Vector3& v, float s) { return {s * v.x, s * v.y, s * v.z}; }
+	inline Vector3 Multiply(float s, const Vector3& v) { return {s * v.x, s * v.y, s * v.z}; }
 
 	// 外積
-	Vector3 Cross(const Vector3& a, const Vector3& b);
+	inline Vector3 Cross(const Vector3& a, const Vector3& b) {
+		return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+	}
 
 	// 内積
-	float Dot(const Vector3& a, const Vector3& b);
+	inline float Dot(const Vector3& a, const Vector3& b) {
+		return a.x * b.x + a.y * b.y + a.z * b.z;
+	}
 
 	// 長さ
-	float Length(const Vector2& v);
-	float Length(const Vector3& v);
+	inline float Length(const Vector2& v) { return std::sqrt(v.x * v.x + v.y * v.y); }
+	inline float Length(const Vector3& v) { return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
 
 	// 距離
-	float Distance(const Vector2& a, const Vector2& b);
+	inline float Distance(const Vector2& a, const Vector2& b) {
+		Vector2 diff = {b.x - a.x, b.y - a.y};
+		return Length(diff);
+	}
 
 	// 正規化
-	Vector3 Normalize(const Vector3& v);
+	inline Vector3 Normalize(const Vector3& v) {
+		float length = Length(v);
+		if (length == 0.0f) {
+			return {0.0f, 0.0f, 0.0f};
+		}
+		return {v.x / length, v.y / length, v.z / length};
+	}
 
 	Vector3 TransformCoord(const Vector3& v, const Matrix4x4& m);
 
@@ -54,25 +68,61 @@ namespace MathUtility {
 	//================================================================================
 
 	//---------- Vector2 ----------
-	Vector2 operator+(const Vector2& v1, const Vector2& v2);
-	Vector2 operator-(const Vector2& v1, const Vector2& v2);
+	inline Vector2 operator+(const Vector2& v1, const Vector2& v2) { return Add(v1, v2); }
+	inline Vector2 operator-(const Vector2& v1, const Vector2& v2) { return Subtract(v1, v2); }
 
-	Vector2& operator+=(Vector2& v1, const Vector2& v2);
-	Vector2& operator-=(Vector2& v1, const Vector2& v2);
-	Vector2& operator*=(Vector2& v, float s);
-	Vector2& operator*=(float s, Vector2& v);
+	inline Vector2& operator+=(Vector2& v1, const Vector2& v2) {
+		v1.x += v2.x;
+		v1.y += v2.y;
+		return v1;
+	}
+	inline Vector2& operator-=(Vector2& v1, const Vector2& v2) {
+		v1.x -= v2.x;
+		v1.y -= v2.y;
+		return v1;
+	}
+	inline Vector2& operator*=(Vector2& v, float s) {
+		v.x *= s;
+		v.y *= s;
+		return v;
+	}
+	inline Vector2& operator*=(float s, Vector2& v) {
+		v.x *= s;
+		v.y *= s;
+		return v;
+	}
 
 	//---------- Vector3 ----------
-	Vector3 operator+(const Vector3& v1, const Vector3& v2);
-	Vector3 operator-(const Vector3& v1, const Vector3& v2);
-	Vector3 operator*(const Vector3& v1, const Vector3& v2);
-	Vector3 operator*(const Vector3& v, float s);
-	Vector3 operator*(float s, const Vector3& v);
+	inline Vector3 operator+(const Vector3& v1, const Vector3& v2) { return Add(v1, v2); }
+	inline Vector3 operator-(const Vector3& v1, const Vector3& v2) { return Subtract(v1, v2); }
+	inline Vector3 operator*(const Vector3& v1, const Vector3& v2) { return Multiply(v1, v2); }
+	inline Vector3 operator*(const Vector3& v, float s) { return Multiply(v, s); }
+	inline Vector3 operator*(float s, const Vector3& v) { return Multiply(v, s); }
 
-	Vector3& operator+=(Vector3& v1, const Vector3& v2);
-	Vector3& operator-=(Vector3& v1, const Vector3& v2);
-	Vector3& operator*=(Vector3& v, float s);
-	Vector3& operator*=(float s, Vector3& v);
+	inline Vector3& operator+=(Vector3& v1, const Vector3& v2) {
+		v1.x += v2.x;
+		v1.y += v2.y;
+		v1.z += v2.z;
+		return v1;
+	}
+	inline Vector3& operator-=(Vector3& v1, const Vector3& v2) {
+		v1.x -= v2.x;
+		v1.y -= v2.y;
+		v1.z -= v2.z;
+		return v1;
+	}
+	inline Vector3& operator*=(Vector3& v, float s) {
+		v.x *= s;
+		v.y *= s;
+		v.z *= s;
+		return v;
+	}
+	inline Vector3& operator*=(float s, Vector3& v) {
+		v.x *= s;
+		v.y *= s;
+		v.z *= s;
+		return v;
+	}
 
 	//================================================================================
 	// 行列演算
@@ -94,7 +144,7 @@ namespace MathUtility {
 	// ベクトル演算子オーバーロード
 	//================================================================================
 
-	Matrix4x4 operator*(const Matrix4x4& m1, const Matrix4x4& m2);
+	inline Matrix4x4 operator*(const Matrix4x4& m1, const Matrix4x4& m2) { return Multiply(m1, m2); }
 
 	//================================================================================
 	// 基本行列の生成

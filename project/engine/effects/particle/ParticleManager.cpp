@@ -7,6 +7,7 @@
 #include "TextureManager.h"
 #include "Plane.h"
 #include "Box.h"
+#include "PipelineStateCache.h"
 
 #include <cassert>
 #include <numbers>
@@ -164,8 +165,10 @@ void ParticleManager::Draw()
 	ID3D12GraphicsCommandList* cmd = dxCommon_->GetCommandList();
 	assert(cmd);
 
-	// コマンド：ルートシグネチャを設定
-	cmd->SetGraphicsRootSignature(rootSignature_.Get());
+	auto* psoCache = PipelineStateCache::GetInstance();
+
+	// コマンド：ルートシグネチャを設定（キャッシュに記録）
+	psoCache->SetGraphicsRootSignature(cmd, rootSignature_.Get());
 
 	// コマンド：プリミティブトポロジー（描画形状）を設定
 	cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -181,9 +184,9 @@ void ParticleManager::Draw()
 
 		// グループのシェーダタイプに応じてPSOを切り替え
 		if (group.shaderType == ShaderType::kBulletTrail && bulletTrailPipelineState_) {
-			cmd->SetPipelineState(bulletTrailPipelineState_.Get());
+			psoCache->SetGraphicsPipelineState(cmd, bulletTrailPipelineState_.Get());
 		} else {
-			cmd->SetPipelineState(graphicsPipelineState_.Get());
+			psoCache->SetGraphicsPipelineState(cmd, graphicsPipelineState_.Get());
 		}
 
 		// コマンド：テクスチャのSRVのDescriptorTableを設定（root[1]）

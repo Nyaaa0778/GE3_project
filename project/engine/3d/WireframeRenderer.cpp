@@ -69,10 +69,10 @@ void WireframeRenderer::SetupCommonRenderState() {
 	// キャッシュから PSO を取得
 	ID3D12PipelineState* pso = psoCache->GetOrCreate(key);
 
-	// ルートシグネチャをセット
-	dxCommon_->GetCommandList()->SetGraphicsRootSignature(psoCache->GetCommonRootSignature());
-	// グラフィックスパイプラインステートをセット
-	dxCommon_->GetCommandList()->SetPipelineState(pso);
+	// ルートシグネチャをセット（重複発行スキップ）
+	psoCache->SetGraphicsRootSignature(dxCommon_->GetCommandList(), psoCache->GetCommonRootSignature());
+	// グラフィックスパイプラインステートをセット（重複発行スキップ）
+	psoCache->SetGraphicsPipelineState(dxCommon_->GetCommandList(), pso);
 	// プリミティブトポロジーをセット
 	dxCommon_->GetCommandList()->IASetPrimitiveTopology(
 		D3D_PRIMITIVE_TOPOLOGY_LINELIST);

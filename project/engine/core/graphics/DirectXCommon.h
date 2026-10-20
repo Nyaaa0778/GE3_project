@@ -16,13 +16,6 @@ class WinApp;
 class DirectXCommon
 {
 public:
-	//================================================================================
-	// 定数
-	//================================================================================
-
-	// SRVの個数
-	static const uint32_t kMaxSRVCount;
-
 public:
 	//================================================================================
 	// シングルトン
@@ -111,26 +104,6 @@ public:
 	// バックバッファの数
 	UINT GetSwapChainResourceNum() const { return kBackBufferCount; }
 
-	// SRVのデスクリプタヒープ
-	ID3D12DescriptorHeap* GetSrvDescriptorHeap() const {
-		return descriptorHeapSRV_.Get();
-	}
-	// SRVのデスクリプタサイズ
-	UINT GetSrvDescriptorSize() const { return descriptorSizeSRV_; }
-
-	/// <summary>
-	/// SRVの指定番号のCPUデスクリプタハンドルを取得
-	/// </summary>
-	/// <param name="index">取得したいSRVのインデックス番号</param>
-	/// <returns>SRVのCPUディスクリプタハンドル</returns>
-	D3D12_CPU_DESCRIPTOR_HANDLE GetSrvCPUDescriptorHandle(uint32_t index);
-	/// <summary>
-	/// SRVの指定番号のGPUデスクリプタハンドルを取得
-	/// </summary>
-	/// <param name="index">取得したいSRVのインデックス番号</param>
-	/// <returns>SRVのCPUディスクリプタハンドル</returns>
-	D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGPUDescriptorHandle(uint32_t index);
-
 	uint32_t GetRenderTextureSrvIndex() const { return srvIndexRenderTexture_; }
 	ID3D12Resource* GetRenderTextureResource() const { return renderTextureResource_.Get(); }
 	D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferRtv() const {
@@ -202,15 +175,11 @@ private:
 
 	// RTVのデスクリプタサイズ
 	uint32_t descriptorSizeRTV_;
-	// SRVのデスクリプタサイズ
-	uint32_t descriptorSizeSRV_;
 	// DSVのデスクリプタサイズ
 	uint32_t descriptorSizeDSV_;
 
 	// RTVのデスクリプタヒープ
 	ComPtr<ID3D12DescriptorHeap> descriptorHeapRTV_;
-	// SRVのデスクリプタヒープ
-	ComPtr<ID3D12DescriptorHeap> descriptorHeapSRV_;
 	// DSVのデスクリプタヒープ
 	ComPtr<ID3D12DescriptorHeap> descriptorHeapDSV_;
 
@@ -238,9 +207,9 @@ private:
 	//================================================================================
 
 	// DXCコンパイラ
-	IDxcUtils* dxcUtils_ = nullptr;
-	IDxcCompiler3* dxcCompiler_ = nullptr;
-	IDxcIncludeHandler* includeHandler_ = nullptr;
+	ComPtr<IDxcUtils> dxcUtils_ = nullptr;
+	ComPtr<IDxcCompiler3> dxcCompiler_ = nullptr;
+	ComPtr<IDxcIncludeHandler> includeHandler_ = nullptr;
 
 	//================================================================================
 	// RenderTexture

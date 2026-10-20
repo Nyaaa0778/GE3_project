@@ -64,9 +64,9 @@ void SkyboxRenderer::PreDraw() {
     // キャッシュから PSO を取得
     ID3D12PipelineState* pso = psoCache->GetOrCreate(key);
 
-    // ルートシグネチャをセット
-    commandList->SetGraphicsRootSignature(psoCache->GetCommonRootSignature());
-    // グラフィックスパイプラインステートをセット
-    commandList->SetPipelineState(pso);
+    // ルートシグネチャをセット（重複発行スキップ）
+    psoCache->SetGraphicsRootSignature(commandList, psoCache->GetCommonRootSignature());
+    // グラフィックスパイプラインステートをセット（重複発行スキップ）
+    psoCache->SetGraphicsPipelineState(commandList, pso);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }

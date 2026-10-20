@@ -250,3 +250,24 @@ void PipelineStateCache::CreateCommonRootSignature() {
 	assert(SUCCEEDED(hr));
 
 }
+
+void PipelineStateCache::SetGraphicsPipelineState(ID3D12GraphicsCommandList* commandList, ID3D12PipelineState* pso) {
+	assert(commandList && pso);
+	if (currentBoundPso_ != pso) {
+		commandList->SetPipelineState(pso);
+		currentBoundPso_ = pso;
+	}
+}
+
+void PipelineStateCache::SetGraphicsRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSig) {
+	assert(commandList && rootSig);
+	if (currentBoundRootSig_ != rootSig) {
+		commandList->SetGraphicsRootSignature(rootSig);
+		currentBoundRootSig_ = rootSig;
+	}
+}
+
+void PipelineStateCache::ResetCommandListState() {
+	currentBoundPso_ = nullptr;
+	currentBoundRootSig_ = nullptr;
+}

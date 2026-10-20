@@ -142,10 +142,10 @@ void PostProcessRenderer::RenderEffect(IPostProcessEffect* effect, D3D12_GPU_DES
 	// 2. PipelineStateCache から PSO を取得
 	ID3D12PipelineState* pso = psoCache->GetOrCreate(key);
 
-	// 3. パイプライン設定
+	// 3. パイプライン設定（重複発行スキップ）
 	auto* cmdList = dxCommon_->GetCommandList();
-	cmdList->SetGraphicsRootSignature(rootSig);
-	cmdList->SetPipelineState(pso);
+	psoCache->SetGraphicsRootSignature(cmdList, rootSig);
+	psoCache->SetGraphicsPipelineState(cmdList, pso);
 	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// 4. メイン入力テクスチャ (t0 -> kRootParamMainTexture: スロット4)

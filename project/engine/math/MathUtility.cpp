@@ -4,78 +4,6 @@
 
 namespace MathUtility {
 
-	//================================================================================
-	// ベクトル演算
-	//================================================================================
-
-	// 加算
-	Vector2 Add(const Vector2& v1, const Vector2& v2) {
-		return {v1.x + v2.x, v1.y + v2.y};
-	}
-	Vector3 Add(const Vector3& v1, const Vector3& v2) {
-		return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
-	}
-
-	// 減算
-	Vector2 Subtract(const Vector2& v1, const Vector2& v2) {
-		return {v1.x - v2.x, v1.y - v2.y};
-	}
-	Vector3 Subtract(const Vector3& v1, const Vector3& v2) {
-		return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
-	}
-
-	// 乗算
-	Vector2 Multiply(const Vector2& v1, const Vector2& v2) {
-		return {v1.x * v2.x, v1.y * v2.y};
-	}
-	Vector2 Multiply(const Vector2& v, float s) { return {s * v.x, s * v.y}; }
-	Vector2 Multiply(float s, const Vector2& v) { return {s * v.x, s * v.y}; }
-
-	Vector3 Multiply(const Vector3& v1, const Vector3& v2) {
-		return {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
-	}
-	Vector3 Multiply(const Vector3& v1, float s) {
-		return {s * v1.x, s * v1.y, s * v1.z};
-	}
-	Vector3 Multiply(float s, const Vector3& v1) {
-		return {s * v1.x, s * v1.y, s * v1.z};
-	}
-
-	// 外積
-	Vector3 Cross(const Vector3& a, const Vector3& b) {
-		return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
-	}
-
-	// 内積
-	float Dot(const Vector3& a, const Vector3& b) {
-		return a.x * b.x + a.y * b.y + a.z * b.z;
-	}
-
-	// 長さ
-	float Length(const Vector2& v) { return sqrtf(v.x * v.x + v.y * v.y); }
-
-	float Length(const Vector3& v) {
-		return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-	}
-
-	// 距離
-	float Distance(const Vector2& a, const Vector2& b) {
-		// 1. AからBに向かう差分ベクトルを作る
-		Vector2 diff = {b.x - a.x, b.y - a.y};
-
-		// 2. そのベクトルの長さを返す
-		return Length(diff);
-	}
-
-	// 正規化
-	Vector3 Normalize(const Vector3& v) {
-		float length = Length(v);
-		if (length == 0.0f) {
-			return {0.0f, 0.0f, 0.0f}; // ゼロ割り防止
-		}
-		return {v.x / length, v.y / length, v.z / length};
-	}
-
 	Vector3 TransformCoord(const Vector3& v, const Matrix4x4& m) {
 		float w = v.x * m.m[0][3] + v.y * m.m[1][3] + v.z * m.m[2][3] + m.m[3][3];
 		return {
@@ -141,84 +69,6 @@ namespace MathUtility {
 	}
 
 	//================================================================================
-	// ベクトル演算子オーバーロード
-	//================================================================================
-
-	//---------- Vector2 ----------
-
-	Vector2 operator+(const Vector2& v1, const Vector2& v2) { return Add(v1, v2); }
-
-	Vector2 operator-(const Vector2& v1, const Vector2& v2) {
-		return Subtract(v1, v2);
-	}
-
-	Vector2& operator+=(Vector2& v1, const Vector2& v2) {
-		v1.x += v2.x;
-		v1.y += v2.y;
-		return v1;
-	}
-
-	Vector2& operator-=(Vector2& v1, const Vector2& v2) {
-		v1.x -= v2.x;
-		v1.y -= v2.y;
-		return v1;
-	}
-
-	Vector2& operator*=(Vector2& v, float s) {
-		v.x *= s;
-		v.y *= s;
-		return v;
-	}
-	Vector2& operator*=(float s, Vector2& v) {
-		v.x *= s;
-		v.y *= s;
-		return v;
-	}
-
-	//---------- Vector3 ----------
-
-	Vector3 operator+(const Vector3& v1, const Vector3& v2) { return Add(v1, v2); }
-
-	Vector3 operator-(const Vector3& v1, const Vector3& v2) {
-		return Subtract(v1, v2);
-	}
-
-	Vector3 operator*(const Vector3& v1, const Vector3& v2) {
-		return Multiply(v1, v2);
-	}
-
-	Vector3 operator*(const Vector3& v, float s) { return Multiply(v, s); }
-	Vector3 operator*(float s, const Vector3& v) { return Multiply(v, s); }
-
-	Vector3& operator+=(Vector3& v1, const Vector3& v2) {
-		v1.x += v2.x;
-		v1.y += v2.y;
-		v1.z += v2.z;
-		return v1;
-	}
-
-	Vector3& operator-=(Vector3& v1, const Vector3& v2) {
-		v1.x -= v2.x;
-		v1.y -= v2.y;
-		v1.z -= v2.z;
-		return v1;
-	}
-
-	Vector3& operator*=(Vector3& v, float s) {
-		v.x *= s;
-		v.y *= s;
-		v.z *= s;
-		return v;
-	}
-
-	Vector3& operator*=(float s, Vector3& v) {
-		v.x *= s;
-		v.y *= s;
-		v.z *= s;
-		return v;
-	}
-
-	//================================================================================
 	// 行列演算
 	//================================================================================
 
@@ -276,14 +126,6 @@ namespace MathUtility {
 		}
 
 		return Vector3(x, y, z);
-	}
-
-	//================================================================================
-	// 行列演算子オーバーロード
-	//================================================================================
-
-	Matrix4x4 operator*(const Matrix4x4& m1, const Matrix4x4& m2) {
-		return Multiply(m1, m2);
 	}
 
 	//================================================================================

@@ -1,5 +1,6 @@
 #include "DirectXCommon.h"
 #include "Logger.h"
+#include "PipelineStateCache.h"
 #include "ShaderResourceViewManager.h"
 #include "StringUtility.h"
 #include "TimeManager.h"
@@ -16,9 +17,6 @@
 
 using namespace Logger;
 using namespace StringUtility;
-
-// 最大SRV数
-const uint32_t DirectXCommon::kMaxSRVCount = 512;
 
 //================================================================================
 // シングルトン
@@ -48,18 +46,6 @@ void DirectXCommon::Finalize() { instance.reset(); }
 /// デストラクタ
 /// </summary>
 DirectXCommon::~DirectXCommon() {
-	if (includeHandler_) {
-		includeHandler_->Release();
-	}
-
-	if (dxcCompiler_) {
-		dxcCompiler_->Release();
-	}
-
-	if (dxcUtils_) {
-		dxcUtils_->Release();
-	}
-
 	CloseHandle(fenceEvent_);
 }
 
@@ -172,6 +158,9 @@ void DirectXCommon::InitializeRenderTexture() {
 /// 描画前処理
 /// </summary>
 void DirectXCommon::BeginDraw() {
+	// コマンドリストのバインドステートキャッシュをクリア
+	PipelineStateCache::GetInstance()->ResetCommandListState();
+
 	D3D12_RESOURCE_BARRIER barrier{};
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -342,25 +331,6 @@ DirectXCommon::GetGPUDescriptorHandle(
 
 	return handle;
 }
-/// <summary>
-/// SRVの指定番号のCPUデスクリプタハンドルを取得
-/// </summary>
-/// <param name="index">取得したいSRVのインデックス番号</param>
-/// <returns>SRVのCPUディスクリプタハンドル</returns>
-D3D12_CPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetSrvCPUDescriptorHandle(uint32_t index) {
-	return GetCPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
-}
-/// <summary>
-/// SRVの指定番号のGPUデスクリプタハンドルを取得
-/// </summary>
-/// <param name="index">取得したいSRVのインデックス番号</param>
-/// <returns>SRVのCPUディスクリプタハンドル</returns>
-D3D12_GPU_DESCRIPTOR_HANDLE
-DirectXCommon::GetSrvGPUDescriptorHandle(uint32_t index) {
-	return GetGPUDescriptorHandle(descriptorHeapSRV_, descriptorSizeSRV_, index);
-}
-
 //================================================================================
 // 内部初期化処理
 //================================================================================
@@ -583,8 +553,6 @@ DirectXCommon::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType,
 /// </summary>
 void DirectXCommon::CreateDescriptorHeaps() {
 	// DescriptorSizeを取得
-	descriptorSizeSRV_ = device_->GetDescriptorHandleIncrementSize(
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	descriptorSizeRTV_ =
 		device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	descriptorSizeDSV_ =
@@ -593,9 +561,6 @@ void DirectXCommon::CreateDescriptorHeaps() {
 	// RTV用のヒープ(ディスクリプタの数は3)、RTVはShader内で触るものではないため、ShaderVisibleはfalse
 	descriptorHeapRTV_ =
 		CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 3, false);
-	// SRV用のヒープ(ディスクリプタの数は128)、RTVはShader内で触るものなので、ShaderVisibleはtrue
-	descriptorHeapSRV_ = CreateDescriptorHeap(
-		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, kMaxSRVCount, true);
 	// DSV用のヒープディスクリプタの数は1、ShaderVisibleはfalse
 	descriptorHeapDSV_ =
 		CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
@@ -748,7 +713,7 @@ DirectXCommon::CompileShader(const std::wstring& filePath,
 	hr = dxcCompiler_->Compile(&shaderSourceBuffer, // 読み込んだファイル
 		arguments,           // コンパイルオプション
 		_countof(arguments), // コンパイルオプションの数
-		includeHandler_, // incluldeが含まれたものいろいろ
+		includeHandler_.Get(), // incluldeが含まれたものいろいろ
 		IID_PPV_ARGS(&shaderResult));
 	// コンパイルエラーではなくdxcが起動できないなど致命的な状況のとき
 	assert(SUCCEEDED(hr));

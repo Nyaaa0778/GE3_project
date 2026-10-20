@@ -12,8 +12,6 @@ using namespace MathUtility;
 
 void Box::Initialize(const std::string& textureFilePath)
 {
-	textureFilePath_ = textureFilePath;
-
 	// カメラの初期設定（指定されていなければデフォルトカメラを使用）
 	if (!camera_) {
 		camera_ = Object3dRenderer::GetInstance()->GetDefaultCamera();
@@ -24,8 +22,8 @@ void Box::Initialize(const std::string& textureFilePath)
 	CreateMaterialData();
 	worldTransform_.Initialize();
 
-	// テクスチャの読み込み（デフォルト）
-	TextureManager::GetInstance()->LoadTexture("resources/sprites/" + textureFilePath_);
+	// テクスチャ設定・ロード
+	SetTexture(textureFilePath);
 }
 
 void Box::SetWorldTransform(WorldTransform* worldTransform)
@@ -66,8 +64,7 @@ void Box::Draw()
 	commandList->SetGraphicsRootConstantBufferView(kRootParamTransform, worldTransform_.constBuffer->GetGPUVirtualAddress());
 
 	// t0: Texture
-	auto srvHandle = TextureManager::GetInstance()->GetSrvHandleGPU("resources/sprites/" + textureFilePath_);
-	commandList->SetGraphicsRootDescriptorTable(kRootParamMainTexture, srvHandle);
+	commandList->SetGraphicsRootDescriptorTable(kRootParamMainTexture, textureSrvHandleGPU_);
 
 	// 描画コマンド (インデックスを使用)
 	commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
@@ -83,7 +80,9 @@ void Box::SetColor(const Vector4& color)
 void Box::SetTexture(const std::string& textureFilePath)
 {
 	textureFilePath_ = textureFilePath;
-	TextureManager::GetInstance()->LoadTexture("resources/sprites/" + textureFilePath_);
+	std::string fullPath = "resources/sprites/" + textureFilePath_;
+	TextureManager::GetInstance()->LoadTexture(fullPath);
+	textureSrvHandleGPU_ = TextureManager::GetInstance()->GetSrvHandleGPU(fullPath);
 }
 
 void Box::CreateMesh()

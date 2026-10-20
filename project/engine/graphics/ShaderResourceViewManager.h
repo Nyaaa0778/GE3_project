@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <d3d12.h>
 #include <memory>
+#include <vector>
 #include <wrl.h>
 
 class ShaderResourceViewManager {
@@ -66,6 +67,12 @@ public:
 	/// </summary>
 	/// <returns>確保したSRVディスクリプタのインデックス番号</returns>
 	uint32_t Allocate();
+
+	/// <summary>
+	/// 使用済みSRVインデックスを解放（再利用可能にする）
+	/// </summary>
+	/// <param name="index">解放するSRVインデックス</param>
+	void Free(uint32_t index);
 
 	/// <summary>
 	/// SRV生成（2D）
@@ -152,4 +159,7 @@ private:
 
 	// 次に使用するSRVインデックス
 	uint32_t useIndexNext_ = 0;
+
+	// 解放されたインデックスの再利用用リスト
+	std::vector<uint32_t> freeIndices_;
 };

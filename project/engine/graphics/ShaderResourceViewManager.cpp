@@ -41,15 +41,23 @@ void ShaderResourceViewManager::Initialize() {
 }
 
 uint32_t ShaderResourceViewManager::Allocate() {
+	// 解放済みインデックスがあれば優先的に再利用
+	if (!freeIndices_.empty()) {
+		uint32_t index = freeIndices_.back();
+		freeIndices_.pop_back();
+		return index;
+	}
+
 	// 上限チェック
 	assert(useIndexNext_ < kMaxSRVCount);
 
-	// returnする番号を一番上に一旦記録
-	int index = useIndexNext_;
-	// 次回のために番号を1進める
-	useIndexNext_++;
-	// 上で記録した番号をreturn
-	return index;
+	// 次回のために番号を1進めてreturn
+	return useIndexNext_++;
+}
+
+void ShaderResourceViewManager::Free(uint32_t index) {
+	assert(index < useIndexNext_ && "Invalid SRV index freed!");
+	freeIndices_.push_back(index);
 }
 
 /// <summary>
@@ -159,5 +167,5 @@ ShaderResourceViewManager::GetGPUDescriptorHandle(uint32_t index) {
 /// </summary>
 /// <returns>確保可能ならtrue、不可能ならfalse</returns>
 bool ShaderResourceViewManager::CanAllocate() const {
-	return useIndexNext_ < kMaxSRVCount;
+	return !freeIndices_.empty() || (useIndexNext_ < kMaxSRVCount);
 }

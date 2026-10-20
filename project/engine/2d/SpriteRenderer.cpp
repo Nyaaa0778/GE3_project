@@ -62,8 +62,8 @@ void SpriteRenderer::SetupCommonRenderState(BlendMode blendMode) {
 	// キャッシュから PSO を取得
 	ID3D12PipelineState* pso = psoCache->GetOrCreate(key);
 
-	dxCommon_->GetCommandList()->SetGraphicsRootSignature(psoCache->GetCommonRootSignature());
-	dxCommon_->GetCommandList()->SetPipelineState(pso);
+	psoCache->SetGraphicsRootSignature(dxCommon_->GetCommandList(), psoCache->GetCommonRootSignature());
+	psoCache->SetGraphicsPipelineState(dxCommon_->GetCommandList(), pso);
 	// プリミティブトポロジーをセット
 	dxCommon_->GetCommandList()->IASetPrimitiveTopology(
 		D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

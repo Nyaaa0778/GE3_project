@@ -99,6 +99,15 @@ public:
 	// 共通ルートシグネチャの取得
 	ID3D12RootSignature* GetCommonRootSignature() const { return commonRootSignature_.Get(); }
 
+	// コマンドリストに対するパイプラインステートバインド（重複発行を自動スキップ）
+	void SetGraphicsPipelineState(ID3D12GraphicsCommandList* commandList, ID3D12PipelineState* pso);
+
+	// コマンドリストに対するルートシグネチャバインド（重複発行を自動スキップ）
+	void SetGraphicsRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* rootSig);
+
+	// フレーム先頭でステートキャッシュをクリア
+	void ResetCommandListState();
+
 private:
 	//================================================================================
 	// 型エイリアス
@@ -114,6 +123,10 @@ private:
 	std::unordered_map<PipelineDescKey, ComPtr<ID3D12PipelineState>, PipelineDescKeyHash> psoCache_;
 
 	ComPtr<ID3D12RootSignature> commonRootSignature_;
+
+	// 現在コマンドリストにバインドされているPSO・RootSigのキャッシュ
+	ID3D12PipelineState* currentBoundPso_ = nullptr;
+	ID3D12RootSignature* currentBoundRootSig_ = nullptr;
 
 private:
 	void CreateCommonRootSignature();

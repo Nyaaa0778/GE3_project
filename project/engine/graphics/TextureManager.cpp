@@ -38,7 +38,7 @@ void TextureManager::Initialize(DirectXCommon* dxCommon,
 	srvManager_ = srvManager;
 
 	// SRVの数と同数
-	textureDatas_.reserve(DirectXCommon::GetInstance()->kMaxSRVCount);
+	textureDatas_.reserve(ShaderResourceViewManager::kMaxSRVCount);
 }
 
 /// <summary>

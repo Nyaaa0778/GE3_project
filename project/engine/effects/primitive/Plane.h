@@ -94,6 +94,7 @@ private:
 	Camera* camera_ = nullptr;
 	WorldTransform* externalWorldTransform_ = nullptr;
 	std::string textureFilePath_ = "uvChecker.png";
+	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvHandleGPU_{};
 	PrimitiveRenderer::BlendMode blendMode_ = PrimitiveRenderer::BlendMode::kNormal;
 
 	// GPUリソース (共有メッシュを参照するためのViewのみ保持)

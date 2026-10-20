@@ -327,6 +327,9 @@ void GameFramework::EndFrame() {
 	// 3. コピーした画像の上に ImGui を重ねて描画する
 	ImGuiManager::GetInstance()->Draw();
 
+	// ImGui が独自に設定した RootSignature/PSO の影響をリセット
+	PipelineStateCache::GetInstance()->ResetCommandListState();
+
 	DirectXCommon::GetInstance()->EndDraw();
 
 	TextureManager::GetInstance()->ReleaseIntermediateResources();
