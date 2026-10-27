@@ -50,7 +50,7 @@ void WireframeRenderer::Initialize(DirectXCommon* dxCommon) {
 /// <summary>
 /// 共通描画設定
 /// </summary>
-void WireframeRenderer::SetupCommonRenderState() {
+void WireframeRenderer::SetupCommonRenderState(bool depthEnable, BlendMode blendMode) {
 	auto* psoCache = PipelineStateCache::GetInstance();
 
 	// 描画キーの構築
@@ -58,11 +58,11 @@ void WireframeRenderer::SetupCommonRenderState() {
 	key.vsBlob = vsBlob_.Get();
 	key.psBlob = psBlob_.Get();
 	key.inputLayout = InputLayoutType::kPosition;
-	key.blendMode = blendMode_;
+	key.blendMode = blendMode;
 	key.cullMode = D3D12_CULL_MODE_NONE;
 	key.fillMode = D3D12_FILL_MODE_SOLID;
-	key.depthEnable = true;
-	key.depthWrite = true;
+	key.depthEnable = depthEnable;
+	key.depthWrite = depthEnable;
 	key.depthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	key.topologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
 

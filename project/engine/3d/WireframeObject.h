@@ -6,6 +6,7 @@
 #include <Vector3.h>
 #include <Vector4.h>
 #include <WorldTransform.h>
+#include <BlendMode.h>
 
 class Camera;
 class WireframeRenderer;
@@ -49,6 +50,11 @@ public:
 	void CreateRing(float radius = 1.0f, uint32_t subdivision = 32, int axis = 2);
 
 	/// <summary>
+	/// 任意の頂点・インデックスからカスタムラインメッシュを生成
+	/// </summary>
+	void CreateCustomMesh(const std::vector<Vector4>& vertices, const std::vector<uint32_t>& indices);
+
+	/// <summary>
 	/// 動的ライン描画用のメッシュバッファを初期化
 	/// </summary>
 	/// <param name="maxLines">最大ライン本数</param>
@@ -75,6 +81,12 @@ public:
 	void SetFog(float fogNear, float fogFar);
 	void SetCamera(Camera* camera) { camera_ = camera; }
 
+	void SetDepthEnable(bool enable) { depthEnable_ = enable; }
+	bool GetDepthEnable() const { return depthEnable_; }
+
+	void SetBlendMode(BlendMode blendMode) { blendMode_ = blendMode; }
+	BlendMode GetBlendMode() const { return blendMode_; }
+
 	// 描画するラインの比率 (0.0f: 0本 〜 1.0f: 全ライン描画、徐々に形成される演出用)
 	void SetDrawRatio(float ratio) { drawRatio_ = ratio; }
 	float GetDrawRatio() const { return drawRatio_; }
@@ -95,6 +107,9 @@ private:
 	WorldTransform transform_;
 
 	Camera* camera_ = nullptr;
+
+	bool depthEnable_ = true;
+	BlendMode blendMode_ = BlendMode::kNormal;
 
 	ComPtr<ID3D12Resource> vertexBuffer_;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView_{};

@@ -342,6 +342,9 @@
     <ClCompile Include="game\scenes\TitleLogo.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="game\scenes\GameOverUI.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="engine\graphics\BlendMode.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -662,6 +665,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\scenes\TitleLogo.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\scenes\GameOverUI.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\graphics\BlendMode.h">

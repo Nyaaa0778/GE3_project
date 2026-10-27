@@ -56,6 +56,7 @@ public:
 	const Matrix4x4& GetReticleMatWorld() const { return reticle_->GetMatWorld(); }
 	Vector2 GetReticle2DPosition() const { return reticle_->Get2DPosition(); }
 	bool GetIsReticleHit() const { return isReticleHit_; }
+	Reticle* GetReticle() const { return reticle_.get(); }
 
 	void SetParent(const WorldTransform* parent) { worldTransform_.parent = parent; }
 

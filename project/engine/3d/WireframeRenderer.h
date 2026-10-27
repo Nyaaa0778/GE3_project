@@ -73,7 +73,7 @@ public:
 	/// <summary>
 	/// 共通描画設定
 	/// </summary>
-	void SetupCommonRenderState();
+	void SetupCommonRenderState(bool depthEnable = true, BlendMode blendMode = BlendMode::kNormal);
 
 	//================================================================================
 	// Getter

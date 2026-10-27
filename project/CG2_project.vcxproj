@@ -264,6 +264,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\WireframeRenderer.cpp" />
     <ClCompile Include="game\scenes\CityBackground.cpp" />
     <ClCompile Include="game\scenes\TitleLogo.cpp" />
+    <ClCompile Include="game\scenes\GameOverUI.cpp" />
     <ClCompile Include="engine\graphics\PipelineStateCache.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -534,6 +535,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
     <ClInclude Include="game\scenes\CityBackground.h" />
     <ClInclude Include="game\scenes\TitleLogo.h" />
+    <ClInclude Include="game\scenes\GameOverUI.h" />
     <ClInclude Include="engine\graphics\PipelineStateCache.h" />
   </ItemGroup>
   <ItemGroup>

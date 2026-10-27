@@ -71,7 +71,7 @@ void WireframeObject::Draw() {
 	}
 
 	// 共通描画設定（シーン側で呼ぶ必要をなくす）
-	wireframeRenderer_->SetupCommonRenderState();
+	wireframeRenderer_->SetupCommonRenderState(depthEnable_, blendMode_);
 
 	auto commandList = DirectXCommon::GetInstance()->GetCommandList();
 	// 頂点バッファ・インデックスバッファをセット
@@ -421,6 +421,10 @@ void WireframeObject::CreateRing(float radius, uint32_t subdivision, int axis) {
 		indices.push_back(next);
 	}
 
+	CreateMeshBuffers(vertices, indices);
+}
+
+void WireframeObject::CreateCustomMesh(const std::vector<Vector4>& vertices, const std::vector<uint32_t>& indices) {
 	CreateMeshBuffers(vertices, indices);
 }
 

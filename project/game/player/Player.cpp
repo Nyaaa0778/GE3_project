@@ -364,7 +364,7 @@ void Player::OnCollision() {
 	}
 
 	// 被弾時にHPを減らす
-	hp_ -= 40.0f;
+	hp_ -= 100.0f;
 	if (hp_ <= 0.0f) {
 		hp_ = 0.0f;
 		isAlive_ = false;

@@ -4,6 +4,7 @@
 #include "PostProcessRenderer.h"
 #include "PostProcessEffects.h"
 #include "CrtTransition.h"
+#include "GameOverUI.h"
 #include "TextureManager.h"
 #include "Input.h"
 
@@ -15,6 +16,7 @@
 
 #include "LockOn.h"
 #include "Player.h"
+#include "Reticle.h"
 #include "IPlayerBullet.h"
 #include "EnemyBase.h"
 #include "RailCameraController.h"
@@ -212,6 +214,13 @@ void GamePlayScene::Initialize() {
 	gameOverWaitTimer_ = 0.0f;
 
 	// ------------------------------------
+	// ゲームオーバー演出UI
+	// ------------------------------------
+	gameOverUI_ = std::make_unique<GameOverUI>();
+	gameOverUI_->Initialize();
+	isPlayerDestroyEffectTriggered_ = false;
+
+	// ------------------------------------
 	// ステージ開始演出の初期化 (Phase::kLeady)
 	// ------------------------------------
 	introCameraTimer_ = 0.0f;
@@ -235,20 +244,6 @@ void GamePlayScene::Update() {
 	// デバッグ・ショートカット: Tキーでタイトル画面へ遷移（CRT画面遷移演出）
 	// ------------------------------------
 	Input* input = Input::GetInstance();
-	if (input->TriggerKey(DIK_T))
-	{
-		if (!CrtTransition::GetInstance()->IsTransitioning())
-		{
-			input->SetShake(0.0f, 0.0f);
-			if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
-			{
-				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-			}
-			// タイトルへ遷移（タイトル画面完了後はkGlitchに復帰）
-			CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kGlitch);
-			return;
-		}
-	}
 
 	// ------------------------------------
 	// ImGui
@@ -286,8 +281,8 @@ void GamePlayScene::Update() {
 	if (shake_)
 	{
 		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
-		// ゲームオーバー時やイントロ時はカメラの揺れも停止
-		if (phase_ != Phase::kGameOver && phase_ != Phase::kLeady && shake_->IsActive() && !useDebugCamera_)
+		// イントロ時以外はカメラの揺れを反映（ゲームオーバー時の撃破衝撃シェイクも適用）
+		if (phase_ != Phase::kLeady && shake_->IsActive() && !useDebugCamera_)
 		{
 			Vector3 offset = shake_->GetOffset();
 			camera_->matWorld.m[3][0] += offset.x;
@@ -646,47 +641,86 @@ void GamePlayScene::Update() {
 		// ------------------------------------
 		// ゲームオーバーフェーズ
 		// カメラワークと敵の動きは停止（Updateを呼ばない）
-		// ヴィネットは即座に消去され、プレイヤーの破壊演出（ディゾルブ）が進行
-		// 破壊演出が完了した後にフェードアウトを開始する
+		// ステップ1: まず自機の消滅演出（ディゾルブ＋飛散粒子）を見届ける
+		// ステップ2: 自機が完全に消滅した後、初めて背景を薄暗くし、GAMEOVER文字とグリッチを表示
 		// ------------------------------------
-
-		// ヴィネットが残っていれば確実に消去
-		if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
-		{
-			PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-		}
-
-		// 1. プレイヤーの更新（ディゾルブ消滅・破壊演出を進行させる）
-		std::list<EnemyBase*> emptyEnemies;
-		player_->Update(emptyEnemies);
 
 		float dt = TimeManager::GetInstance()->GetDeltaTime();
 
-		// 2. プレイヤーの破壊演出（ディゾルブ）が完了してからフェードアウトを開始
-		if (player_->GetDissolveThreshold() >= 1.0f)
+		// 1. プレイヤーの更新（ディゾルブ消滅を進行させる）
+		std::list<EnemyBase*> emptyEnemies;
+		player_->Update(emptyEnemies);
+
+		// ================================================================
+		// ステップ1: プレイヤーの消滅演出中
+		// ================================================================
+		if (gameOverStep_ == GameOverStep::kPlayerDisappearing)
 		{
-			fadeAlpha_ += dt / kGameOverFadeDuration;
-			if (fadeAlpha_ >= 1.0f)
+			// ディゾルブ中、自機からデジタルグリッチ粒子がフワッと立ち昇る
+			if (player_->GetDissolveThreshold() < 1.0f)
 			{
-				fadeAlpha_ = 1.0f;
-				gameOverWaitTimer_ += dt;
+				Vector3 playerPos = player_->GetWorldPosition();
+				for (int i = 0; i < 3; ++i)
+				{
+					Vector3 randOffset = {
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f,
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f,
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f
+					};
+					Vector3 vel = {
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.9f,
+						0.9f + (static_cast<float>(rand()) / RAND_MAX) * 1.3f,
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.9f
+					};
+					ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos + randOffset, vel, { 1.0f, 0.25f, 0.35f, 0.90f }, { 0.18f, 0.18f, 0.18f }, 0.50f, 1);
+				}
+			}
+			else
+			{
+				// 自機が完全にディゾルブしきった後の余韻待機タイマー
+				playerDisappearTimer_ += dt;
+
+				if (playerDisappearTimer_ >= kPlayerDisappearPostWait)
+				{
+					// 自機の消滅演出が完全に終了！
+					// ここで初めてゲームオーバーUI（背景暗転＋GAMEOVER文字＋グリッチ）を開始
+					gameOverStep_ = GameOverStep::kGameOverUI;
+					if (gameOverUI_)
+					{
+						gameOverUI_->Start();
+					}
+				}
 			}
 		}
-
-		if (fadeSprite_)
+		// ================================================================
+		// ステップ2: 自機消滅完了後 ➔ GAMEOVER演出 & 操作受付
+		// ================================================================
+		else if (gameOverStep_ == GameOverStep::kGameOverUI)
 		{
-			fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, fadeAlpha_});
-			fadeSprite_->Update();
-		}
-
-		// 3. フェードアウト完了後、ENTERキー/Aボタン、もしくはフェードアウト完了後2秒経過でタイトルへ戻る
-		if (fadeAlpha_ >= 1.0f)
-		{
-			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A) || gameOverWaitTimer_ >= 2.0f)
+			if (gameOverUI_)
 			{
-				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-				SceneManager::GetInstance()->ChangeScene("TITLE");
-				return;
+				gameOverUI_->Update();
+
+				// リトライ（ゲームプレイ再開）要求: CRT画面遷移演出を挟む
+				if (gameOverUI_->IsRetryRequested())
+				{
+					if (!CrtTransition::GetInstance()->IsTransitioning())
+					{
+						input->SetShake(0.0f, 0.0f);
+						CrtTransition::GetInstance()->StartTransition("GAMEPLAY", PostProcessRenderer::PostProcessMode::kNormal);
+					}
+					return;
+				}
+				// タイトルへ戻る要求: CRT画面遷移演出を挟む
+				if (gameOverUI_->IsTitleRequested())
+				{
+					if (!CrtTransition::GetInstance()->IsTransitioning())
+					{
+						input->SetShake(0.0f, 0.0f);
+						CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kGlitch);
+					}
+					return;
+				}
 			}
 		}
 	}
@@ -785,10 +819,10 @@ void GamePlayScene::Draw() {
 	ParticleManager::GetInstance()->Draw();
 
 	// ------------------------------------
-	// UI (イントロ演出中は非表示にしてパノラマ映像に没入させる)
+	// UI (イントロ演出中とゲームオーバー中は通常UIを非表示)
 	// ------------------------------------
 
-	if (phase_ != Phase::kLeady)
+	if (phase_ != Phase::kLeady && phase_ != Phase::kGameOver)
 	{
 		uiPlayerHp_->Draw();
 
@@ -800,7 +834,15 @@ void GamePlayScene::Draw() {
 	}
 
 	// ------------------------------------
-	// フェードアウト (最前面に描画)
+	// ゲームオーバー演出（自機消滅完了後のみ暗幕・GAMEOVER文字・グリッチUIを描画）
+	// ------------------------------------
+	if (phase_ == Phase::kGameOver && gameOverStep_ == GameOverStep::kGameOverUI && gameOverUI_)
+	{
+		gameOverUI_->Draw();
+	}
+
+	// ------------------------------------
+	// フェードアウト (最前面に描画: クリア時など)
 	// ------------------------------------
 	if (fadeSprite_ && fadeAlpha_ > 0.0f)
 	{
@@ -814,8 +856,14 @@ void GamePlayScene::Finalize() {
 	cityBackground_.reset();
 	fadeSprite_.reset();
 
-	// シーン終了時にポストプロセスを通常状態に戻す
-	if (PostProcessRenderer::GetInstance()->GetMode() == PostProcessRenderer::PostProcessMode::kVignetting)
+	if (gameOverUI_)
+	{
+		gameOverUI_->Reset();
+		gameOverUI_.reset();
+	}
+
+	// 画面遷移中（CrtTransition実行中）以外のみ通常描画へ戻す
+	if (!CrtTransition::GetInstance()->IsTransitioning())
 	{
 		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
 	}
@@ -920,9 +968,63 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		{
 			railCamera_->SetIsPlaying(false);
 		}
-		// 2. ヴィネットを確実に消去して通常描画に戻す
-		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-		// 3. フェードアウトの初期化
+		// 2. 自機消滅ステップの初期化（まずは自機が消滅する演出を見届ける）
+		gameOverStep_ = GameOverStep::kPlayerDisappearing;
+		playerDisappearTimer_ = 0.0f;
+		if (gameOverUI_)
+		{
+			gameOverUI_->Reset();
+		}
+
+		// 3. 撃破時の初期バースト演出（自機の爆散・カメラシェイク・ディゾルブ開始）
+		if (!isPlayerDestroyEffectTriggered_ && player_)
+		{
+			isPlayerDestroyEffectTriggered_ = true;
+
+			// 自機のディゾルブ（消滅演出）を確実に開始
+			player_->SetHP(0.0f);
+			player_->SetDissolveEnable(true);
+
+			Vector3 playerPos = player_->GetWorldPosition();
+
+			// 光粒子バースト (36個)
+			for (int i = 0; i < 36; ++i)
+			{
+				float angle = (static_cast<float>(i) / 36.0f) * 6.2831853f;
+				float speed = 4.0f + (static_cast<float>(rand()) / RAND_MAX) * 5.0f;
+				float pitchAngle = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.5f;
+
+				Vector3 burstVel = {
+					std::cos(angle) * std::cos(pitchAngle) * speed,
+					std::sin(pitchAngle) * speed,
+					std::sin(angle) * std::cos(pitchAngle) * speed
+				};
+
+				Vector4 color = ((i % 2) == 0)
+					? Vector4{ 1.0f, 0.20f, 0.30f, 1.0f }  // クリムゾンレッド
+					: Vector4{ 0.10f, 0.90f, 1.0f, 1.0f }; // シアン
+
+				ParticleManager::GetInstance()->Emit("CircleParticle", playerPos, burstVel, color, { 0.22f, 0.22f, 0.22f }, 0.55f, 1);
+			}
+
+			// デジタルグリッチボックスの爆散 (24個)
+			for (int i = 0; i < 24; ++i)
+			{
+				Vector3 boxVel = {
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 7.0f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 7.0f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 7.0f
+				};
+				ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos, boxVel, { 1.0f, 0.25f, 0.35f, 1.0f }, { 0.22f, 0.22f, 0.22f }, 0.50f, 1);
+			}
+
+			// 衝撃カメラシェイク（程よい強さ）
+			if (shake_)
+			{
+				shake_->Start(0.40f, 0.55f);
+			}
+		}
+		// 4. 通常フェードアウトの初期化
 		fadeAlpha_ = 0.0f;
 		gameOverWaitTimer_ = 0.0f;
 		if (fadeSprite_)
@@ -1287,6 +1389,25 @@ void GamePlayScene::UpdateImGui() {
 		if (ImGui::Button("Spawn 8-Shape Formation (4)"))
 		{
 			SpawnDroneFormation(spawnFront, DroneFlightPattern::kFigureEight, 4);
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Player Reticle (Cyberpunk HUD)", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (player_ && player_->GetReticle())
+		{
+			Reticle* reticle = player_->GetReticle();
+			int themeIdx = static_cast<int>(reticle->GetColorTheme());
+			const char* themeItems[] = {
+				"1. Cyber Amber & Solar White (最高視認性・対比色オレンジ/琥珀&白)",
+				"2. Electric Lime & Citron (超蛍光ライムグリーン&イエロー)",
+				"3. Neon Gold & Cyber Magenta (ゴールド&マゼンタ華麗ツートン)",
+				"4. Solar Crimson & White (プラズマクリムゾン戦闘機HUD)"
+			};
+			if (ImGui::Combo("HUD Color Theme", &themeIdx, themeItems, IM_ARRAYSIZE(themeItems)))
+			{
+				reticle->SetColorTheme(static_cast<Reticle::ColorTheme>(themeIdx));
+			}
 		}
 	}
 

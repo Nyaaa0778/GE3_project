@@ -23,6 +23,7 @@ class LockOn;
 class Goal;
 class Sprite;
 class CityBackground;
+class GameOverUI;
 enum class DroneFlightPattern;
 
 class GamePlayScene : public IScene {
@@ -142,6 +143,19 @@ private:
 	static constexpr float kGameOverFadeDuration = 1.0f; // 破壊演出後のフェードアウト時間（秒）
 	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
 	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
+
+	// ------------------------------------
+	// ゲームオーバー演出UI
+	// ------------------------------------
+	enum class GameOverStep {
+		kPlayerDisappearing, // 自機の消滅演出中（ディゾルブ＋破片散乱）
+		kGameOverUI,         // 消滅完了後：背景暗転＋GAMEOVER文字＋グリッチ
+	};
+	GameOverStep gameOverStep_ = GameOverStep::kPlayerDisappearing;
+	float playerDisappearTimer_ = 0.0f;
+	static constexpr float kPlayerDisappearPostWait = 0.40f; // 消滅完了後の余韻待機時間（秒）
+	std::unique_ptr<GameOverUI> gameOverUI_;
+	bool isPlayerDestroyEffectTriggered_ = false; // 撃破時演出発生済みフラグ
 
 	// ------------------------------------
 	// ステージ開始カメラ演出 (Phase::kLeady)
