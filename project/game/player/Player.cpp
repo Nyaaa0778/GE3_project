@@ -109,6 +109,9 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	
 	if (!isAlive_) {
+		// プレイヤーの回転を親のレールカメラに平行に保つ（ブレ防止）
+		worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
+
 		// ディゾルブを進行させる
 		if (useDissolve_) {
 			dissolveThreshold_ += (1.0f / kDissolveDuration) * TimeManager::GetInstance()->GetDeltaTime();
@@ -536,14 +539,34 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	// ----------------------------------------------------
 	// 4. 内側光核の公転（Cyan & Magenta Twin Cores）
 	// ----------------------------------------------------
-	// コンパクトサイズ（公転半径 0.20f）
-	const float orbitRadius = 0.20f;
-	const float orbitSpeed = 2.4f;
+	// 死亡ディゾルブ進行によるパーツごとの段階的残存度 (1.0 -> 0.0)
+	float outerHealth = 1.0f;
+	float midHealth   = 1.0f;
+	float coreHealth  = 1.0f;
+	if (useDissolve_ || dissolveThreshold_ > 0.0f) {
+		// 外殻：0.0f 〜 0.35f で崩壊・剥落
+		outerHealth = (std::clamp)(1.0f - (dissolveThreshold_ - 0.00f) / 0.35f, 0.0f, 1.0f);
+		// 中間層：0.30f 〜 0.68f で軸ブレ・爆散
+		midHealth   = (std::clamp)(1.0f - (dissolveThreshold_ - 0.30f) / 0.38f, 0.0f, 1.0f);
+		// 中心核：0.65f 〜 1.00f で公転拡散・臨界崩壊
+		coreHealth  = (std::clamp)(1.0f - (dissolveThreshold_ - 0.65f) / 0.35f, 0.0f, 1.0f);
+	}
+
+	// コア崩壊時は公転半径が遠心力で外側へ螺旋拡散
+	float orbitRadius = 0.20f;
+	float orbitSpeed = 2.4f;
+	if (midHealth < 1.0f) {
+		orbitSpeed = 6.0f; // 中間層が壊れると高速化
+	}
+	if (coreHealth < 1.0f) {
+		orbitRadius += (1.0f - coreHealth) * 1.6f; // 遠心力で外側へ大きく螺旋拡散
+		orbitSpeed = 14.0f + (1.0f - coreHealth) * 12.0f; // 猛スピードで螺旋拡散
+	}
 	float orbitAngle = visualTime_ * orbitSpeed;
 
 	Vector3 cyanPos = {
 		std::cos(orbitAngle) * orbitRadius,
-		std::sin(orbitAngle * 2.0f) * 0.08f,
+		std::sin(orbitAngle * 2.0f) * (0.08f + (1.0f - coreHealth) * 0.5f),
 		std::sin(orbitAngle) * orbitRadius
 	};
 	Vector3 magentaPos = {
@@ -553,13 +576,12 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	};
 
 	// ----------------------------------------------------
-	// 5. 各パーツのトランスフォーム設定・更新 (ライン単位の漸進的形成 drawRatio_ 対応)
+	// 5. 各パーツのトランスフォーム設定・更新 (ライン単位の漸進的形成・崩壊 drawRatio_ 対応)
 	// ----------------------------------------------------
 	float coreProg = (std::clamp)((materializeProgress_ - 0.0f) / 0.40f, 0.0f, 1.0f);
 	float midProg  = (std::clamp)((materializeProgress_ - 0.20f) / 0.50f, 0.0f, 1.0f);
 	float outerProg= (std::clamp)((materializeProgress_ - 0.45f) / 0.55f, 0.0f, 1.0f);
 
-	// ポンっと拡大するのではなく、線が描画される間は 0.85f -> 1.0f で自然に安定
 	auto MaterializeScale = [](float prog) {
 		if (prog <= 0.0f) return 0.0f;
 		if (prog >= 1.0f) return 1.0f;
@@ -569,70 +591,89 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	float scaleMidMult  = (midProg >= 1.0f)  ? 1.0f : MaterializeScale(midProg);
 	float scaleOuterMult= (outerProg >= 1.0f)? 1.0f : MaterializeScale(outerProg);
 
-	// 外殻二十面体（エッジが1本ずつ順番に描画されて形成）
+	// 外殻二十面体（0.0〜0.35で線が欠落しながら外側へ急拡大・弾け飛び）
 	if (outerShell_) {
 		auto& tf = outerShell_->GetWorldTransform();
+		// 崩壊が進むにつれて回転が急加速
+		float spinAccel = (outerHealth < 1.0f) ? (1.0f - outerHealth) * 5.0f : 0.0f;
 		tf.rotation = {
-			outerRotation_.x + currentTilt_.x,
-			outerRotation_.y + currentTilt_.y,
-			outerRotation_.z + currentTilt_.z
+			outerRotation_.x + currentTilt_.x + spinAccel * 0.7f,
+			outerRotation_.y + currentTilt_.y + spinAccel,
+			outerRotation_.z + currentTilt_.z + spinAccel * 0.5f
 		};
-		float s = pulseOuter * scaleOuterMult;
+		// 外側へ破断拡大 (1.0 -> 2.4倍)
+		float breakScale = (outerHealth < 1.0f) ? (1.0f + std::pow(1.0f - outerHealth, 1.2f) * 1.5f) : 1.0f;
+		float s = pulseOuter * scaleOuterMult * breakScale;
 		tf.scale = {s, s, s};
-		outerShell_->SetDrawRatio(outerProg);
+		// 破片が前方へ少し吹き飛ぶ
+		tf.translation = { 0.0f, 0.0f, (outerHealth < 1.0f) ? (1.0f - outerHealth) * 0.5f : 0.0f };
+		outerShell_->SetDrawRatio(outerProg * outerHealth);
 		outerShell_->Update();
 	}
 
-	// 中間十二面体（エッジが1本ずつ順番に描画されて形成）
+	// 中間十二面体（0.30〜0.68で線が欠落しながら爆散）
 	if (middleShell_) {
 		auto& tf = middleShell_->GetWorldTransform();
+		float spinAccel = (midHealth < 1.0f) ? (1.0f - midHealth) * 6.5f : 0.0f;
 		tf.rotation = {
-			middleRotation_.x + currentTilt_.x,
-			middleRotation_.y + currentTilt_.y,
-			middleRotation_.z + currentTilt_.z
+			middleRotation_.x + currentTilt_.x - spinAccel * 0.4f,
+			middleRotation_.y + currentTilt_.y - spinAccel,
+			middleRotation_.z + currentTilt_.z + spinAccel * 0.8f
 		};
-		float s = pulseMiddle * scaleMidMult;
+		float breakScale = (midHealth < 1.0f) ? (1.0f + std::pow(1.0f - midHealth, 1.2f) * 1.8f) : 1.0f;
+		float s = pulseMiddle * scaleMidMult * breakScale;
 		tf.scale = {s, s, s};
-		middleShell_->SetDrawRatio(midProg);
+		middleShell_->SetDrawRatio(midProg * midHealth);
 		middleShell_->Update();
 	}
 
-	// ジャイロリング
+	// ジャイロリング（過負荷で不均等に歪みながら爆散）
 	if (gyroRingX_) {
 		auto& tf = gyroRingX_->GetWorldTransform();
+		float spinAccel = (midHealth < 1.0f) ? (1.0f - midHealth) * 8.0f : 0.0f;
 		tf.rotation = {
-			gyroRotationX_.x + currentTilt_.x,
+			gyroRotationX_.x + currentTilt_.x + spinAccel * 0.5f,
 			gyroRotationX_.y + currentTilt_.y,
-			gyroRotationX_.z + currentTilt_.z
+			gyroRotationX_.z + currentTilt_.z + spinAccel
 		};
-		tf.scale = {scaleMidMult, scaleMidMult, scaleMidMult};
-		gyroRingX_->SetDrawRatio(midProg);
+		float breakX = (midHealth < 1.0f) ? (1.0f + (1.0f - midHealth) * 2.2f) : 1.0f;
+		float breakY = (midHealth < 1.0f) ? (1.0f + (1.0f - midHealth) * 1.2f) : 1.0f;
+		tf.scale = {scaleMidMult * breakX, scaleMidMult * breakY, scaleMidMult * breakX};
+		gyroRingX_->SetDrawRatio(midProg * midHealth);
 		gyroRingX_->Update();
 	}
 
 	if (gyroRingY_) {
 		auto& tf = gyroRingY_->GetWorldTransform();
+		float spinAccel = (midHealth < 1.0f) ? (1.0f - midHealth) * 8.0f : 0.0f;
 		tf.rotation = {
 			gyroRotationY_.x + currentTilt_.x,
-			gyroRotationY_.y + currentTilt_.y,
-			gyroRotationY_.z + currentTilt_.z
+			gyroRotationY_.y + currentTilt_.y - spinAccel,
+			gyroRotationY_.z + currentTilt_.z - spinAccel * 0.5f
 		};
-		tf.scale = {scaleMidMult, scaleMidMult, scaleMidMult};
-		gyroRingY_->SetDrawRatio(midProg);
+		float breakX = (midHealth < 1.0f) ? (1.0f + (1.0f - midHealth) * 1.3f) : 1.0f;
+		float breakZ = (midHealth < 1.0f) ? (1.0f + (1.0f - midHealth) * 2.4f) : 1.0f;
+		tf.scale = {scaleMidMult * breakX, scaleMidMult * breakX, scaleMidMult * breakZ};
+		gyroRingY_->SetDrawRatio(midProg * midHealth);
 		gyroRingY_->Update();
 	}
 
-	// 中心核
+	// 中心核（臨界膨張・超爆散）
 	if (centerCore_) {
 		auto& tf = centerCore_->GetWorldTransform();
+		float spinAccel = (coreHealth < 1.0f) ? (1.0f - coreHealth) * 12.0f : 0.0f;
 		tf.rotation = {
-			centerCoreRotation_.x + currentTilt_.x,
-			centerCoreRotation_.y + currentTilt_.y,
+			centerCoreRotation_.x + currentTilt_.x + spinAccel * 0.6f,
+			centerCoreRotation_.y + currentTilt_.y + spinAccel,
 			centerCoreRotation_.z + currentTilt_.z
 		};
-		float s = pulseCore * scaleCoreMult;
+		// 臨界爆散直前に一気に巨大化して弾け飛ぶ (1.0 -> 3.2倍)
+		float explodeScale = (coreHealth < 1.0f)
+			? (1.0f + std::pow(1.0f - coreHealth, 1.5f) * 2.4f)
+			: 1.0f;
+		float s = pulseCore * scaleCoreMult * explodeScale;
 		tf.scale = {s, s, s};
-		centerCore_->SetDrawRatio(coreProg);
+		centerCore_->SetDrawRatio(coreProg * coreHealth);
 		centerCore_->Update();
 	}
 
@@ -640,9 +681,10 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	if (cyanCore_) {
 		auto& tf = cyanCore_->GetWorldTransform();
 		tf.translation = cyanPos * scaleCoreMult;
-		tf.rotation = {centerCoreRotation_.y * 1.5f, centerCoreRotation_.x * 1.5f, 0.0f};
-		tf.scale = {scaleCoreMult, scaleCoreMult, scaleCoreMult};
-		cyanCore_->SetDrawRatio(coreProg);
+		tf.rotation = {centerCoreRotation_.y * 2.5f, centerCoreRotation_.x * 2.5f, 0.0f};
+		float coreScale = (coreHealth < 1.0f) ? (coreHealth * (1.0f + (1.0f - coreHealth) * 1.5f)) : 1.0f;
+		tf.scale = {scaleCoreMult * coreScale, scaleCoreMult * coreScale, scaleCoreMult * coreScale};
+		cyanCore_->SetDrawRatio(coreProg * coreHealth);
 		cyanCore_->Update();
 	}
 
@@ -650,72 +692,91 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	if (magentaCore_) {
 		auto& tf = magentaCore_->GetWorldTransform();
 		tf.translation = magentaPos * scaleCoreMult;
-		tf.rotation = {-centerCoreRotation_.y * 1.5f, -centerCoreRotation_.x * 1.5f, 0.0f};
-		tf.scale = {scaleCoreMult, scaleCoreMult, scaleCoreMult};
-		magentaCore_->SetDrawRatio(coreProg);
+		tf.rotation = {-centerCoreRotation_.y * 2.5f, -centerCoreRotation_.x * 2.5f, 0.0f};
+		float coreScale = (coreHealth < 1.0f) ? (coreHealth * (1.0f + (1.0f - coreHealth) * 1.5f)) : 1.0f;
+		tf.scale = {scaleCoreMult * coreScale, scaleCoreMult * coreScale, scaleCoreMult * coreScale};
+		magentaCore_->SetDrawRatio(coreProg * coreHealth);
 		magentaCore_->Update();
 	}
 
-	// 前方ポインター
+	// 前方ポインター（外殻と同時に破損）
 	if (forwardPointer_) {
 		auto& tf = forwardPointer_->GetWorldTransform();
 		tf.rotation = currentTilt_;
-		tf.scale = {scaleOuterMult, scaleOuterMult, scaleOuterMult};
-		forwardPointer_->SetDrawRatio(outerProg);
+		float breakZ = (outerHealth < 1.0f) ? (1.0f + (1.0f - outerHealth) * 1.5f) : 1.0f;
+		tf.scale = {scaleOuterMult, scaleOuterMult, scaleOuterMult * breakZ};
+		tf.translation = {0.0f, 0.0f, 0.55f + (1.0f - outerHealth) * 0.8f};
+		forwardPointer_->SetDrawRatio(outerProg * outerHealth);
 		forwardPointer_->Update();
 	}
 
 	// ----------------------------------------------------
-	// 6. ディゾルブ・アルファフェード制御 (マテリアライズ段階別アルファ)
+	// 6. カラー・ショート明滅制御
 	// ----------------------------------------------------
-	float alphaMul = 1.0f;
-	if (useDissolve_ || dissolveThreshold_ > 0.0f) {
-		alphaMul = (std::max)(0.0f, 1.0f - dissolveThreshold_);
-	}
-
-	// 形成中の激しいエネルギー明滅ストロボ (サイバー過電圧グロー)
+	// 形成中の明滅
 	float matGlow = 1.0f;
 	if (materializeProgress_ < 1.0f && materializeProgress_ > 0.0f) {
 		matGlow = 1.0f + 0.5f * std::sin(visualTime_ * 32.0f);
 	}
 
-	// 外殻：まばゆいピュアホワイト
+	// 外殻：破損中は激しいショートスパーク（白と赤の超高速点滅）
 	if (outerShell_) {
 		float shimmer = (0.90f + 0.10f * std::sin(visualTime_ * 3.0f)) * matGlow;
-		outerShell_->SetColor({1.0f * shimmer, 1.0f * shimmer, 1.0f * shimmer, outerProg * alphaMul});
+		Vector4 c;
+		if (outerHealth < 1.0f) {
+			float strobe = (std::sin(visualTime_ * 48.0f) > 0.0f) ? 1.0f : 0.2f;
+			c = Vector4{ 1.0f, 0.2f * outerHealth + 0.8f * strobe, 0.2f * outerHealth + 0.8f * strobe, outerProg * outerHealth };
+		} else {
+			c = Vector4{ 1.0f * shimmer, 1.0f * shimmer, 1.0f * shimmer, outerProg };
+		}
+		outerShell_->SetColor(c);
 	}
-	// 中間層：ビビッドマゼンタ
+	// 中間層：破損中はマゼンタ過負荷・プラズマストロボ
 	if (middleShell_) {
 		float shimmer = (0.85f + 0.15f * std::cos(visualTime_ * 3.0f)) * matGlow;
-		middleShell_->SetColor({1.0f * shimmer, 0.05f * shimmer, 0.80f * shimmer, 0.85f * midProg * alphaMul});
+		Vector4 c;
+		if (midHealth < 1.0f) {
+			float strobe = (std::sin(visualTime_ * 42.0f) > 0.0f) ? 1.0f : 0.1f;
+			c = Vector4{ 1.0f, 0.1f * midHealth + 0.9f * strobe, 0.7f * midHealth, 0.90f * midProg * midHealth };
+		} else {
+			c = Vector4{ 1.0f * shimmer, 0.05f * shimmer, 0.80f * shimmer, 0.85f * midProg };
+		}
+		middleShell_->SetColor(c);
 	}
 	if (gyroRingX_) {
-		gyroRingX_->SetColor({0.3f * matGlow, 0.9f * matGlow, 1.0f * matGlow, 0.75f * midProg * alphaMul});
+		float strobe = (midHealth < 1.0f && std::sin(visualTime_ * 36.0f) > 0.0f) ? 1.5f : 1.0f;
+		gyroRingX_->SetColor({0.3f * matGlow * strobe, 0.9f * matGlow * strobe, 1.0f * matGlow * strobe, 0.85f * midProg * midHealth});
 	}
 	if (gyroRingY_) {
-		gyroRingY_->SetColor({1.0f * matGlow, 0.3f * matGlow, 0.9f * matGlow, 0.75f * midProg * alphaMul});
+		float strobe = (midHealth < 1.0f && std::sin(visualTime_ * 36.0f) < 0.0f) ? 1.5f : 1.0f;
+		gyroRingY_->SetColor({1.0f * matGlow * strobe, 0.3f * matGlow * strobe, 0.9f * matGlow * strobe, 0.85f * midProg * midHealth});
 	}
-	// 中心核：超高輝度ゴールド
+	// 中心核：臨界時は超高輝度プラズマゴールド＆ホワイトの限界ストロボ発光
 	if (centerCore_) {
-		float pulse = (0.90f + 0.10f * std::sin(visualTime_ * 5.0f)) * matGlow;
-		centerCore_->SetColor({1.0f * pulse, 0.92f * pulse, 0.20f * pulse, coreProg * alphaMul});
+		if (coreHealth < 1.0f) {
+			float strobe = (std::sin(visualTime_ * 55.0f) > 0.0f) ? 2.0f : 0.4f;
+			centerCore_->SetColor({1.0f * strobe, 0.95f * strobe, 0.4f * strobe, coreProg * coreHealth});
+		} else {
+			float pulse = (0.85f + 0.15f * std::sin(visualTime_ * 5.0f)) * matGlow;
+			centerCore_->SetColor({1.0f * pulse, 0.92f * pulse, 0.20f * pulse, coreProg * coreHealth});
+		}
 	}
-	// シアン光核：高彩度ネオンシアン
+	// シアン光核
 	if (cyanCore_) {
-		cyanCore_->SetColor({0.0f, 1.0f * matGlow, 1.0f * matGlow, coreProg * alphaMul});
+		cyanCore_->SetColor({0.0f, 1.0f * matGlow, 1.0f * matGlow, coreProg * coreHealth});
 	}
-	// マゼンタ光核：高彩度ネオンマゼンタ
+	// マゼンタ光核
 	if (magentaCore_) {
-		magentaCore_->SetColor({1.0f * matGlow, 0.0f, 0.85f * matGlow, coreProg * alphaMul});
+		magentaCore_->SetColor({1.0f * matGlow, 0.0f, 0.85f * matGlow, coreProg * coreHealth});
 	}
-	// 前方ポインター：ゴールドポインター
+	// 前方ポインター
 	if (forwardPointer_) {
-		forwardPointer_->SetColor({1.0f * matGlow, 0.90f * matGlow, 0.30f * matGlow, 0.95f * outerProg * alphaMul});
+		forwardPointer_->SetColor({1.0f * matGlow, 0.90f * matGlow, 0.30f * matGlow, 0.95f * outerProg * outerHealth});
 	}
 }
 
 /// <summary>
-/// 幾何学多面体パーツの描画
+/// 幾何学多面体パーツの描画（段階的崩壊に対応）
 /// </summary>
 void Player::DrawGeometricVisual() {
 	if (materializeProgress_ <= 0.001f) return;
@@ -724,22 +785,32 @@ void Player::DrawGeometricVisual() {
 	float midProg  = (std::clamp)((materializeProgress_ - 0.25f) / 0.45f, 0.0f, 1.0f);
 	float outerProg= (std::clamp)((materializeProgress_ - 0.50f) / 0.50f, 0.0f, 1.0f);
 
-	// 内側コア（シアン＆マゼンタ＆中心ビーコン）
-	if (coreProg > 0.001f) {
+	// 破壊・ディゾルブによる段階別ヘルス (1.0 -> 0.0)
+	float outerHealth = 1.0f;
+	float midHealth   = 1.0f;
+	float coreHealth  = 1.0f;
+	if (useDissolve_ || dissolveThreshold_ > 0.0f) {
+		outerHealth = (std::clamp)(1.0f - (dissolveThreshold_ - 0.00f) / 0.35f, 0.0f, 1.0f);
+		midHealth   = (std::clamp)(1.0f - (dissolveThreshold_ - 0.30f) / 0.38f, 0.0f, 1.0f);
+		coreHealth  = (std::clamp)(1.0f - (dissolveThreshold_ - 0.65f) / 0.35f, 0.0f, 1.0f);
+	}
+
+	// 1. 内側コア（シアン＆マゼンタ＆中心ビーコン）: 0.65〜1.00まで残存
+	if (coreProg > 0.001f && coreHealth > 0.001f) {
 		if (cyanCore_) cyanCore_->Draw();
 		if (magentaCore_) magentaCore_->Draw();
 		if (centerCore_) centerCore_->Draw();
 	}
 
-	// 中間層（十二面体マゼンタ＆ジャイロリング）
-	if (midProg > 0.001f) {
+	// 2. 中間層（十二面体マゼンタ＆ジャイロリング）: 0.0〜0.68まで残存
+	if (midProg > 0.001f && midHealth > 0.001f) {
 		if (middleShell_) middleShell_->Draw();
 		if (gyroRingX_) gyroRingX_->Draw();
 		if (gyroRingY_) gyroRingY_->Draw();
 	}
 
-	// 外殻（二十面体シアン）＆前方ポインター
-	if (outerProg > 0.001f) {
+	// 3. 外殻（二十面体）＆前方ポインター: 0.0〜0.35で真っ先に崩壊
+	if (outerProg > 0.001f && outerHealth > 0.001f) {
 		if (outerShell_) outerShell_->Draw();
 		if (forwardPointer_) forwardPointer_->Draw();
 	}

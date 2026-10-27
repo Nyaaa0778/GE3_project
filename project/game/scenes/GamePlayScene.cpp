@@ -219,6 +219,9 @@ void GamePlayScene::Initialize() {
 	gameOverUI_ = std::make_unique<GameOverUI>();
 	gameOverUI_->Initialize();
 	isPlayerDestroyEffectTriggered_ = false;
+	isOuterBreakTriggered_ = false;
+	isMiddleBreakTriggered_ = false;
+	isCoreBreakTriggered_ = false;
 
 	// ------------------------------------
 	// ステージ開始演出の初期化 (Phase::kLeady)
@@ -264,6 +267,13 @@ void GamePlayScene::Update() {
 		{
 			railCamera_->Update(!useDebugCamera_);
 		}
+		else if (phase_ == Phase::kGameOver && !useDebugCamera_)
+		{
+			// ゲームオーバー時は進行は停止するが、カメラの基準姿勢を同期して位置を固定
+			camera_->matWorld = railCamera_->GetWorldTransform()->matWorld;
+			camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
+			camera_->UpdateViewProjection();
+		}
 	}
 	if (useDebugCamera_)
 	{
@@ -282,15 +292,23 @@ void GamePlayScene::Update() {
 	{
 		shake_->Update(TimeManager::GetInstance()->GetDeltaTime());
 		// イントロ時以外はカメラの揺れを反映（ゲームオーバー時の撃破衝撃シェイクも適用）
-		if (phase_ != Phase::kLeady && shake_->IsActive() && !useDebugCamera_)
+		if (phase_ != Phase::kLeady && !useDebugCamera_)
 		{
-			Vector3 offset = shake_->GetOffset();
-			camera_->matWorld.m[3][0] += offset.x;
-			camera_->matWorld.m[3][1] += offset.y;
-			camera_->matWorld.m[3][2] += offset.z;
+			if (shake_->IsActive())
+			{
+				Vector3 offset = shake_->GetOffset();
+				// 基準姿勢からオフセットを加算（累積加算による破綻・ブレを防止）
+				if (railCamera_)
+				{
+					camera_->matWorld = railCamera_->GetWorldTransform()->matWorld;
+				}
+				camera_->matWorld.m[3][0] += offset.x;
+				camera_->matWorld.m[3][1] += offset.y;
+				camera_->matWorld.m[3][2] += offset.z;
 
-			camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
-			camera_->UpdateViewProjection();
+				camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
+				camera_->UpdateViewProjection();
+			}
 		}
 	}
 
@@ -656,23 +674,165 @@ void GamePlayScene::Update() {
 		// ================================================================
 		if (gameOverStep_ == GameOverStep::kPlayerDisappearing)
 		{
-			// ディゾルブ中、自機からデジタルグリッチ粒子がフワッと立ち昇る
-			if (player_->GetDissolveThreshold() < 1.0f)
+			float threshold = player_->GetDissolveThreshold();
+			Vector3 playerPos = player_->GetWorldPosition();
+
+			// ----------------------------------------------------------------
+			// 崩壊中：機体の視認性を邪魔しない、ごく控えめな火花の散り
+			// ----------------------------------------------------------------
+			if (threshold < 1.0f)
 			{
-				Vector3 playerPos = player_->GetWorldPosition();
-				for (int i = 0; i < 3; ++i)
+				// 毎フレーム1個だけ微細なスパークがパチッと散る（機体の崩壊がクリアに見える）
+				if (rand() % 2 == 0)
 				{
 					Vector3 randOffset = {
-						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f,
-						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f,
-						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.8f
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.8f,
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.8f,
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.8f
 					};
 					Vector3 vel = {
-						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.9f,
-						0.9f + (static_cast<float>(rand()) / RAND_MAX) * 1.3f,
-						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.9f
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.5f,
+						0.5f + (static_cast<float>(rand()) / RAND_MAX) * 1.0f,
+						(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.5f
 					};
-					ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos + randOffset, vel, { 1.0f, 0.25f, 0.35f, 0.90f }, { 0.18f, 0.18f, 0.18f }, 0.50f, 1);
+					Vector4 pColor = (threshold < 0.35f)
+						? Vector4{ 0.2f, 0.95f, 1.0f, 0.8f }   // シアン火花
+						: ((threshold < 0.68f)
+							? Vector4{ 1.0f, 0.2f, 0.7f, 0.8f }  // マゼンタ火花
+							: Vector4{ 1.0f, 0.9f, 0.3f, 0.8f }); // ゴールド火花
+
+					ParticleManager::GetInstance()->Emit("CircleParticle", playerPos + randOffset, vel, pColor, { 0.08f, 0.08f, 0.08f }, 0.25f, 1);
+				}
+
+				// ----------------------------------------------------
+				// 第1段階: 外殻（正二十面体フレーム）の崩壊時（上品に8個だけ弾ける）
+				// ----------------------------------------------------
+				if (threshold >= 0.35f && !isOuterBreakTriggered_)
+				{
+					isOuterBreakTriggered_ = true;
+
+					// 外殻フレームが割れた瞬間にパチッと散るシアン火花 (8個)
+					for (int i = 0; i < 8; ++i)
+					{
+						float angle = (static_cast<float>(i) / 8.0f) * 6.2831853f;
+						float speed = 2.0f + (static_cast<float>(rand()) / RAND_MAX) * 2.0f;
+						float pitch = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.2f;
+
+						Vector3 vel = {
+							std::cos(angle) * std::cos(pitch) * speed,
+							std::sin(pitch) * speed,
+							std::sin(angle) * std::cos(pitch) * speed
+						};
+						Vector4 color = ((i % 2) == 0)
+							? Vector4{ 0.20f, 0.95f, 1.0f, 0.85f } // シアン
+							: Vector4{ 1.0f, 1.0f, 1.0f, 0.90f };   // ホワイト
+
+						ParticleManager::GetInstance()->Emit("CircleParticle", playerPos, vel, color, { 0.10f, 0.10f, 0.10f }, 0.35f, 1);
+					}
+
+					// 微小破片キューブ (3個)
+					for (int i = 0; i < 3; ++i)
+					{
+						Vector3 boxVel = {
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.0f,
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.0f,
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.0f
+						};
+						ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos, boxVel, { 0.9f, 1.0f, 1.0f, 0.8f }, { 0.10f, 0.10f, 0.10f }, 0.35f, 1);
+					}
+
+					if (shake_)
+					{
+						shake_->Start(0.08f, 0.08f);
+					}
+				}
+
+				// ----------------------------------------------------
+				// 第2段階: 中間層（十二面体・ジャイロリング）の崩壊時（10個だけ弾ける）
+				// ----------------------------------------------------
+				if (threshold >= 0.68f && !isMiddleBreakTriggered_)
+				{
+					isMiddleBreakTriggered_ = true;
+
+					// マゼンタ火花 (10個)
+					for (int i = 0; i < 10; ++i)
+					{
+						float angle = (static_cast<float>(i) / 10.0f) * 6.2831853f;
+						float speed = 2.2f + (static_cast<float>(rand()) / RAND_MAX) * 2.5f;
+						float pitch = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.4f;
+
+						Vector3 vel = {
+							std::cos(angle) * std::cos(pitch) * speed,
+							std::sin(pitch) * speed,
+							std::sin(angle) * std::cos(pitch) * speed
+						};
+						Vector4 color = ((i % 2) == 0)
+							? Vector4{ 1.0f, 0.15f, 0.75f, 0.85f } // マゼンタ
+							: Vector4{ 1.0f, 0.85f, 0.25f, 0.85f }; // ゴールド
+
+						ParticleManager::GetInstance()->Emit("CircleParticle", playerPos, vel, color, { 0.11f, 0.11f, 0.11f }, 0.35f, 1);
+					}
+
+					// 微小破片キューブ (4個)
+					for (int i = 0; i < 4; ++i)
+					{
+						Vector3 boxVel = {
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.5f,
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.5f,
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.5f
+						};
+						ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos, boxVel, { 1.0f, 0.3f, 0.8f, 0.8f }, { 0.11f, 0.11f, 0.11f }, 0.35f, 1);
+					}
+
+					if (shake_)
+					{
+						shake_->Start(0.10f, 0.10f);
+					}
+				}
+
+				// ----------------------------------------------------
+				// 第3段階: 中心核（光核・コア）の消滅時（16個の星屑が散る）
+				// ----------------------------------------------------
+				if (threshold >= 0.98f && !isCoreBreakTriggered_)
+				{
+					isCoreBreakTriggered_ = true;
+
+					// コア消滅時の星屑光粒子 (16個)
+					for (int i = 0; i < 16; ++i)
+					{
+						float angle = (static_cast<float>(i) / 16.0f) * 6.2831853f;
+						float speed = 2.5f + (static_cast<float>(rand()) / RAND_MAX) * 3.0f;
+						float pitch = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.5f;
+
+						Vector3 vel = {
+							std::cos(angle) * std::cos(pitch) * speed,
+							std::sin(pitch) * speed,
+							std::sin(angle) * std::cos(pitch) * speed
+						};
+						Vector4 color;
+						int cType = i % 3;
+						if (cType == 0) color = { 1.0f, 0.95f, 0.30f, 0.90f };      // ゴールド
+						else if (cType == 1) color = { 0.20f, 1.0f, 1.0f, 0.90f };   // シアン
+						else color = { 1.0f, 1.0f, 1.0f, 0.90f };                   // ホワイト
+
+						ParticleManager::GetInstance()->Emit("CircleParticle", playerPos, vel, color, { 0.12f, 0.12f, 0.12f }, 0.45f, 1);
+					}
+
+					// 微小破片キューブ (5個)
+					for (int i = 0; i < 5; ++i)
+					{
+						Vector3 boxVel = {
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 4.0f,
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 4.0f,
+							(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 4.0f
+						};
+						ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos, boxVel, { 1.0f, 0.95f, 0.4f, 0.85f }, { 0.12f, 0.12f, 0.12f }, 0.40f, 1);
+					}
+
+					if (shake_)
+					{
+						shake_->Start(0.10f, 0.10f);
+					}
 				}
 			}
 			else
@@ -723,6 +883,11 @@ void GamePlayScene::Update() {
 				}
 			}
 		}
+
+		// ------------------------------------
+		// パーティクルの更新（自機崩壊パーティクルの進行・GPU転送）
+		// ------------------------------------
+		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 	}
 
 	// ------------------------------------
@@ -880,7 +1045,7 @@ void GamePlayScene::CheckAllCollisions() {
 			enemy->OnCollision();
 			if (shake_)
 			{
-				shake_->Start(0.4f, 0.8f);
+				shake_->Start(0.18f, 0.16f);
 			}
 		}
 	}
@@ -971,12 +1136,16 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		// 2. 自機消滅ステップの初期化（まずは自機が消滅する演出を見届ける）
 		gameOverStep_ = GameOverStep::kPlayerDisappearing;
 		playerDisappearTimer_ = 0.0f;
+		isOuterBreakTriggered_ = false;
+		isMiddleBreakTriggered_ = false;
+		isCoreBreakTriggered_ = false;
+		isPlayerDestroyEffectTriggered_ = false;
 		if (gameOverUI_)
 		{
 			gameOverUI_->Reset();
 		}
 
-		// 3. 撃破時の初期バースト演出（自機の爆散・カメラシェイク・ディゾルブ開始）
+		// 3. 被弾・機能停止の初期スパーク演出（自機の被弾・火花・ディゾルブ崩壊開始）
 		if (!isPlayerDestroyEffectTriggered_ && player_)
 		{
 			isPlayerDestroyEffectTriggered_ = true;
@@ -987,12 +1156,12 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 
 			Vector3 playerPos = player_->GetWorldPosition();
 
-			// 光粒子バースト (36個)
-			for (int i = 0; i < 36; ++i)
+			// 被弾スパーク粒子 (24個)
+			for (int i = 0; i < 24; ++i)
 			{
-				float angle = (static_cast<float>(i) / 36.0f) * 6.2831853f;
-				float speed = 4.0f + (static_cast<float>(rand()) / RAND_MAX) * 5.0f;
-				float pitchAngle = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.5f;
+				float angle = (static_cast<float>(i) / 24.0f) * 6.2831853f;
+				float speed = 3.5f + (static_cast<float>(rand()) / RAND_MAX) * 4.5f;
+				float pitchAngle = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 1.6f;
 
 				Vector3 burstVel = {
 					std::cos(angle) * std::cos(pitchAngle) * speed,
@@ -1001,27 +1170,27 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 				};
 
 				Vector4 color = ((i % 2) == 0)
-					? Vector4{ 1.0f, 0.20f, 0.30f, 1.0f }  // クリムゾンレッド
-					: Vector4{ 0.10f, 0.90f, 1.0f, 1.0f }; // シアン
+					? Vector4{ 1.0f, 0.25f, 0.30f, 1.0f }  // クリムゾンレッド
+					: Vector4{ 0.20f, 0.90f, 1.0f, 1.0f }; // シアン
 
-				ParticleManager::GetInstance()->Emit("CircleParticle", playerPos, burstVel, color, { 0.22f, 0.22f, 0.22f }, 0.55f, 1);
+				ParticleManager::GetInstance()->Emit("CircleParticle", playerPos, burstVel, color, { 0.20f, 0.20f, 0.20f }, 0.45f, 1);
 			}
 
-			// デジタルグリッチボックスの爆散 (24個)
-			for (int i = 0; i < 24; ++i)
+			// デジタルグリッチボックスのスパーク (10個)
+			for (int i = 0; i < 10; ++i)
 			{
 				Vector3 boxVel = {
-					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 7.0f,
-					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 7.0f,
-					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 7.0f
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 5.0f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 5.0f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 5.0f
 				};
-				ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos, boxVel, { 1.0f, 0.25f, 0.35f, 1.0f }, { 0.22f, 0.22f, 0.22f }, 0.50f, 1);
+				ParticleManager::GetInstance()->Emit("DigitalGlitchBox", playerPos, boxVel, { 1.0f, 0.30f, 0.35f, 1.0f }, { 0.18f, 0.18f, 0.18f }, 0.35f, 1);
 			}
 
-			// 衝撃カメラシェイク（程よい強さ）
+			// 初動の被弾カメラマイクロシェイク
 			if (shake_)
 			{
-				shake_->Start(0.40f, 0.55f);
+				shake_->Start(0.15f, 0.12f);
 			}
 		}
 		// 4. 通常フェードアウトの初期化

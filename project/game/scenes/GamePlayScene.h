@@ -156,6 +156,9 @@ private:
 	static constexpr float kPlayerDisappearPostWait = 0.40f; // 消滅完了後の余韻待機時間（秒）
 	std::unique_ptr<GameOverUI> gameOverUI_;
 	bool isPlayerDestroyEffectTriggered_ = false; // 撃破時演出発生済みフラグ
+	bool isOuterBreakTriggered_ = false;          // 外殻（二十面体）崩壊トリガー
+	bool isMiddleBreakTriggered_ = false;         // 中間層（十二面体・リング）崩壊トリガー
+	bool isCoreBreakTriggered_ = false;           // 中心核臨界爆散トリガー
 
 	// ------------------------------------
 	// ステージ開始カメラ演出 (Phase::kLeady)
