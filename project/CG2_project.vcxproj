@@ -216,6 +216,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\LightManager.cpp" />
     <ClCompile Include="engine\level\LevelLoader.cpp" />
     <ClCompile Include="engine\level\Level.cpp" />
+    <ClCompile Include="KeyframeAnimation.cpp" />
     <ClCompile Include="main.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -427,6 +428,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\graphics\BlendMode.h" />
     <ClInclude Include="engine\graphics\RootParameter.h" />
     <ClInclude Include="engine\effects\primitive\Ring.h" />
+    <ClInclude Include="engine\math\Quaternion.h" />
     <ClInclude Include="game\collider\Collider.h" />
     <ClInclude Include="engine\core\utility\Easing.h" />
     <ClInclude Include="engine\effects\primitive\Box.h" />
@@ -499,6 +501,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\WireframeObject.h" />
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
     <ClInclude Include="engine\graphics\PipelineStateCache.h" />
+    <ClInclude Include="KeyframeAnimation.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />
