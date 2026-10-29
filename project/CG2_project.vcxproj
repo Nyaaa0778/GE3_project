@@ -164,7 +164,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\graphics\BlendMode.cpp" />
     <ClCompile Include="engine\effects\primitive\Ring.cpp" />
     <ClCompile Include="game\collider\Collider.cpp" />
-    <ClCompile Include="game\enemy\EnemyBase.cpp" />
     <ClCompile Include="engine\core\utility\Easing.cpp" />
     <ClCompile Include="engine\effects\primitive\Box.cpp" />
     <ClCompile Include="engine\effects\primitive\Cylinder.cpp" />
@@ -217,9 +216,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\LightManager.cpp" />
     <ClCompile Include="engine\level\LevelLoader.cpp" />
     <ClCompile Include="engine\level\Level.cpp" />
-    <ClCompile Include="game\player\LockOn.cpp" />
-    <ClCompile Include="game\player\Reticle.cpp" />
-    <ClCompile Include="game\playerState\IPlayerState.cpp" />
     <ClCompile Include="main.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">MaxSpeed</Optimization>
       <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</WholeProgramOptimization>
@@ -244,27 +240,12 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\effects\primitive\Plane.cpp" />
     <ClCompile Include="engine\effects\primitive\Primitive.cpp" />
     <ClCompile Include="engine\effects\primitive\PrimitiveRenderer.cpp" />
-    <ClCompile Include="game\player\Player.cpp" />
-    <ClCompile Include="game\camera\RailCameraController.cpp" />
     <ClCompile Include="game\Shake.cpp" />
     <ClCompile Include="engine\3d\Skydome.cpp" />
-    <ClCompile Include="game\playerBullet\IPlayerBullet.cpp" />
-    <ClCompile Include="game\playerBullet\NormalPlayerBullet.cpp" />
-    <ClCompile Include="game\playerBullet\HomingPlayerBullet.cpp" />
-    <ClCompile Include="game\enemy\RusherEnemy.cpp" />
-    <ClCompile Include="game\enemy\FormationDroneEnemy.cpp" />
-    <ClCompile Include="game\enemy\Shockwave.cpp" />
-    <ClCompile Include="game\goal\Goal.cpp" />
     <ClCompile Include="engine\core\graphics\PostProcessRenderer.cpp" />
     <ClCompile Include="engine\core\graphics\PostProcessEffects.cpp" />
-    <ClCompile Include="game\playerState\PlayerIdleState.cpp" />
-    <ClCompile Include="game\playerState\PlayerMoveState.cpp" />
-    <ClCompile Include="game\playerState\PlayerDeathState.cpp" />
     <ClCompile Include="engine\3d\WireframeObject.cpp" />
     <ClCompile Include="engine\3d\WireframeRenderer.cpp" />
-    <ClCompile Include="game\scenes\CityBackground.cpp" />
-    <ClCompile Include="game\scenes\TitleLogo.cpp" />
-    <ClCompile Include="game\scenes\GameOverUI.cpp" />
     <ClCompile Include="engine\graphics\PipelineStateCache.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -447,7 +428,6 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\graphics\RootParameter.h" />
     <ClInclude Include="engine\effects\primitive\Ring.h" />
     <ClInclude Include="game\collider\Collider.h" />
-    <ClInclude Include="game\enemy\EnemyBase.h" />
     <ClInclude Include="engine\core\utility\Easing.h" />
     <ClInclude Include="engine\effects\primitive\Box.h" />
     <ClInclude Include="engine\effects\primitive\Cylinder.h" />
@@ -510,32 +490,14 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\effects\primitive\PrimitiveRenderer.h" />
     <ClInclude Include="engine\level\LevelLoader.h" />
     <ClInclude Include="engine\level\Level.h" />
-    <ClInclude Include="game\player\Player.h" />
-    <ClInclude Include="game\camera\RailCameraController.h" />
     <ClInclude Include="game\Shake.h" />
     <ClInclude Include="engine\3d\Skydome.h" />
-    <ClInclude Include="game\playerBullet\IPlayerBullet.h" />
-    <ClInclude Include="game\playerBullet\NormalPlayerBullet.h" />
-    <ClInclude Include="game\playerBullet\HomingPlayerBullet.h" />
-    <ClInclude Include="game\enemy\RusherEnemy.h" />
-    <ClInclude Include="game\enemy\FormationDroneEnemy.h" />
-    <ClInclude Include="game\enemy\Shockwave.h" />
-    <ClInclude Include="game\goal\Goal.h" />
-    <ClInclude Include="game\player\LockOn.h" />
-    <ClInclude Include="game\player\Reticle.h" />
     <ClInclude Include="engine\core\graphics\PostProcessRenderer.h" />
     <ClInclude Include="engine\core\graphics\IPostProcessEffect.h" />
     <ClInclude Include="engine\core\graphics\PostProcessEffects.h" />
     <ClInclude Include="engine\core\utility\ObjectPool.h" />
-    <ClInclude Include="game\playerState\IPlayerState.h" />
-    <ClInclude Include="game\playerState\PlayerIdleState.h" />
-    <ClInclude Include="game\playerState\PlayerMoveState.h" />
-    <ClInclude Include="game\playerState\PlayerDeathState.h" />
     <ClInclude Include="engine\3d\WireframeObject.h" />
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
-    <ClInclude Include="game\scenes\CityBackground.h" />
-    <ClInclude Include="game\scenes\TitleLogo.h" />
-    <ClInclude Include="game\scenes\GameOverUI.h" />
     <ClInclude Include="engine\graphics\PipelineStateCache.h" />
   </ItemGroup>
   <ItemGroup>
