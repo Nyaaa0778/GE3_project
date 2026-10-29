@@ -223,9 +223,19 @@ void GamePlayScene::Initialize() {
 	isMiddleBreakTriggered_ = false;
 	isCoreBreakTriggered_ = false;
 
+	// 画面中央上部の自死案内スプライトUI（[K] キーで自滅）の初期化
+	uiKillHint_ = std::make_unique<Sprite>();
+	uiKillHint_->Initialize("kill_hint.png", { 640.0f, 55.0f }, { 0.5f, 0.5f });
+	uiKillHint_->SetSize({ 460.0f, 62.0f });
+
 	// ------------------------------------
-	// ステージ開始演出の初期化 (Phase::kLeady)
+	// ステージ開始演出の一時的無効化（即座にゲームプレイ開始）
+	// 元に戻す場合は ChangePhase(Phase::kPlay); をコメントアウトし、
+	// 下記の kLeady 処理のコメントを解除してください
 	// ------------------------------------
+	ChangePhase(Phase::kPlay);
+
+	/*
 	introCameraTimer_ = 0.0f;
 	playerMaterializeTimer_ = 0.0f;
 	if (railCamera_)
@@ -240,6 +250,7 @@ void GamePlayScene::Initialize() {
 	playerMaterializedEffectTriggered_ = false;
 	phase_ = Phase::kLeady;
 	UpdateIntroCamera();
+	*/
 }
 
 void GamePlayScene::Update() {
@@ -309,6 +320,17 @@ void GamePlayScene::Update() {
 				camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
 				camera_->UpdateViewProjection();
 			}
+		}
+	}
+
+	// ------------------------------------
+	// デバッグ用即死ショートカット: [K] キー または ゲームパッドのBackボタンで即座にHPを0にして死亡演出
+	// ------------------------------------
+	if (phase_ == Phase::kPlay && player_ && player_->IsAlive())
+	{
+		if (input->TriggerKey(DIK_K) || input->TriggerKey(DIK_DELETE) || input->TriggerButton(XINPUT_GAMEPAD_BACK))
+		{
+			player_->OnCollision();
 		}
 	}
 
@@ -917,6 +939,12 @@ void GamePlayScene::Update() {
 	{
 		digitSprite->Update();
 	}
+
+	// 自死案内スプライトの更新
+	if (uiKillHint_)
+	{
+		uiKillHint_->Update();
+	}
 }
 
 void GamePlayScene::Draw() {
@@ -996,6 +1024,12 @@ void GamePlayScene::Draw() {
 		{
 			digitSprite->Draw();
 		}
+
+		// 画面中央の自死案内スプライトUI（[K] キーで自滅）を描画
+		if (uiKillHint_)
+		{
+			uiKillHint_->Draw();
+		}
 	}
 
 	// ------------------------------------
@@ -1020,6 +1054,7 @@ void GamePlayScene::Finalize() {
 	backgroundSprite_.reset();
 	cityBackground_.reset();
 	fadeSprite_.reset();
+	uiKillHint_.reset();
 
 	if (gameOverUI_)
 	{
@@ -1479,6 +1514,12 @@ void GamePlayScene::UpdateImGui() {
 	if (phase_ == Phase::kPlay) {
 		if (ImGui::Button("Debug: Trigger Goal (Clear)")) {
 			ChangePhase(Phase::kClear);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Debug: Kill Player [K]")) {
+			if (player_) {
+				player_->OnCollision();
+			}
 		}
 	}
 

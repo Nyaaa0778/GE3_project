@@ -133,6 +133,9 @@ private:
 	static constexpr int kMaxScoreDigits = 5;
 	std::vector<std::unique_ptr<Sprite>> uiScoreDigits_;
 
+	// 画面中央の自死案内UI（[K] キー で即座に自滅）スプライト
+	std::unique_ptr<Sprite> uiKillHint_;
+
 	// ------------------------------------
 	// フェードアウト
 	// ------------------------------------
