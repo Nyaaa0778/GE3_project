@@ -106,7 +106,7 @@ void GamePlayScene::Initialize() {
 	player_->GetWorldTransform()->rotation = spawner->rotation;
 	player_->GetWorldTransform()->scale = spawner->scaling;
 	player_->SetParent(railCamera_->GetWorldTransform());
-	player_->GetWorldTransform()->translation.z = 20.0f;
+	player_->GetWorldTransform()->translation.z = kPlayerOffsetZ;
 
 	// ------------------------------------
 	// ロックオン
@@ -157,18 +157,19 @@ void GamePlayScene::Initialize() {
 	// ゴール初期化
 	// ------------------------------------
 	goal_ = std::make_unique<Goal>();
-	Vector3 goalPos = {0.0f, 0.0f, 150.0f};
+	Vector3 goalPos = {0.0f, 0.0f, 150.0f + kPlayerOffsetZ};
 	if (railCamera_)
 	{
-		const auto& controlPoints = railCamera_->GetControlPoints();
-		if (!controlPoints.empty())
-		{
-			goalPos = controlPoints.back();
-		}
+		// カメラ末尾到達時に自機（カメラ前方 kPlayerOffsetZ）がジャスト到達する位置にゴールを配置
+		goalPos = railCamera_->CalculateGoalPosition(kPlayerOffsetZ);
 		// レールカメラのループをオフにしてゴール地点で停止するようにする
 		railCamera_->SetIsLoop(false);
 	}
 	goal_->Initialize(goalPos, camera_.get());
+	if (cityBackground_)
+	{
+		goal_->SetFog(cityBackground_->GetFogNear(), cityBackground_->GetFogFar());
+	}
 
 	isGoalReached_ = false;
 	clearWaitTimer_ = 0.0f;
@@ -378,17 +379,10 @@ void GamePlayScene::Update() {
 		}
 
 		// ------------------------------------
-		// ゴール到達判定（衝突判定またはレールカメラ末尾到達）
+		// ゴール到達判定（レールカメラ末尾到達 または 自機衝突判定）
+		// 自機はカメラ前方 kPlayerOffsetZ に同期しているため、カメラ末尾到達時に自機は描画されたゴール座標にジャスト到達する
 		// ------------------------------------
 		bool reachedGoal = false;
-		// 自機との衝突判定によるゴール到達チェック
-		if (player_ && goal_)
-		{
-			if (Collision::CheckCollision(player_.get(), goal_.get()))
-			{
-				reachedGoal = true;
-			}
-		}
 
 		// カメラがレール末尾に到達したことによるゴール到達チェック
 		if (railCamera_ && !railCamera_->GetIsLoop())
@@ -400,9 +394,24 @@ void GamePlayScene::Update() {
 			}
 		}
 
-		// ゴールに到達した場合はクリアフェーズへ移行（フェードアウト開始）
+		// 自機との衝突判定によるゴール到達チェック
+		if (player_ && goal_)
+		{
+			if (Collision::CheckCollision(player_.get(), goal_.get()))
+			{
+				reachedGoal = true;
+			}
+		}
+
+		// ゴールに到達した場合はクリアフェーズへ移行（カメラ姿勢を末尾に完全同期）
 		if (reachedGoal)
 		{
+			if (railCamera_ && !railCamera_->GetIsLoop())
+			{
+				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+				railCamera_->SetSplineTime(maxTime);
+				railCamera_->Update(!useDebugCamera_);
+			}
 			ChangePhase(Phase::kClear);
 			return;
 		}
@@ -1219,7 +1228,7 @@ void GamePlayScene::UpdateIntroCamera() {
 	// コースの始点・終点（ゴール）を取得
 	const auto& controlPoints = railCamera_->GetControlPoints();
 	Vector3 startPos = controlPoints.empty() ? Vector3{ 0.0f, 0.0f, 0.0f } : controlPoints.front();
-	Vector3 goalPos = controlPoints.empty() ? Vector3{ 0.0f, 0.0f, 150.0f } : controlPoints.back();
+	Vector3 goalPos = goal_ ? goal_->GetWorldPosition() : (railCamera_ ? railCamera_->CalculateGoalPosition(kPlayerOffsetZ) : Vector3{ 0.0f, 0.0f, 150.0f + kPlayerOffsetZ });
 	Vector3 stageCenter = (startPos + goalPos) * 0.5f;
 
 	// 通常プレイ時の初期カメラ座標・回転（スタート位置）
@@ -1483,6 +1492,12 @@ void GamePlayScene::UpdateImGui() {
 	ImGui::Text("Fade Alpha: %.2f", fadeAlpha_);
 	if (phase_ == Phase::kPlay) {
 		if (ImGui::Button("Debug: Trigger Goal (Clear)")) {
+			if (railCamera_ && !railCamera_->GetIsLoop())
+			{
+				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+				railCamera_->SetSplineTime(maxTime);
+				railCamera_->Update(!useDebugCamera_);
+			}
 			ChangePhase(Phase::kClear);
 		}
 	}
@@ -1524,6 +1539,9 @@ void GamePlayScene::UpdateImGui() {
 			}
 			if (fogChanged) {
 				cityBackground_->SetFog(fogNear, fogFar);
+				if (goal_) {
+					goal_->SetFog(fogNear, fogFar);
+				}
 			}
 
 			if (camera_) {

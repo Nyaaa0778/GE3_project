@@ -214,7 +214,49 @@ void RailCameraController::DrawDebugSpline() {
 			drawList->AddText(ImVec2(screenPos.x + 8.0f, screenPos.y - 8.0f), IM_COL32(255, 255, 255, 255), label.c_str());
 		}
 	}
+
+	// 3. 自機が到達するゴール目標地点（カメラ末尾から前方オフセット）の描画
+	if (!controlPoints_.empty()) {
+		Vector3 goalPos = CalculateGoalPosition(20.0f);
+		Vector2 goalScreenPos;
+		if (WorldToScreen(goalPos, goalScreenPos)) {
+			// カメラ終端 P_last から自機ゴール地点への接続ライン
+			Vector2 lastPtScreen;
+			if (WorldToScreen(controlPoints_.back(), lastPtScreen)) {
+				drawList->AddLine(
+					ImVec2(lastPtScreen.x, lastPtScreen.y),
+					ImVec2(goalScreenPos.x, goalScreenPos.y),
+					IM_COL32(0, 255, 180, 200),
+					1.5f
+				);
+			}
+
+			// ゴール目標点（鮮やかなエメラルドグリーン）
+			drawList->AddCircleFilled(ImVec2(goalScreenPos.x, goalScreenPos.y), 5.0f, IM_COL32(0, 255, 180, 255));
+			drawList->AddCircle(ImVec2(goalScreenPos.x, goalScreenPos.y), 6.5f, IM_COL32(0, 0, 0, 255), 0, 1.0f);
+			drawList->AddText(ImVec2(goalScreenPos.x + 8.0f, goalScreenPos.y - 8.0f), IM_COL32(0, 255, 180, 255), "GOAL");
+		}
+	}
 #endif
+}
+
+Vector3 RailCameraController::GetEndTangent() const {
+	if (controlPoints_.size() < 2) {
+		return { 0.0f, 0.0f, 1.0f };
+	}
+	float maxTime = static_cast<float>(controlPoints_.size() - 1);
+	Vector3 tangent = EvaluateSplineTangent(controlPoints_, maxTime);
+	if (Length(tangent) > 0.0001f) {
+		return Normalize(tangent);
+	}
+	return { 0.0f, 0.0f, 1.0f };
+}
+
+Vector3 RailCameraController::CalculateGoalPosition(float playerDistance) const {
+	if (controlPoints_.empty()) {
+		return { 0.0f, 0.0f, 150.0f + playerDistance };
+	}
+	return controlPoints_.back() + GetEndTangent() * playerDistance;
 }
 Vector3 RailCameraController::EvaluateSpline(const std::vector<Vector3>& points, float time) const {
 	size_t n = points.size();

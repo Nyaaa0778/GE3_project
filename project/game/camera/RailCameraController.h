@@ -40,6 +40,12 @@ public:
 	float GetSpeed() const { return speed_; }
 	void SetSpeed(float speed) { speed_ = speed; }
 
+	// レール末尾の進行方向接線ベクトル（正規化済み）
+	Vector3 GetEndTangent() const;
+
+	// 自機の前方オフセットを考慮したゴール目標位置の算出
+	Vector3 CalculateGoalPosition(float playerDistance = 20.0f) const;
+
 private:
 	// スプライン計算用のヘルパー
 	Vector3 EvaluateSpline(const std::vector<Vector3>& points, float time) const;

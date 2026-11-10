@@ -144,6 +144,7 @@ private:
 	static constexpr float kGameOverFadeDuration = 1.0f; // 破壊演出後のフェードアウト時間（秒）
 	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
 	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
+	static constexpr float kPlayerOffsetZ = 20.0f;       // レールカメラに対する自機の前方オフセット（メートル）
 	std::unique_ptr<GameClearUI> gameClearUI_;
 	int killedEnemyCount_ = 0;
 
