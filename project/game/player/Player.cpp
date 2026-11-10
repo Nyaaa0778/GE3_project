@@ -24,6 +24,7 @@
 #include "TimeManager.h"
 #include <cmath>
 #include <numbers>
+#include <unordered_set>
 
 using namespace MathUtility;
 
@@ -255,6 +256,18 @@ void Player::UpdateBullet(const std::list<EnemyBase*>& enemies) {
 		cooldownTimer_ -= TimeManager::GetInstance()->GetDeltaTime();
 	}
 
+	// ホーミング弾のリチャージタイマー更新（時間経過で1発ずつ復活）
+	if (homingAmmo_ < kMaxHomingAmmo) {
+		homingRechargeTimer_ += TimeManager::GetInstance()->GetDeltaTime();
+		if (homingRechargeTimer_ >= kHomingRechargeTime) {
+			homingAmmo_++;
+			homingRechargeTimer_ -= kHomingRechargeTime;
+			if (homingAmmo_ >= kMaxHomingAmmo) {
+				homingRechargeTimer_ = 0.0f;
+			}
+		}
+	}
+
 	// 弾の更新
 	for (IPlayerBullet* bullet : bullets_) {
 		bullet->Update(enemies);
@@ -274,6 +287,23 @@ void Player::UpdateBullet(const std::list<EnemyBase*>& enemies) {
 	});
 }
 
+bool Player::IsTargetedByActiveHomingBullet(const EnemyBase* enemy) const {
+	if (!enemy) {
+		return false;
+	}
+	for (const IPlayerBullet* bullet : bullets_) {
+		if (bullet->IsDead()) {
+			continue;
+		}
+		if (const auto* homing = dynamic_cast<const HomingPlayerBullet*>(bullet)) {
+			if (homing->GetTarget() == enemy) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 /// <summary>
 /// 攻撃
 /// </summary>
@@ -284,8 +314,10 @@ void Player::Attack() {
 		isLockOnMode_ = !isLockOnMode_; // trueとfalseを反転させる
 	}
 
-	// クールダウンが終了しており、キーが押されていたら発射
-	if (input->PushKey(DIK_SPACE)) {
+	// クールダウンが終了しており、キー入力があったら発射
+	// ※ロックオンモード時は1回押すごとに一斉発射（TriggerKey）、通常モード時は長押し連射（PushKey）
+	bool isShootInput = isLockOnMode_ ? input->TriggerKey(DIK_SPACE) : input->PushKey(DIK_SPACE);
+	if (isShootInput) {
 		if(cooldownTimer_ <= 0.0f)
 		{
 			bool canShoot = false;
@@ -294,10 +326,24 @@ void Player::Attack() {
 			Vector3 shootDir = {};
 
 			if (isLockOnMode_) {
-				// ロックオンモード時は、ロックオン対象が存在する場合のみ射撃可能
-				if (lockOn_ && !lockOn_->GetTargets().empty()) {
+				// ロックオンモード時は、弾があり、かつロックオン対象が存在する場合のみ射撃可能
+				if (homingAmmo_ > 0 && lockOn_ && !lockOn_->GetTargets().empty()) {
 					const auto& targets = lockOn_->GetTargets();
+					int shotCount = 0;
+					std::unordered_set<const EnemyBase*> shotEnemies;
+
 					for (EnemyBase* target : targets) {
+						if (!target || !target->IsAlive()) {
+							continue;
+						}
+						// 1体の敵に対して1発のみ発射（同一射撃内、および既に飛行中の弾がある敵はスキップ）
+						if (shotEnemies.count(target) > 0 || IsTargetedByActiveHomingBullet(target)) {
+							continue;
+						}
+						if (shotCount >= homingAmmo_) {
+							break;
+						}
+
 						Vector3 targetPos = target->GetWorldPosition();
 
 						// ターゲットへの方向ベクトル ＝ 終点(敵) － 始点(自機)
@@ -319,14 +365,19 @@ void Player::Attack() {
 							param.target = target;
 							homingBullet->Initialize(param);
 							bullets_.push_back(homingBullet);
+							shotCount++;
+							shotEnemies.insert(target);
 						}
 					}
+
+					// 撃った分だけ残弾数を減らす
+					homingAmmo_ -= shotCount;
 
 					// 射撃した後は、ロックオンをクリアする
 					lockOn_->ClearTargets();
 
-					// クールダウンを設定
-					cooldownTimer_ = kCooldownDuration;
+					// クールダウンを設定（ホーミング弾の一斉射撃後は0.35秒のディレイ）
+					cooldownTimer_ = 0.35f;
 				}
 			} else {
 				// 通常モード時は常に射撃可能

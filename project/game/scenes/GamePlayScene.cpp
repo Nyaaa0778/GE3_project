@@ -5,6 +5,7 @@
 #include "PostProcessEffects.h"
 #include "CrtTransition.h"
 #include "GameOverUI.h"
+#include "GameClearUI.h"
 #include "TextureManager.h"
 #include "Input.h"
 
@@ -222,6 +223,13 @@ void GamePlayScene::Initialize() {
 	isOuterBreakTriggered_ = false;
 	isMiddleBreakTriggered_ = false;
 	isCoreBreakTriggered_ = false;
+
+	// ------------------------------------
+	// ゲームクリア演出UI
+	// ------------------------------------
+	gameClearUI_ = std::make_unique<GameClearUI>();
+	gameClearUI_->Initialize();
+	killedEnemyCount_ = 0;
 
 	// ------------------------------------
 	// ステージ開始演出の初期化 (Phase::kLeady)
@@ -487,6 +495,7 @@ void GamePlayScene::Update() {
 					{
 						// スコア加算
 						score_ += (*it)->GetScore();
+						killedEnemyCount_++;
 
 						// 敵撃破時の衝撃波エフェクト生成
 						auto shockwave = std::make_unique<Shockwave>();
@@ -619,37 +628,18 @@ void GamePlayScene::Update() {
 		}
 		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
-		// 4. フェードアウトの進行
-		fadeAlpha_ += dt / kClearFadeDuration;
-		if (fadeAlpha_ >= 1.0f)
+		// 4. ゲームクリア演出UI（リザルト画面: スコア・撃破数カウントアップ）の更新
+		if (gameClearUI_)
 		{
-			fadeAlpha_ = 1.0f;
-			clearWaitTimer_ += dt;
-		}
+			gameClearUI_->Update();
 
-		if (fadeSprite_)
-		{
-			fadeSprite_->SetColor({0.0f, 0.0f, 0.0f, fadeAlpha_});
-			fadeSprite_->Update();
-		}
-
-		// 5. フェードアウト完了後、余韻待機時間経過（またはENTER / Aボタン入力）でタイトルシーンへ遷移
-		if (fadeAlpha_ >= 1.0f)
-		{
-			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A) || clearWaitTimer_ >= kClearWaitDuration)
+			// タイトルへ戻る入力要求があったら画面遷移
+			if (gameClearUI_->IsTitleRequested())
 			{
-				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-				SceneManager::GetInstance()->ChangeScene("TITLE");
-				return;
-			}
-		}
-		else
-		{
-			// フェードアウト中もENTER / Aボタンで即座にタイトルへ戻れるようにする
-			if (input->TriggerKey(DIK_RETURN) || input->TriggerButton(XINPUT_GAMEPAD_A))
-			{
-				PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-				SceneManager::GetInstance()->ChangeScene("TITLE");
+				if (!CrtTransition::GetInstance()->IsTransitioning())
+				{
+					CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kNormal);
+				}
 				return;
 			}
 		}
@@ -984,10 +974,10 @@ void GamePlayScene::Draw() {
 	ParticleManager::GetInstance()->Draw();
 
 	// ------------------------------------
-	// UI (イントロ演出中とゲームオーバー中は通常UIを非表示)
+	// UI (イントロ演出中、ゲームオーバー中、クリアリザルト中は通常UIを非表示)
 	// ------------------------------------
 
-	if (phase_ != Phase::kLeady && phase_ != Phase::kGameOver)
+	if (phase_ != Phase::kLeady && phase_ != Phase::kGameOver && phase_ != Phase::kClear)
 	{
 		uiPlayerHp_->Draw();
 
@@ -996,6 +986,15 @@ void GamePlayScene::Draw() {
 		{
 			digitSprite->Draw();
 		}
+	}
+
+	// ------------------------------------
+	// ゲームクリア演出UI（リザルト画面: スコア・撃破数カウントアップ）
+	// ------------------------------------
+	if (phase_ == Phase::kClear && gameClearUI_ && gameClearUI_->IsActive())
+	{
+		gameClearUI_->Draw3D();
+		gameClearUI_->Draw2D();
 	}
 
 	// ------------------------------------
@@ -1026,6 +1025,8 @@ void GamePlayScene::Finalize() {
 		gameOverUI_->Reset();
 		gameOverUI_.reset();
 	}
+
+	gameClearUI_.reset();
 
 	// 画面遷移中（CrtTransition実行中）以外のみ通常描画へ戻す
 	if (!CrtTransition::GetInstance()->IsTransitioning())
@@ -1118,7 +1119,11 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		}
 		// 2. ヴィネットを確実に消去して通常描画に戻す
 		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-		// 3. フェードアウトの初期化
+		// 3. クリアリザルトUI演出の開始
+		if (gameClearUI_)
+		{
+			gameClearUI_->Start(score_, killedEnemyCount_);
+		}
 		fadeAlpha_ = 0.0f;
 		clearWaitTimer_ = 0.0f;
 		if (fadeSprite_)
@@ -1576,6 +1581,28 @@ void GamePlayScene::UpdateImGui() {
 			if (ImGui::Combo("HUD Color Theme", &themeIdx, themeItems, IM_ARRAYSIZE(themeItems)))
 			{
 				reticle->SetColorTheme(static_cast<Reticle::ColorTheme>(themeIdx));
+			}
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Homing Bullet (Recharge System)", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		if (player_)
+		{
+			ImGui::Text("Ammo: %d / %d", player_->GetHomingAmmo(), player_->GetMaxHomingAmmo());
+			float progress = player_->GetHomingRechargeProgress();
+			char buf[32];
+			if (player_->GetHomingAmmo() >= player_->GetMaxHomingAmmo()) {
+				snprintf(buf, sizeof(buf), "FULL STOCK");
+			} else {
+				snprintf(buf, sizeof(buf), "Recharging %.0f%%", progress * 100.0f);
+			}
+			ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f), buf);
+
+			float rechargeTime = player_->GetHomingRechargeTime();
+			if (ImGui::SliderFloat("Recharge Time per Bullet (s)", &rechargeTime, 0.3f, 5.0f, "%.1f s"))
+			{
+				player_->SetHomingRechargeTime(rechargeTime);
 			}
 		}
 	}

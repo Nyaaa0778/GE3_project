@@ -102,8 +102,8 @@ void LockOn::CreateCenterCrossMesh(WireframeObject* obj, float gapRadius, float 
 }
 
 void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera* camera) {
-	// ロックオンモードではない場合はロックオン対象をクリアして終了
-	if (!player->GetIsLockOnMode()) {
+	// ロックオンモードではない、またはホーミング弾の残弾が0の場合はロックオン対象をクリアして終了
+	if (!player->GetIsLockOnMode() || player->GetHomingAmmo() <= 0) {
 		ClearTargets();
 		return;
 	}
@@ -113,12 +113,17 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 	// ビュー座標に変換する
 	Vector3 playerPositionView = TransformCoord(playerPositionWorld, camera->matView);
 
-	// 生存している敵、かつプレイヤーより前方にいる敵だけに絞り込む
+	// 生存している敵、プレイヤーより前方、かつ「まだホーミング弾が向かっていない敵」だけに絞り込む
 	targetInfos_.erase(
 		std::remove_if(targetInfos_.begin(), targetInfos_.end(),
-			[&enemies, camera, &playerPositionView](const TargetInfo& info) {
-				// 敵がすでに存在しない場合
-				if (std::find(enemies.begin(), enemies.end(), info.enemy) == enemies.end()) {
+			[&enemies, camera, &playerPositionView, player](const TargetInfo& info) {
+				// 敵がすでに存在しない、または死亡している場合
+				if (std::find(enemies.begin(), enemies.end(), info.enemy) == enemies.end() ||
+					!info.enemy->IsAlive()) {
+					return true;
+				}
+				// 既にこの敵に向けてホーミング弾が飛行中の場合はロックオン解除（1体につき1発のみ）
+				if (player->IsTargetedByActiveHomingBullet(info.enemy)) {
 					return true;
 				}
 				// 敵のビュー座標を計算
@@ -132,7 +137,10 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 			}),
 		targetInfos_.end());
 
-	// targets_ も targetInfos_ に同期させる
+	// targets_ も targetInfos_ に同期させる（残弾数以上のロックオンは除外）
+	while (targetInfos_.size() > static_cast<size_t>(player->GetHomingAmmo())) {
+		targetInfos_.pop_back();
+	}
 	targets_.clear();
 	for (const auto& info : targetInfos_) {
 		targets_.push_back(info.enemy);
@@ -140,6 +148,16 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 
 	// ロックオン判定処理
 	for (EnemyBase* enemy : enemies) {
+		// 生存していない敵はスキップ
+		if (!enemy || !enemy->IsAlive()) {
+			continue;
+		}
+
+		// すでに飛行中のホーミング弾のターゲットになっている敵はスキップ（1体の敵には1発のみ！）
+		if (player->IsTargetedByActiveHomingBullet(enemy)) {
+			continue;
+		}
+
 		// すでにロックオンされている場合はスキップ
 		auto it = std::find_if(targetInfos_.begin(), targetInfos_.end(),
 			[enemy](const TargetInfo& info) { return info.enemy == enemy; });
@@ -147,8 +165,9 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 			continue;
 		}
 
-		// 最大ロックオン数に達している場合はスキップ
-		if (targetInfos_.size() >= kMaxLockOnTargets) {
+		// 残弾数、または最大ロックオン数に達している場合はスキップ
+		size_t maxLockOn = (std::min)(kMaxLockOnTargets, static_cast<size_t>(player->GetHomingAmmo()));
+		if (targetInfos_.size() >= maxLockOn) {
 			break;
 		}
 

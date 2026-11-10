@@ -24,6 +24,7 @@ class Goal;
 class Sprite;
 class CityBackground;
 class GameOverUI;
+class GameClearUI;
 enum class DroneFlightPattern;
 
 class GamePlayScene : public IScene {
@@ -143,6 +144,8 @@ private:
 	static constexpr float kGameOverFadeDuration = 1.0f; // 破壊演出後のフェードアウト時間（秒）
 	static constexpr float kClearFadeDuration = 1.5f;    // ゴール到達後のフェードアウト時間（秒）
 	static constexpr float kClearWaitDuration = 0.5f;    // フェード完了後の余韻待機時間（秒）
+	std::unique_ptr<GameClearUI> gameClearUI_;
+	int killedEnemyCount_ = 0;
 
 	// ------------------------------------
 	// ゲームオーバー演出UI

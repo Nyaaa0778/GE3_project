@@ -82,6 +82,18 @@ public:
 	float GetHP() const { return hp_; }
 	void SetHP(float hp) { hp_ = hp; }
 
+	// ホーミング弾残弾システム
+	int GetHomingAmmo() const { return homingAmmo_; }
+	int GetMaxHomingAmmo() const { return kMaxHomingAmmo; }
+	float GetHomingRechargeProgress() const {
+		return (kHomingRechargeTime > 0.0f) ? (homingRechargeTimer_ / kHomingRechargeTime) : 1.0f;
+	}
+	float GetHomingRechargeTime() const { return kHomingRechargeTime; }
+	void SetHomingRechargeTime(float time) { kHomingRechargeTime = time; }
+
+	// すでに飛行中のホーミング弾のターゲットになっているか
+	bool IsTargetedByActiveHomingBullet(const EnemyBase* enemy) const;
+
 private:
 	// ------------------------------------
 	// 本体
@@ -160,6 +172,12 @@ public:
 
 	static constexpr float kCooldownDuration = 0.1f;
 	float cooldownTimer_ = 0.0f;
+
+	// ホーミング弾のリチャージシステム
+	static constexpr int kMaxHomingAmmo = 5;
+	int homingAmmo_ = kMaxHomingAmmo;
+	float kHomingRechargeTime = 2.0f; // 1発回復するのに要する時間（秒）
+	float homingRechargeTimer_ = 0.0f;
 
 	// 前フレームのワールド座標（速度計算用）
 	Vector3 prevWorldPos_ = { 0.0f, 0.0f, 0.0f };
