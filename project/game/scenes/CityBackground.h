@@ -27,7 +27,7 @@ public:
 	/// <param name="gridLength">地面グリッドの長さ</param>
 	/// <param name="fogNear">奥のフェード開始距離</param>
 	/// <param name="fogFar">奥のフェード完全消滅距離</param>
-	void Initialize(Camera* camera, float minZ = 4.0f, float maxZ = 320.0f, int numBuildingsPerSide = 65, float roadHalfWidth = 8.0f, float gridLength = 200.0f, float fogNear = 80.0f, float fogFar = 300.0f);
+	void Initialize(Camera* camera, float minZ = 4.0f, float maxZ = 320.0f, int numBuildingsPerSide = 65, float roadHalfWidth = 20.0f, float gridLength = 200.0f, float fogNear = 80.0f, float fogFar = 300.0f);
 
 	/// <summary>
 	/// コース（スプライン軌道）に沿ってゴール地点までビル群を生成
@@ -39,7 +39,7 @@ public:
 	/// <param name="extraEndMargin">ゴール地点の先へ延長配置する余白距離</param>
 	/// <param name="fogNear">奥のフェード開始距離</param>
 	/// <param name="fogFar">奥のフェード完全消滅距離</param>
-	void InitializeAlongPath(Camera* camera, const std::vector<Vector3>& pathPoints, float roadHalfWidth = 10.0f, float buildingInterval = 8.0f, float extraEndMargin = 150.0f, float fogNear = 80.0f, float fogFar = 300.0f);
+	void InitializeAlongPath(Camera* camera, const std::vector<Vector3>& pathPoints, float roadHalfWidth = 20.0f, float buildingInterval = 8.0f, float extraEndMargin = 150.0f, float fogNear = 80.0f, float fogFar = 300.0f);
 
 	/// <summary>
 	/// 更新

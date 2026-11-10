@@ -33,6 +33,138 @@
                     1.0
                 ]
             }
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher",
+            "transform": {
+                "translation": [
+                    5.136200904846191,
+                    0.0,
+                    207.34751892089844
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.19000000119209293
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher.001",
+            "transform": {
+                "translation": [
+                    -10.496299743652344,
+                    5.0,
+                    152.6772003173828
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.040000001192092904
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher.002",
+            "transform": {
+                "translation": [
+                    7.094792366027832,
+                    5.0,
+                    107.11431884765625
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.0
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Formation_FigureEight",
+            "transform": {
+                "translation": [
+                    -1.6804161071777344,
+                    0.0,
+                    268.09564208984375
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.3800000011920929
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher.003",
+            "transform": {
+                "translation": [
+                    11.916059494018555,
+                    0.0,
+                    179.31712341308594
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.11000000119209286
+        },
+        {
+            "type": "PlayerSpawn",
+            "name": "Enemy_Rusher.004",
+            "transform": {
+                "translation": [
+                    -11.920300483703613,
+                    0.0,
+                    238.85543823242188
+                ],
+                "rotation": [
+                    -0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scaling": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "spawn_time": 0.2800000011920929
         }
     ]
 }
