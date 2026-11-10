@@ -27,9 +27,10 @@ void HomingPlayerBullet::Initialize(const PlayerBulletParam& param) {
 	startPos_ = param.position;
 	prevWorldPos_ = param.position;
 	target_ = param.target;
-	if (target_) {
+	if (target_ && target_->IsAlive()) {
 		targetPos_ = target_->GetWorldPosition();
 	} else {
+		target_ = nullptr;
 		Vector3 forward = Normalize(param.velocity);
 		if (Length(forward) < 0.001f) {
 			forward = { 0.0f, 0.0f, 1.0f };
@@ -74,9 +75,7 @@ void HomingPlayerBullet::Initialize(const PlayerBulletParam& param) {
 }
 
 void HomingPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {
-	// 前のフレームで着弾点に到達していた場合、当たり判定フレームを経て消滅させる
-	if (hasArrived_) {
-		isDead_ = true;
+	if (isDead_) {
 		return;
 	}
 
@@ -86,7 +85,7 @@ void HomingPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {
 	// ターゲットの生存確認
 	if (target_) {
 		auto it = std::find(enemies.begin(), enemies.end(), target_);
-		if (it == enemies.end()) {
+		if (it == enemies.end() || !target_->IsAlive()) {
 			target_ = nullptr;
 		} else {
 			// 生存していればターゲットの最新座標を取得
@@ -96,11 +95,6 @@ void HomingPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {
 
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 	progress_ += progressSpeed_ * dt;
-
-	if (progress_ >= 1.0f) {
-		progress_ = 1.0f;
-		hasArrived_ = true; // このフレームで確実にターゲット座標に接触・衝突判定を行い、次フレームで消滅
-	}
 
 	// 2次ベジェ曲線を用いた前方射出＋サイドカーブ軌道
 	// P0: 自機位置（発射点）
@@ -116,6 +110,36 @@ void HomingPlayerBullet::Update(const std::list<EnemyBase*>& enemies) {
 
 	float oneMinusU = 1.0f - u;
 	Vector3 newPos = P0 * (oneMinusU * oneMinusU) + P1 * (2.0f * oneMinusU * u) + P2 * (u * u);
+
+	// --- 確実なヒット判定 ---
+	if (target_ && target_->IsAlive()) {
+		Vector3 currentEnemyPos = target_->GetWorldPosition();
+		float distToEnemy = Length(newPos - currentEnemyPos);
+
+		// 進行完了(progress_ >= 1.0f) または 敵と十分接近(distToEnemy <= 2.5f)した場合、直撃確定
+		if (progress_ >= 1.0f || distToEnemy <= 2.5f) {
+			worldTransform_.translation = currentEnemyPos;
+			worldTransform_.UpdateMatrix();
+			model_->Update(&worldTransform_);
+
+			// 着弾エフェクト用のパーティクル生成
+			Vector4 hitColor = { 1.0f, 0.4f, 0.9f, 1.0f };
+			Vector3 hitScale = { 1.2f, 1.2f, 1.2f };
+			ParticleManager::GetInstance()->Emit("BulletTrail", currentEnemyPos, {0.0f, 0.0f, 0.0f}, hitColor, hitScale, 0.15f, 6);
+
+			// 命中処理を実行
+			OnCollision();
+			target_->OnCollision();
+			target_->SetKilledByPlayerBullet(true);
+			return;
+		}
+	} else {
+		// ターゲットが既に死亡または不在で、軌道終点に達した場合は消滅
+		if (progress_ >= 1.0f) {
+			isDead_ = true;
+			return;
+		}
+	}
 
 	worldTransform_.translation = newPos;
 	worldTransform_.UpdateMatrix();

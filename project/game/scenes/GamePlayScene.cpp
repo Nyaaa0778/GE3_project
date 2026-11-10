@@ -140,7 +140,7 @@ void GamePlayScene::Initialize() {
 	cityBackground_ = std::make_unique<CityBackground>();
 	if (railCamera_ && !railCamera_->GetControlPoints().empty()) {
 		// コース（スプライン軌道）に沿ってゴール地点（＋奥の余白150m）までビル群を生成、中央道路の半幅を20mに広げて左右に寄せる
-		cityBackground_->InitializeAlongPath(camera_.get(), railCamera_->GetControlPoints(), 15.0f, 8.0f, 150.0f, 80.0f, 300.0f);
+		cityBackground_->InitializeAlongPath(camera_.get(), railCamera_->GetControlPoints(), 20.0f, 8.0f, 150.0f, 80.0f, 300.0f);
 	} else {
 		cityBackground_->Initialize(camera_.get(), -20.0f, 320.0f, 65, 20.0f, 200.0f, 80.0f, 300.0f);
 	}
