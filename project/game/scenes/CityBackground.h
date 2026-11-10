@@ -106,8 +106,8 @@ private:
 	};
 
 	struct Building {
-		std::unique_ptr<WireframeObject> wireObject;
 		Vector3 basePosition;
+		Vector3 rotation = {0.0f, 0.0f, 0.0f};
 		Vector3 scale;
 		Vector4 baseColor;
 		float pulsePhase = 0.0f;
@@ -115,6 +115,8 @@ private:
 		bool isFlickering = false;
 		float flickerTimer = 0.0f;
 
+		// 段階的形成アニメーション時のみ使用する動的ラインオブジェクト
+		std::unique_ptr<WireframeObject> dynamicWireObject;
 		BuildingGrowth growth;
 	};
 
@@ -129,7 +131,10 @@ private:
 	// 奥の巨大ネオンサン (Synthwave / Cyberpunk風)
 	std::unique_ptr<WireframeObject> neonSun_;
 
-	// 摩天楼ビル群
+	// ビル群の一括インスタンシング描画用オブジェクト (1つの単位立方体メッシュを全ビルで共有)
+	std::unique_ptr<WireframeObject> buildingInstancedBox_;
+
+	// 摩天楼ビル群の配置・色パラメータ
 	std::vector<Building> buildings_;
 
 	float scrollSpeed_ = 0.0f; // スクロール速度 (0で固定静止)
@@ -152,6 +157,7 @@ private:
 
 private:
 	void GenerateCity();
+	void SetupInstancedBuildings();
 	void SetupBuildAnimation();
 	void UpdateBuildAnimation();
 };

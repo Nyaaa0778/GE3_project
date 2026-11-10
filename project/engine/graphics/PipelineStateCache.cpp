@@ -173,7 +173,7 @@ void PipelineStateCache::CreateCommonRootSignature() {
 	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature{};
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	D3D12_ROOT_PARAMETER rootParameters[7] = {};
+	D3D12_ROOT_PARAMETER rootParameters[8] = {};
 
 	// [0] Material（PS b0）
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -211,6 +211,11 @@ void PipelineStateCache::CreateCommonRootSignature() {
 		rootParameters[4 + i].DescriptorTable.pDescriptorRanges = &ranges[i];
 		rootParameters[4 + i].DescriptorTable.NumDescriptorRanges = 1;
 	}
+
+	// [7] InstanceData SRV（VS t0: インスタンシング用StructuredBuffer）
+	rootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	rootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[7].Descriptor.ShaderRegister = 0;
 
 	descriptionRootSignature.pParameters = rootParameters;
 	descriptionRootSignature.NumParameters = _countof(rootParameters);

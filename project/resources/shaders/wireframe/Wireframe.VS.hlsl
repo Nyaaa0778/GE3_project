@@ -1,23 +1,23 @@
 #include "Wireframe.hlsli"
 
-struct TransformationMatrix
+struct InstanceData
 {
     float4x4 WVP;
-    float4x4 World;
-    float4x4 WorldInverseTranspose;
+    float4 color;
 };
-ConstantBuffer<TransformationMatrix> gTransformationMatrix : register(b0);
+StructuredBuffer<InstanceData> gInstances : register(t0);
 
 struct VertexShaderInput
 {
     float4 position : POSITION0;
 };
 
-VertexShaderOutput main(VertexShaderInput input)
+VertexShaderOutput main(VertexShaderInput input, uint instanceId : SV_InstanceID)
 {
     VertexShaderOutput output;
-    output.position = mul(input.position, gTransformationMatrix.WVP);
+    output.position = mul(input.position, gInstances[instanceId].WVP);
     output.depth = max(output.position.w, 0.0f);
+    output.color = gInstances[instanceId].color;
     return output;
 }
 

@@ -313,6 +313,7 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 				bPos.y = baseY_ + h * 0.5f;
 
 				b.basePosition = bPos;
+				b.rotation = {0.0f, yaw, 0.0f};
 				b.scale = {w, h, d};
 
 				float accentRoll = rand01(rng);
@@ -324,16 +325,6 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 
 				b.pulsePhase = rand01(rng) * 6.28318f;
 				b.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
-
-				b.wireObject = std::make_unique<WireframeObject>();
-				b.wireObject->Initialize();
-				b.wireObject->SetCamera(camera_);
-				b.wireObject->CreateBox({1.0f, 1.0f, 1.0f});
-				b.wireObject->SetScale(b.scale);
-				b.wireObject->SetRotation({0.0f, yaw, 0.0f});
-				b.wireObject->SetPosition(b.basePosition);
-				b.wireObject->SetColor(b.baseColor);
-				b.wireObject->SetFog(fogNear_, fogFar_);
 
 				buildings_.push_back(std::move(b));
 			}
@@ -350,6 +341,7 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 				bPos2.y = baseY_ + h2 * 0.5f;
 
 				b2.basePosition = bPos2;
+				b2.rotation = {0.0f, yaw, 0.0f};
 				b2.scale = {w2, h2, d2};
 
 				float accentRoll = rand01(rng);
@@ -362,20 +354,12 @@ void CityBackground::InitializeAlongPath(Camera* camera, const std::vector<Vecto
 				b2.pulsePhase = rand01(rng) * 6.28318f;
 				b2.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
 
-				b2.wireObject = std::make_unique<WireframeObject>();
-				b2.wireObject->Initialize();
-				b2.wireObject->SetCamera(camera_);
-				b2.wireObject->CreateBox({1.0f, 1.0f, 1.0f});
-				b2.wireObject->SetScale(b2.scale);
-				b2.wireObject->SetRotation({0.0f, yaw, 0.0f});
-				b2.wireObject->SetPosition(b2.basePosition);
-				b2.wireObject->SetColor(b2.baseColor);
-				b2.wireObject->SetFog(fogNear_, fogFar_);
-
 				buildings_.push_back(std::move(b2));
 			}
 		}
 	}
+
+	SetupInstancedBuildings();
 }
 
 
@@ -412,6 +396,7 @@ void CityBackground::GenerateCity() {
 				float y = baseY_ + h * 0.5f;
 
 				b.basePosition = {x, y, z};
+				b.rotation = {0.0f, 0.0f, 0.0f};
 				b.scale = {w, h, d};
 
 				// 配色の決定: 高層ビル(h>16m)または約25%の確率でアクセント(マゼンタ)、残りはシアンで統一
@@ -424,15 +409,6 @@ void CityBackground::GenerateCity() {
 
 				b.pulsePhase = rand01(rng) * 6.28318f;
 				b.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
-
-				b.wireObject = std::make_unique<WireframeObject>();
-				b.wireObject->Initialize();
-				b.wireObject->SetCamera(camera_);
-				b.wireObject->CreateBox({1.0f, 1.0f, 1.0f}); // 単位立方体をスケールで拡大
-				b.wireObject->SetScale(b.scale);
-				b.wireObject->SetPosition(b.basePosition);
-				b.wireObject->SetColor(b.baseColor);
-				b.wireObject->SetFog(fogNear_, fogFar_);
 
 				buildings_.push_back(std::move(b));
 			}
@@ -450,6 +426,7 @@ void CityBackground::GenerateCity() {
 				float y2 = baseY_ + h2 * 0.5f;
 
 				b2.basePosition = {x2, y2, z2};
+				b2.rotation = {0.0f, 0.0f, 0.0f};
 				b2.scale = {w2, h2, d2};
 
 				float accentRoll = rand01(rng);
@@ -462,19 +439,21 @@ void CityBackground::GenerateCity() {
 				b2.pulsePhase = rand01(rng) * 6.28318f;
 				b2.pulseSpeed = 1.0f + rand01(rng) * 2.0f;
 
-				b2.wireObject = std::make_unique<WireframeObject>();
-				b2.wireObject->Initialize();
-				b2.wireObject->SetCamera(camera_);
-				b2.wireObject->CreateBox({1.0f, 1.0f, 1.0f});
-				b2.wireObject->SetScale(b2.scale);
-				b2.wireObject->SetPosition(b2.basePosition);
-				b2.wireObject->SetColor(b2.baseColor);
-				b2.wireObject->SetFog(fogNear_, fogFar_);
-
 				buildings_.push_back(std::move(b2));
 			}
 		}
 	}
+
+	SetupInstancedBuildings();
+}
+
+void CityBackground::SetupInstancedBuildings() {
+	buildingInstancedBox_ = std::make_unique<WireframeObject>();
+	buildingInstancedBox_->Initialize();
+	buildingInstancedBox_->SetCamera(camera_);
+	buildingInstancedBox_->CreateBox({1.0f, 1.0f, 1.0f});
+	buildingInstancedBox_->SetFog(fogNear_, fogFar_);
+	buildingInstancedBox_->CreateInstanceBuffer(static_cast<uint32_t>((std::max)(size_t(1), buildings_.size())));
 }
 
 void CityBackground::Update() {
@@ -492,17 +471,25 @@ void CityBackground::Update() {
 		if (gridZ_ <= -gridLength_) {
 			gridZ_ += gridLength_;
 		}
+		if (groundGrid1_) {
+			groundGrid1_->SetPosition({0.0f, baseY_, minZ_ + gridZ_ + gridLength_ * 0.5f});
+		}
+		if (groundGrid2_) {
+			groundGrid2_->SetPosition({0.0f, baseY_, minZ_ + gridZ_ + gridLength_ * 1.5f});
+		}
 	}
 	if (groundGrid1_) {
-		groundGrid1_->SetPosition({0.0f, baseY_, minZ_ + gridZ_ + gridLength_ * 0.5f});
 		groundGrid1_->Update();
 	}
 	if (groundGrid2_) {
-		groundGrid2_->SetPosition({0.0f, baseY_, minZ_ + gridZ_ + gridLength_ * 1.5f});
 		groundGrid2_->Update();
 	}
 
-	// 3. ビル群のスクロールとネオン明滅アニメーション
+	// 3. ビル群のスクロール・ネオン明滅アニメーションとインスタンシングバッファ更新
+	Matrix4x4 viewProjectionMatrix = camera_ ? camera_->GetViewProjectionMatrix() : MathUtility::MakeIdentityMatrix();
+	std::vector<WireframeObject::InstanceData> instances;
+	instances.reserve(buildings_.size());
+
 	for (auto& b : buildings_) {
 		// スクロール移動 (速度が0より大きい場合のみ)
 		if (scrollSpeed_ > 0.0f) {
@@ -510,22 +497,37 @@ void CityBackground::Update() {
 			if (b.basePosition.z < minZ_) {
 				b.basePosition.z += (maxZ_ - minZ_);
 			}
-			b.wireObject->SetPosition(b.basePosition);
 		}
 
-		// ネオンの呼吸（穏やかなパルス発光のみ、不快なチカチカ点滅は削除）
+		// ネオンの呼吸（穏やかなパルス発光）
+		Vector4 currentColor = b.baseColor;
 		if (enablePulse_) {
 			float pulse = 0.85f + 0.15f * std::sin(time_ * b.pulseSpeed + b.pulsePhase);
-			Vector4 currentColor = {
+			currentColor = {
 				b.baseColor.x * pulse,
 				b.baseColor.y * pulse,
 				b.baseColor.z * pulse,
 				b.baseColor.w
 			};
-			b.wireObject->SetColor(currentColor);
 		}
 
-		b.wireObject->Update();
+		// 段階的形成アニメーション中（未完了）のビルは動的ラインオブジェクトを更新
+		if (buildAnimationEnabled_ && !b.growth.isComplete) {
+			if (b.dynamicWireObject) {
+				b.dynamicWireObject->SetPosition(b.basePosition);
+				b.dynamicWireObject->SetColor(currentColor);
+				b.dynamicWireObject->Update();
+			}
+		} else {
+			// 完成しているビルはインスタンシング配列へ追加（1回のDrawCallで一括描画）
+			Matrix4x4 worldMatrix = MathUtility::MakeAffineMatrix(b.scale, b.rotation, b.basePosition);
+			Matrix4x4 wvpMatrix = MathUtility::Multiply(worldMatrix, viewProjectionMatrix);
+			instances.push_back({wvpMatrix, currentColor});
+		}
+	}
+
+	if (buildingInstancedBox_) {
+		buildingInstancedBox_->UpdateInstances(instances);
 	}
 }
 
@@ -534,10 +536,17 @@ void CityBackground::Draw() {
 	if (groundGrid1_) groundGrid1_->Draw();
 	if (groundGrid2_) groundGrid2_->Draw();
 
-	// ビル群
-	for (auto& b : buildings_) {
-		if (b.wireObject) {
-			b.wireObject->Draw();
+	// ビル群（インスタンシングによる1回の一括描画）
+	if (buildingInstancedBox_) {
+		buildingInstancedBox_->Draw();
+	}
+
+	// 段階的形成アニメーション中の未完了ビルのみ個別描画
+	if (buildAnimationEnabled_) {
+		for (auto& b : buildings_) {
+			if (!b.growth.isComplete && b.dynamicWireObject) {
+				b.dynamicWireObject->Draw();
+			}
 		}
 	}
 }
@@ -548,15 +557,19 @@ void CityBackground::SetBaseY(float baseY) {
 
 	for (auto& b : buildings_) {
 		b.basePosition.y += diffY;
-		if (b.wireObject) {
-			b.wireObject->SetPosition(b.basePosition);
+		if (b.dynamicWireObject) {
+			b.dynamicWireObject->SetPosition(b.basePosition);
 		}
 	}
 	if (groundGrid1_) {
-		groundGrid1_->SetPosition({0.0f, baseY_, minZ_ + gridZ_ + gridLength_ * 0.5f});
+		Vector3 pos = groundGrid1_->GetWorldTransform().translation;
+		pos.y = baseY_;
+		groundGrid1_->SetPosition(pos);
 	}
 	if (groundGrid2_) {
-		groundGrid2_->SetPosition({0.0f, baseY_, minZ_ + gridZ_ + gridLength_ * 1.5f});
+		Vector3 pos = groundGrid2_->GetWorldTransform().translation;
+		pos.y = baseY_;
+		groundGrid2_->SetPosition(pos);
 	}
 }
 
@@ -564,9 +577,10 @@ void CityBackground::SetCamera(Camera* camera) {
 	camera_ = camera;
 	if (groundGrid1_) groundGrid1_->SetCamera(camera);
 	if (groundGrid2_) groundGrid2_->SetCamera(camera);
+	if (buildingInstancedBox_) buildingInstancedBox_->SetCamera(camera);
 	for (auto& b : buildings_) {
-		if (b.wireObject) {
-			b.wireObject->SetCamera(camera);
+		if (b.dynamicWireObject) {
+			b.dynamicWireObject->SetCamera(camera);
 		}
 	}
 }
@@ -576,9 +590,10 @@ void CityBackground::SetFog(float fogNear, float fogFar) {
 	fogFar_ = fogFar;
 	if (groundGrid1_) groundGrid1_->SetFog(fogNear_, fogFar_);
 	if (groundGrid2_) groundGrid2_->SetFog(fogNear_, fogFar_);
+	if (buildingInstancedBox_) buildingInstancedBox_->SetFog(fogNear_, fogFar_);
 	for (auto& b : buildings_) {
-		if (b.wireObject) {
-			b.wireObject->SetFog(fogNear_, fogFar_);
+		if (b.dynamicWireObject) {
+			b.dynamicWireObject->SetFog(fogNear_, fogFar_);
 		}
 	}
 }
@@ -591,12 +606,8 @@ void CityBackground::SetBuildAnimationEnabled(bool enabled) {
 }
 
 void CityBackground::ResetBuildAnimation() {
-	buildAnimTime_ = 0.0f;
-	for (auto& b : buildings_) {
-		b.growth.isComplete = false;
-		if (b.wireObject) {
-			b.wireObject->UpdateDynamicLines({});
-		}
+	if (buildAnimationEnabled_) {
+		SetupBuildAnimation();
 	}
 }
 
@@ -641,10 +652,19 @@ void CityBackground::SetupBuildAnimation() {
 	float zRange = (maxZ_ - minZ_ > 0.001f) ? (maxZ_ - minZ_) : 1.0f;
 
 	for (auto& b : buildings_) {
-		if (!b.wireObject) continue;
+		if (!b.dynamicWireObject) {
+			b.dynamicWireObject = std::make_unique<WireframeObject>();
+			b.dynamicWireObject->Initialize();
+			b.dynamicWireObject->SetCamera(camera_);
+			b.dynamicWireObject->SetScale(b.scale);
+			b.dynamicWireObject->SetRotation(b.rotation);
+			b.dynamicWireObject->SetPosition(b.basePosition);
+			b.dynamicWireObject->SetColor(b.baseColor);
+			b.dynamicWireObject->SetFog(fogNear_, fogFar_);
+		}
 
 		// 12本の動的ラインメッシュに切り替え
-		b.wireObject->CreateDynamicLineMesh(12);
+		b.dynamicWireObject->CreateDynamicLineMesh(12);
 
 		// 手前から奥へのウェーブ伝播＋ランダムジッターによる開始時差
 		float zNorm = std::clamp((b.basePosition.z - minZ_) / zRange, 0.0f, 1.0f);
@@ -731,7 +751,7 @@ void CityBackground::SetupBuildAnimation() {
 		}
 
 		// 初期状態は描画なし
-		b.wireObject->UpdateDynamicLines({});
+		b.dynamicWireObject->UpdateDynamicLines({});
 	}
 }
 
@@ -777,14 +797,13 @@ void CityBackground::UpdateBuildAnimation() {
 
 		if (allEdgesDone) {
 			b.growth.isComplete = true;
-			activeLines.clear();
-			for (const auto& eg : b.growth.edges) {
-				activeLines.push_back({kBoxCorners[eg.fromVertex], kBoxCorners[eg.toVertex]});
-			}
+			// 形成完了後はbuildingInstancedBox_によるインスタンシング描画に切り替わるため動的ラインを解放
+			b.dynamicWireObject.reset();
+			continue;
 		}
 
-		if (b.wireObject) {
-			b.wireObject->UpdateDynamicLines(activeLines);
+		if (b.dynamicWireObject) {
+			b.dynamicWireObject->UpdateDynamicLines(activeLines);
 		}
 	}
 }

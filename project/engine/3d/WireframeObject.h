@@ -66,6 +66,23 @@ public:
 	/// <param name="lines">描画する各ラインの始点と終点のペア配列</param>
 	void UpdateDynamicLines(const std::vector<std::pair<Vector3, Vector3>>& lines);
 
+	struct InstanceData {
+		Matrix4x4 WVP;
+		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};
+	};
+
+	/// <summary>
+	/// インスタンシング描画用バッファの生成
+	/// </summary>
+	/// <param name="maxInstances">最大インスタンス数</param>
+	void CreateInstanceBuffer(uint32_t maxInstances);
+
+	/// <summary>
+	/// インスタンシングデータの更新
+	/// </summary>
+	/// <param name="instances">各インスタンスのWVP行列と色配列</param>
+	void UpdateInstances(const std::vector<InstanceData>& instances);
+
 public:
 	struct MaterialData {
 		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -124,6 +141,12 @@ private:
 
 	Vector4* mappedVertexData_ = nullptr;
 	uint32_t maxVertexCount_ = 0;
+
+	ComPtr<ID3D12Resource> instanceBuffer_;
+	InstanceData* mappedInstanceData_ = nullptr;
+	uint32_t maxInstanceCount_ = 0;
+	uint32_t instanceCount_ = 1;
+	bool isInstanced_ = false;
 
 private:
 	void CreateMeshBuffers(const std::vector<Vector4>& vertices, 

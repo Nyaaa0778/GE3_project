@@ -10,4 +10,5 @@ enum RootParameterIndex : uint32_t {
 	kRootParamMainTexture = 4,         // [4] PS t0 (メインテクスチャ)
 	kRootParamEnvironmentOrExtra = 5,  // [5] PS t1 (環境マップ / 追加マスクテクスチャ)
 	kRootParamDissolveMask = 6,        // [6] PS t2 (3Dディゾルブ用マスク)
+	kRootParamInstanceData = 7,        // [7] VS t0 (インスタンシング用StructuredBuffer)
 };

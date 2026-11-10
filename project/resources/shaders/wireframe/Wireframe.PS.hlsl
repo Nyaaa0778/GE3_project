@@ -11,7 +11,7 @@ ConstantBuffer<WireframeMaterial> gMaterial : register(b0);
 
 float4 main(VertexShaderOutput input) : SV_TARGET
 {
-    float4 finalColor = gMaterial.color;
+    float4 finalColor = gMaterial.color * input.color;
 
     // 距離フォグ / デプスフェード (奥にいくほど徐々に見えなくなる)
     if (gMaterial.fogFar > gMaterial.fogNear && gMaterial.fogFar > 0.0f)

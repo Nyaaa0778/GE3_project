@@ -46,7 +46,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("formingEnemy"));
+	std::unique_ptr<LevelData> levelData(loader.Load("stage1"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -63,7 +63,7 @@ void GamePlayScene::Initialize() {
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "formingEnemy");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "stage1");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();

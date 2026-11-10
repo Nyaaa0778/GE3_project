@@ -17,6 +17,10 @@ WireframeObject::~WireframeObject() {
 		vertexBuffer_->Unmap(0, nullptr);
 		mappedVertexData_ = nullptr;
 	}
+	if (mappedInstanceData_ && instanceBuffer_) {
+		instanceBuffer_->Unmap(0, nullptr);
+		mappedInstanceData_ = nullptr;
+	}
 	if (materialData_ && colorResource_) {
 		colorResource_->Unmap(0, nullptr);
 		materialData_ = nullptr;
@@ -43,6 +47,11 @@ void WireframeObject::Initialize() {
 		materialData_->pad[0] = 0.0f;
 		materialData_->pad[1] = 0.0f;
 	}
+
+	// デフォルトは1インスタンス用バッファを作成（単体描画用）
+	CreateInstanceBuffer(1);
+	isInstanced_ = false;
+	instanceCount_ = 1;
 }
 void WireframeObject::Update() {
 	// 行列の更新
@@ -50,14 +59,21 @@ void WireframeObject::Update() {
 	// カメラのViewProjection行列を取得
 	Matrix4x4 viewProjectionMatrix = camera_ ? camera_->GetViewProjectionMatrix() : MakeIdentityMatrix();
 	// WVP行列を計算して定数バッファに転送
+	Matrix4x4 wvp = transform_.matWorld * viewProjectionMatrix;
 	if (transform_.constMap)
 	{
 		transform_.constMap->World = transform_.matWorld;
-		transform_.constMap->WVP = transform_.matWorld * viewProjectionMatrix;
+		transform_.constMap->WVP = wvp;
+	}
+	if (!isInstanced_ && mappedInstanceData_)
+	{
+		mappedInstanceData_[0].WVP = wvp;
+		mappedInstanceData_[0].color = {1.0f, 1.0f, 1.0f, 1.0f};
+		instanceCount_ = 1;
 	}
 }
 void WireframeObject::Draw() {
-	if (indexCount_ == 0 || !vertexBuffer_ || !indexBuffer_ || drawRatio_ <= 0.0001f)
+	if (indexCount_ == 0 || !vertexBuffer_ || !indexBuffer_ || !instanceBuffer_ || instanceCount_ == 0 || drawRatio_ <= 0.0001f)
 	{
 		return;
 	}
@@ -70,6 +86,13 @@ void WireframeObject::Draw() {
 		return;
 	}
 
+	// 単体描画時は外部でtransform_が直接更新された場合にも同期
+	if (!isInstanced_ && mappedInstanceData_ && transform_.constMap)
+	{
+		mappedInstanceData_[0].WVP = transform_.constMap->WVP;
+		mappedInstanceData_[0].color = {1.0f, 1.0f, 1.0f, 1.0f};
+	}
+
 	// 共通描画設定（シーン側で呼ぶ必要をなくす）
 	wireframeRenderer_->SetupCommonRenderState(depthEnable_, blendMode_);
 
@@ -77,12 +100,12 @@ void WireframeObject::Draw() {
 	// 頂点バッファ・インデックスバッファをセット
 	commandList->IASetVertexBuffers(0, 1, &vertexBufferView_);
 	commandList->IASetIndexBuffer(&indexBufferView_);
-	// b1: TransformMatrix
-	commandList->SetGraphicsRootConstantBufferView(kRootParamTransform, transform_.constBuffer->GetGPUVirtualAddress());
-	// b0: Material (Color + Fog)
+	// VS t0: InstanceData (StructuredBuffer)
+	commandList->SetGraphicsRootShaderResourceView(kRootParamInstanceData, instanceBuffer_->GetGPUVirtualAddress());
+	// PS b0: Material (Color + Fog)
 	commandList->SetGraphicsRootConstantBufferView(kRootParamMaterialOrParams, colorResource_->GetGPUVirtualAddress());
-	// 描画実行
-	commandList->DrawIndexedInstanced(activeIndices, 1, 0, 0, 0);
+	// 描画実行（単体時はinstanceCount_=1、インスタンシング時はN個を一括描画）
+	commandList->DrawIndexedInstanced(activeIndices, instanceCount_, 0, 0, 0);
 }
 void WireframeObject::SetColor(const Vector4& color) {
 	if (materialData_)
@@ -173,6 +196,41 @@ void WireframeObject::UpdateDynamicLines(const std::vector<std::pair<Vector3, Ve
 		mappedVertexData_[i * 2 + 1] = {lines[i].second.x, lines[i].second.y, lines[i].second.z, 1.0f};
 	}
 	indexCount_ = lineCount * 2;
+}
+
+void WireframeObject::CreateInstanceBuffer(uint32_t maxInstances) {
+	if (mappedInstanceData_ && instanceBuffer_) {
+		instanceBuffer_->Unmap(0, nullptr);
+		mappedInstanceData_ = nullptr;
+	}
+
+	maxInstanceCount_ = (std::max)(1u, maxInstances);
+	auto dxCommon = DirectXCommon::GetInstance();
+	size_t bufferSize = sizeof(InstanceData) * maxInstanceCount_;
+	instanceBuffer_ = dxCommon->CreateBufferResource(bufferSize);
+	instanceBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&mappedInstanceData_));
+
+	if (mappedInstanceData_) {
+		for (uint32_t i = 0; i < maxInstanceCount_; ++i) {
+			mappedInstanceData_[i].WVP = MakeIdentityMatrix();
+			mappedInstanceData_[i].color = {1.0f, 1.0f, 1.0f, 1.0f};
+		}
+	}
+
+	isInstanced_ = true;
+	instanceCount_ = 0;
+}
+
+void WireframeObject::UpdateInstances(const std::vector<InstanceData>& instances) {
+	if (!mappedInstanceData_ || maxInstanceCount_ == 0) {
+		return;
+	}
+
+	uint32_t count = (std::min)(static_cast<uint32_t>(instances.size()), maxInstanceCount_);
+	if (count > 0) {
+		std::memcpy(mappedInstanceData_, instances.data(), sizeof(InstanceData) * count);
+	}
+	instanceCount_ = count;
 }
 
 // ------------------------------------------------------------
