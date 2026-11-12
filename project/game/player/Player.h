@@ -63,8 +63,14 @@ public:
 	//ロックオンをセット
 	void SetLockOn(LockOn* lockOn) { lockOn_ = lockOn; }
 
-	// ロックオンモードのゲッター
+	// 照準の表示・非表示（開始前演出やクリア時などは非表示にする）
+	void SetReticleVisible(bool visible) { isReticleVisible_ = visible; }
+	bool IsReticleVisible() const { return isReticleVisible_; }
+
+	// ロックオン（ホーミング）モードのゲッター・セッター（デフォルトは通常弾なのでfalse）
 	bool GetIsLockOnMode() const { return isLockOnMode_; }
+	void SetIsLockOnMode(bool mode) { isLockOnMode_ = mode; }
+	bool WasWeaponModeChanged() const { return wasWeaponModeChanged_; }
 
 	// 弾リストのゲッター
 	const std::list<IPlayerBullet*>& GetBullets() const { return bullets_; }
@@ -87,6 +93,10 @@ public:
 	int GetMaxHomingAmmo() const { return kMaxHomingAmmo; }
 	float GetHomingRechargeProgress() const {
 		return (kHomingRechargeTime > 0.0f) ? (homingRechargeTimer_ / kHomingRechargeTime) : 1.0f;
+	}
+	float GetHomingRemainingTime() const {
+		if (homingAmmo_ >= kMaxHomingAmmo) return 0.0f;
+		return (std::max)(0.0f, kHomingRechargeTime - homingRechargeTimer_);
 	}
 	float GetHomingRechargeTime() const { return kHomingRechargeTime; }
 	void SetHomingRechargeTime(float time) { kHomingRechargeTime = time; }
@@ -117,6 +127,7 @@ private:
 	// 生存フラグ
 	bool isAlive_ = true;
 	bool isReticleHit_ = false;
+	bool isReticleVisible_ = false; // 照準描画フラグ（プレイ開始前などはfalse）
 
 	// ディゾルブ用パラメータ
 	float dissolveThreshold_ = 0.0f;
@@ -147,8 +158,9 @@ public:
 
 	LockOn* lockOn_ = nullptr;
 
-	// ロックオンモードかどうかのフラグ（最初は通常モードなのでfalse）
-	bool isLockOnMode_ = true;
+	// ロックオン（ホーミング）モードかどうかのフラグ（デフォルトは通常弾なのでfalse）
+	bool isLockOnMode_ = false;
+	bool wasWeaponModeChanged_ = false;
 
 	// ------------------------------------
 	// カメラ

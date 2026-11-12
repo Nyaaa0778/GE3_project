@@ -348,6 +348,9 @@
     <ClCompile Include="game\scenes\GameClearUI.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="game\scenes\HomingAmmoUI.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
     <ClCompile Include="engine\graphics\BlendMode.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -674,6 +677,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="game\scenes\GameClearUI.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="game\scenes\HomingAmmoUI.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="engine\graphics\BlendMode.h">

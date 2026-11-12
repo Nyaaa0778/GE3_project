@@ -25,6 +25,7 @@ class Sprite;
 class CityBackground;
 class GameOverUI;
 class GameClearUI;
+class HomingAmmoUI;
 enum class DroneFlightPattern;
 
 class GamePlayScene : public IScene {
@@ -125,6 +126,9 @@ private:
 
 	// プレイヤーのHP
 	std::unique_ptr<Sprite> uiPlayerHp_;
+
+	// ホーミング弾残弾 & リチャージUI
+	std::unique_ptr<HomingAmmoUI> homingAmmoUI_;
 
 	// スコア
 	int score_ = 0;

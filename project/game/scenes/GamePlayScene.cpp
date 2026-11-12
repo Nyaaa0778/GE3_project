@@ -6,6 +6,7 @@
 #include "CrtTransition.h"
 #include "GameOverUI.h"
 #include "GameClearUI.h"
+#include "HomingAmmoUI.h"
 #include "TextureManager.h"
 #include "Input.h"
 
@@ -188,6 +189,10 @@ void GamePlayScene::Initialize() {
 	uiPlayerHp_->Initialize("white.png", {10.0f, 10.0f}, {0.0f, 0.0f});
 	uiPlayerHp_->SetSize({player_->GetHP() * 4.0f, 40.0f});
 
+	// ホーミング弾残弾 & リチャージUI
+	homingAmmoUI_ = std::make_unique<HomingAmmoUI>();
+	homingAmmoUI_->Initialize({ 12.0f, 58.0f });
+
 	// スコアの初期化
 	score_ = 0;
 	prevScore_ = -1;
@@ -245,6 +250,7 @@ void GamePlayScene::Initialize() {
 	if (player_)
 	{
 		player_->SetMaterializeProgress(0.0f);
+		player_->SetReticleVisible(false);
 	}
 	playerMaterializedEffectTriggered_ = false;
 	phase_ = Phase::kLeady;
@@ -897,6 +903,11 @@ void GamePlayScene::Update() {
 
 	uiPlayerHp_->Update();
 
+	if (homingAmmoUI_ && player_)
+	{
+		homingAmmoUI_->Update(player_.get());
+	}
+
 	// スコアの更新があった場合のみテクスチャを再設定
 	if (score_ != prevScore_)
 	{
@@ -989,6 +1000,11 @@ void GamePlayScene::Draw() {
 	if (phase_ != Phase::kLeady && phase_ != Phase::kGameOver && phase_ != Phase::kClear)
 	{
 		uiPlayerHp_->Draw();
+
+		if (homingAmmoUI_)
+		{
+			homingAmmoUI_->Draw();
+		}
 
 		// スコアUIの描画
 		for (auto& digitSprite : uiScoreDigits_)
@@ -1095,6 +1111,7 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		if (player_)
 		{
 			player_->SetMaterializeProgress(0.0f);
+			player_->SetReticleVisible(false);
 		}
 		playerMaterializedEffectTriggered_ = false;
 		UpdateIntroCamera();
@@ -1107,6 +1124,7 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		if (player_)
 		{
 			player_->SetMaterializeProgress(1.0f);
+			player_->SetReticleVisible(true);
 		}
 		// レールカメラの再生を開始
 		if (railCamera_)
@@ -1121,6 +1139,10 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		break;
 	case Phase::kClear:
 		isGoalReached_ = true;
+		if (player_)
+		{
+			player_->SetReticleVisible(false);
+		}
 		// 1. レールカメラの動きを停止
 		if (railCamera_)
 		{
@@ -1142,6 +1164,10 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		}
 		break;
 	case Phase::kGameOver:
+		if (player_)
+		{
+			player_->SetReticleVisible(false);
+		}
 		// 1. レールカメラの動きを停止
 		if (railCamera_)
 		{
@@ -1621,6 +1647,15 @@ void GamePlayScene::UpdateImGui() {
 			if (ImGui::SliderFloat("Recharge Time per Bullet (s)", &rechargeTime, 0.3f, 5.0f, "%.1f s"))
 			{
 				player_->SetHomingRechargeTime(rechargeTime);
+			}
+
+			if (homingAmmoUI_)
+			{
+				Vector2 uiPos = homingAmmoUI_->GetPosition();
+				if (ImGui::DragFloat2("Ammo UI Pos", &uiPos.x, 1.0f, 0.0f, 1920.0f))
+				{
+					homingAmmoUI_->SetPosition(uiPos);
+				}
 			}
 		}
 	}

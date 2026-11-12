@@ -71,6 +71,8 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 
 	reticle_ = std::make_unique<Reticle>();
 	reticle_->Initialize(camera_);
+	reticle_->Update(worldTransform_);
+	isReticleVisible_ = false;
 
 	// コライダーの初期設定
 	SetShape(ColliderShape::kSphere);
@@ -170,6 +172,8 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	reticle_->Update(worldTransform_);
 
 
+	wasWeaponModeChanged_ = false;
+
 	// ------------------------------------
 	// 弾
 	// ------------------------------------
@@ -216,8 +220,8 @@ void Player::Draw() {
 	// ------------------------------------
 	// 照準
 	// ------------------------------------
-	// 生存時かつ、ロックオンモードではない場合のみ通常レティクルを描画
-	if (isAlive_ && !isLockOnMode_) {
+	// 生存時、かつロックオンモードではなく、レティクル表示が許可され、マテリアライズ完了時のみ通常レティクルを描画
+	if (isAlive_ && !isLockOnMode_ && isReticleVisible_ && materializeProgress_ >= 0.99f) {
 		reticle_->Draw();
 	}
 
@@ -310,8 +314,9 @@ bool Player::IsTargetedByActiveHomingBullet(const EnemyBase* enemy) const {
 void Player::Attack() {
 	auto* input = Input::GetInstance();
 
-	if (input->TriggerKey(DIK_Q)) {
-		isLockOnMode_ = !isLockOnMode_; // trueとfalseを反転させる
+	if (input->TriggerKey(DIK_E)) {
+		isLockOnMode_ = !isLockOnMode_; // 通常弾とホーミング弾を切り替え
+		wasWeaponModeChanged_ = true;
 	}
 
 	// クールダウンが終了しており、キー入力があったら発射
