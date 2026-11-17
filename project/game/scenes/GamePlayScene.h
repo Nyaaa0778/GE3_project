@@ -115,10 +115,23 @@ private:
 	std::unique_ptr<Shake> shake_;
 
 	// ------------------------------------
-	// ゴール
+	// ゴール & セキュリティゲート突破クリア演出
 	// ------------------------------------
+	enum class ClearStep {
+		kHitStop,     // ゲート激突瞬間：画面が一瞬スローモーション（ヒットストップ＋ガラス亀裂）
+		kGateShatter, // パリンッ！とガラス破砕＋無数のサイバー発光ボクセルが前方へ弾け飛び自機が突っ切る
+		kClearUI,     // 突破完了後：STAGE CLEAR リザルト画面表示
+	};
 	std::unique_ptr<Goal> goal_;
 	bool isGoalReached_ = false;
+	ClearStep clearStep_ = ClearStep::kHitStop;
+	float clearStepTimer_ = 0.0f;
+	Vector3 clearImpactCamPos_ = {};
+	Vector3 clearForwardDir_ = { 0.0f, 0.0f, 1.0f };
+	uint32_t gateShatterSeHandle_ = 0;
+	static constexpr float kGoalAppearDistance = 95.0f;     // ホログラムゲートが出現開始する自機との距離（メートル）
+	static constexpr float kClearHitStopDuration = 0.30f;   // 激突時のスローモーション（ヒットストップ）時間（秒）
+	static constexpr float kClearShatterDuration = 1.35f;   // ゲート破砕・ボクセル飛散＆突破演出時間（秒）
 
 	// ------------------------------------
 	// UI

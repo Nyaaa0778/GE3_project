@@ -174,6 +174,11 @@ void GamePlayScene::Initialize() {
 
 	isGoalReached_ = false;
 	clearWaitTimer_ = 0.0f;
+	clearStep_ = ClearStep::kHitStop;
+	clearStepTimer_ = 0.0f;
+
+	// ゲート破砕SE（パリンッ！というガラスの割れる音）のロード
+	gateShatterSeHandle_ = AudioManager::LoadAudio("gateShatter.wav", SoundGroup::SE);
 
 	// パーティクルグループの作成と初期クリア
 	ParticleManager::GetInstance()->CreateParticleGroup("CircleParticle", "resources/sprites/circle.png", ParticleManager::ParticleShape::kPlane);
@@ -375,22 +380,47 @@ void GamePlayScene::Update() {
 	}
 	else if (phase_ == Phase::kPlay)
 	{
-
-		// ------------------------------------
-		// ゴールの更新・アニメーション
-		// ------------------------------------
-		if (goal_)
+		// 自機のワールド座標を最新フレームのレールカメラに同期してからゴール接近・衝突を判定
+		if (player_)
 		{
-			goal_->Update();
+			player_->GetWorldTransform()->UpdateMatrix();
 		}
 
 		// ------------------------------------
-		// ゴール到達判定（レールカメラ末尾到達 または 自機衝突判定）
-		// 自機はカメラ前方 kPlayerOffsetZ に同期しているため、カメラ末尾到達時に自機は描画されたゴール座標にジャスト到達する
+		// ゴール接近判定：近づくとコースを塞ぐように「GOAL」ホログラムゲートが出現！
+		// ------------------------------------
+		if (goal_ && player_)
+		{
+			Vector3 playerPos = player_->GetWorldPosition();
+			Vector3 goalPos = goal_->GetWorldPosition();
+			float distToGoal = Length(goalPos - playerPos);
+
+			if (distToGoal <= kGoalAppearDistance && !goal_->IsAppearingOrAppeared())
+			{
+				goal_->TriggerAppear();
+
+				// ホログラムゲート展開開始時のサイバースキャン粒子エフェクト
+				for (int i = 0; i < 28; ++i)
+				{
+					float rx = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 30.0f;
+					float ry = (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 9.0f;
+					Vector3 emitPos = { goalPos.x + rx, goalPos.y + ry, goalPos.z };
+					Vector3 emitVel = { 0.0f, (ry >= 0.0f ? 2.5f : -2.5f), -3.0f };
+					Vector4 emitCol = ((i % 2) == 0)
+						? Vector4{ 0.1f, 0.95f, 1.0f, 0.95f }
+						: Vector4{ 0.3f, 1.0f, 0.35f, 0.95f };
+					ParticleManager::GetInstance()->Emit("DigitalGlitchBox", emitPos, emitVel, emitCol, { 0.22f, 0.22f, 0.22f }, 0.55f, 1);
+				}
+			}
+
+			goal_->Update(1.0f);
+		}
+
+		// ------------------------------------
+		// ゴール激突判定（レールカメラ末尾到達 または 自機とホログラムゲートの衝突判定）
 		// ------------------------------------
 		bool reachedGoal = false;
 
-		// カメラがレール末尾に到達したことによるゴール到達チェック
 		if (railCamera_ && !railCamera_->GetIsLoop())
 		{
 			float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
@@ -400,7 +430,6 @@ void GamePlayScene::Update() {
 			}
 		}
 
-		// 自機との衝突判定によるゴール到達チェック
 		if (player_ && goal_)
 		{
 			if (Collision::CheckCollision(player_.get(), goal_.get()))
@@ -409,7 +438,7 @@ void GamePlayScene::Update() {
 			}
 		}
 
-		// ゴールに到達した場合はクリアフェーズへ移行（カメラ姿勢を末尾に完全同期）
+		// ゲートに激突した瞬間、クリア演出フェーズ（ヒットストップ ➔ ガラス破砕＆ボクセル突破）へ移行！
 		if (reachedGoal)
 		{
 			if (railCamera_ && !railCamera_->GetIsLoop())
@@ -417,6 +446,10 @@ void GamePlayScene::Update() {
 				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
 				railCamera_->SetSplineTime(maxTime);
 				railCamera_->Update(!useDebugCamera_);
+			}
+			if (player_)
+			{
+				player_->UpdateAnimationOnly();
 			}
 			ChangePhase(Phase::kClear);
 			return;
@@ -605,9 +638,7 @@ void GamePlayScene::Update() {
 	else if (phase_ == Phase::kClear)
 	{
 		// ------------------------------------
-		// クリアフェーズ（ゴール到達・フェードアウト演出）
-		// レールカメラと敵の動きは停止
-		// ゴールや自機のアニメーション、背景、パーティクルは継続
+		// クリアフェーズ（セキュリティゲート激突 ➔ ヒットストップ ➔ ガラス破砕＆ボクセル突破 ➔ リザルトUI）
 		// ------------------------------------
 
 		// ヴィネットが残っていれば確実に消去
@@ -617,20 +648,224 @@ void GamePlayScene::Update() {
 		}
 
 		float dt = TimeManager::GetInstance()->GetDeltaTime();
+		clearStepTimer_ += dt;
 
-		// 1. ゴールオブジェクトの更新（回転・UVアニメーション継続）
-		if (goal_)
+		float timeScale = 1.0f;
+
+		// ================================================================
+		// ステップ1: ゲート激突瞬間のスローモーション（ヒットストップ）
+		// ================================================================
+		if (clearStep_ == ClearStep::kHitStop)
 		{
-			goal_->Update();
+			// 画面全体を一瞬スローモーションにする
+			timeScale = 0.06f;
+
+			float hitStopProgress = (std::clamp)(clearStepTimer_ / kClearHitStopDuration, 0.0f, 1.0f);
+
+			// スローモーション中にカメラがわずかにズームインし、自機が光の壁へめり込む緊張感を演出
+			if (camera_)
+			{
+				float targetFov = introEndFov_ - 0.065f * hitStopProgress;
+				camera_->SetFovY(targetFov);
+			}
+			if (railCamera_)
+			{
+				railCamera_->GetWorldTransform()->translation = clearImpactCamPos_ + clearForwardDir_ * (0.45f * hitStopProgress);
+				railCamera_->GetWorldTransform()->UpdateMatrix();
+			}
+
+			// 激突箇所からパチパチと散る高圧スパーク粒子
+			if (player_ && (rand() % 2 == 0))
+			{
+				Vector3 pPos = player_->GetWorldPosition();
+				Vector3 sparkVel = {
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.5f,
+					(static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.5f,
+					-1.5f
+				};
+				ParticleManager::GetInstance()->Emit("CircleParticle", pPos, sparkVel, { 0.7f, 1.0f, 1.0f, 1.0f }, { 0.16f, 0.16f, 0.16f }, 0.25f, 1);
+			}
+
+			// ヒットストップ終了 ➔ ガラス破砕＆サイバーボクセル飛散へ！
+			if (clearStepTimer_ >= kClearHitStopDuration)
+			{
+				clearStep_ = ClearStep::kGateShatter;
+				clearStepTimer_ = 0.0f;
+
+				// 1. 「パリンッ！」という爽快なガラス破砕サウンドを再生
+				if (gateShatterSeHandle_ != 0)
+				{
+					AudioManager::PlayOneShot(gateShatterSeHandle_, 1.0f);
+				}
+
+				// 2. ホログラムゲート＆「GOAL」文字を無数の3Dサイバー発光ボクセルとして前方へ爆散！
+				Vector3 impactPos = player_ ? player_->GetWorldPosition() : (goal_ ? goal_->GetWorldPosition() : Vector3{ 0.0f, 0.0f, 0.0f });
+				if (goal_)
+				{
+					goal_->Shatter(impactPos, clearForwardDir_);
+				}
+
+				// 3. ソリッド発光キューブ（DigitalGlitchBox）＆光結晶シャードを前方へ大量放出
+				Vector3 gateCenter = goal_ ? goal_->GetWorldPosition() : impactPos;
+				for (int i = 0; i < 96; ++i)
+				{
+					// ゲート壁面全体＆激突中心から発生
+					float spawnX = (i < 36)
+						? ((static_cast<float>(rand()) / RAND_MAX - 0.5f) * 5.5f + (impactPos.x - gateCenter.x))
+						: ((static_cast<float>(rand()) / RAND_MAX - 0.5f) * 30.0f);
+					float spawnY = (i < 36)
+						? ((static_cast<float>(rand()) / RAND_MAX - 0.5f) * 3.5f + (impactPos.y - gateCenter.y))
+						: ((static_cast<float>(rand()) / RAND_MAX - 0.5f) * 9.5f);
+
+					Vector3 boxPos = { gateCenter.x + spawnX, gateCenter.y + spawnY, gateCenter.z + (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 0.5f };
+
+					float fwdSpeed = 14.0f + (static_cast<float>(rand()) / RAND_MAX) * 26.0f;
+					Vector3 boxVel = clearForwardDir_ * fwdSpeed + Vector3{
+						spawnX * 1.35f + (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 6.0f,
+						spawnY * 1.35f + (static_cast<float>(rand()) / RAND_MAX - 0.5f) * 6.0f,
+						0.0f
+					};
+
+					Vector4 boxCol;
+					int cType = i % 5;
+					if (cType == 0)      boxCol = { 0.10f, 0.96f, 1.00f, 1.0f }; // エレクトリックシアン
+					else if (cType == 1) boxCol = { 0.35f, 1.00f, 0.30f, 1.0f }; // エレクトリックライム
+					else if (cType == 2) boxCol = { 1.00f, 0.22f, 0.88f, 1.0f }; // ネオンマゼンタ
+					else if (cType == 3) boxCol = { 1.00f, 0.92f, 0.25f, 1.0f }; // ソーラーゴールド
+					else                 boxCol = { 1.00f, 1.00f, 1.00f, 1.0f }; // ブリリアントホワイト
+
+					float boxScale = 0.18f + (static_cast<float>(rand()) / RAND_MAX) * 0.26f;
+					ParticleManager::GetInstance()->Emit("DigitalGlitchBox", boxPos, boxVel, boxCol, { boxScale, boxScale, boxScale }, 1.25f, 1);
+				}
+
+				// キラキラと輝くガラス破片スパーク粒子 (64個)
+				for (int i = 0; i < 64; ++i)
+				{
+					float angle = (static_cast<float>(i) / 64.0f) * 6.2831853f;
+					float radial = 3.0f + (static_cast<float>(rand()) / RAND_MAX) * 14.0f;
+					float fwdSpeed = 12.0f + (static_cast<float>(rand()) / RAND_MAX) * 24.0f;
+					Vector3 vel = clearForwardDir_ * fwdSpeed + Vector3{
+						std::cos(angle) * radial,
+						std::sin(angle) * radial,
+						0.0f
+					};
+					Vector4 col = ((i % 2) == 0)
+						? Vector4{ 0.4f, 1.0f, 1.0f, 1.0f }
+						: Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+					ParticleManager::GetInstance()->Emit("CircleParticle", impactPos, vel, col, { 0.22f, 0.22f, 0.22f }, 0.85f, 1);
+				}
+
+				// 激突ポイントから広がる衝撃波リング
+				auto shockwave = std::make_unique<Shockwave>();
+				shockwave->Initialize(camera_.get(), impactPos);
+				shockwaves_.push_back(std::move(shockwave));
+
+				// ゲート突破の手応えを強調するカメラシェイク
+				if (shake_)
+				{
+					shake_->Start(0.42f, 0.35f);
+				}
+			}
+		}
+		// ================================================================
+		// ステップ2: パリンッ！と割れたゲートを自機が突っ切る演出
+		// ================================================================
+		else if (clearStep_ == ClearStep::kGateShatter)
+		{
+			timeScale = 1.0f;
+			float shatterT = (std::clamp)(clearStepTimer_ / kClearShatterDuration, 0.0f, 1.0f);
+			float easeOut = 1.0f - (1.0f - shatterT) * (1.0f - shatterT) * (1.0f - shatterT);
+
+			// カメラ＆自機が破砕されたゲートを勢いよく前方へ突き抜ける！
+			if (railCamera_)
+			{
+				railCamera_->GetWorldTransform()->translation = clearImpactCamPos_ + clearForwardDir_ * (0.45f + 11.5f * easeOut);
+				railCamera_->GetWorldTransform()->UpdateMatrix();
+			}
+
+			// 突破瞬間にFOVがワイドに弾けてから通常視野角へ滑らかに戻る（スピード感の強調）
+			if (camera_)
+			{
+				float fovKick = std::sin(shatterT * 3.14159265f) * (1.0f - shatterT * 0.5f);
+				camera_->SetFovY(introEndFov_ + 0.085f * fovKick);
+			}
+
+			// 突破演出が完了したら STAGE CLEAR リザルト画面を開始
+			if (clearStepTimer_ >= kClearShatterDuration)
+			{
+				clearStep_ = ClearStep::kClearUI;
+				clearStepTimer_ = 0.0f;
+				if (camera_)
+				{
+					camera_->SetFovY(introEndFov_);
+				}
+				if (gameClearUI_)
+				{
+					gameClearUI_->Start(score_, killedEnemyCount_);
+				}
+			}
+		}
+		// ================================================================
+		// ステップ3: STAGE CLEAR リザルトUI表示＆操作受付
+		// ================================================================
+		else if (clearStep_ == ClearStep::kClearUI)
+		{
+			// リザルト画面の背後では発光ボクセルがゆったりと漂い続ける
+			timeScale = 0.35f;
+
+			if (gameClearUI_)
+			{
+				gameClearUI_->Update();
+
+				// タイトルへ戻る入力要求があったら画面遷移
+				if (gameClearUI_->IsTitleRequested())
+				{
+					if (!CrtTransition::GetInstance()->IsTransitioning())
+					{
+						CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kNormal);
+					}
+					return;
+				}
+			}
 		}
 
-		// 2. 自機の更新（操作や弾撃ちは行わず、アニメーションとトランスフォームのみ更新）
+		// カメラ行列の同期（突破による前進およびシェイクを反映）
+		if (railCamera_ && !useDebugCamera_)
+		{
+			camera_->matWorld = railCamera_->GetWorldTransform()->matWorld;
+			if (shake_ && shake_->IsActive())
+			{
+				Vector3 offset = shake_->GetOffset();
+				camera_->matWorld.m[3][0] += offset.x;
+				camera_->matWorld.m[3][1] += offset.y;
+				camera_->matWorld.m[3][2] += offset.z;
+			}
+			camera_->matView = MathUtility::MakeInverseMatrix(camera_->matWorld);
+			camera_->UpdateViewProjection();
+		}
+
+		// 1. ゴールオブジェクト（亀裂・3D発光ボクセル飛散）の更新
+		if (goal_)
+		{
+			goal_->Update(timeScale);
+		}
+
+		// 2. 自機の更新（アニメーションとトランスフォームの更新）
 		if (player_)
 		{
 			player_->UpdateAnimationOnly();
 		}
 
-		// 3. 背景都市・オブジェクト・パーティクルの更新
+		// 3. 衝撃波エフェクトの更新
+		for (auto& shockwave : shockwaves_)
+		{
+			shockwave->Update();
+		}
+		shockwaves_.remove_if([](const std::unique_ptr<Shockwave>& shockwave) {
+			return shockwave->IsFinished();
+		});
+
+		// 4. 背景都市・オブジェクト・パーティクルの更新
 		level_->Update();
 		if (backgroundSprite_)
 		{
@@ -641,22 +876,9 @@ void GamePlayScene::Update() {
 			cityBackground_->SetCamera(camera_.get());
 			cityBackground_->Update();
 		}
-		ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
-
-		// 4. ゲームクリア演出UI（リザルト画面: スコア・撃破数カウントアップ）の更新
-		if (gameClearUI_)
+		if (clearStep_ != ClearStep::kHitStop)
 		{
-			gameClearUI_->Update();
-
-			// タイトルへ戻る入力要求があったら画面遷移
-			if (gameClearUI_->IsTitleRequested())
-			{
-				if (!CrtTransition::GetInstance()->IsTransitioning())
-				{
-					CrtTransition::GetInstance()->StartTransition("TITLE", PostProcessRenderer::PostProcessMode::kNormal);
-				}
-				return;
-			}
+			ParticleManager::GetInstance()->Update(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 		}
 	}
 	else if (phase_ == Phase::kGameOver)
@@ -1103,6 +1325,10 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 	case Phase::kLeady:
 		introCameraTimer_ = 0.0f;
 		playerMaterializeTimer_ = 0.0f;
+		if (goal_)
+		{
+			goal_->Reset();
+		}
 		if (railCamera_)
 		{
 			railCamera_->SetIsPlaying(false);
@@ -1117,6 +1343,10 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		UpdateIntroCamera();
 		break;
 	case Phase::kPlay:
+		if (goal_)
+		{
+			goal_->Reset();
+		}
 		if (camera_)
 		{
 			camera_->SetFovY(introEndFov_);
@@ -1139,21 +1369,52 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		break;
 	case Phase::kClear:
 		isGoalReached_ = true;
+		clearStep_ = ClearStep::kHitStop;
+		clearStepTimer_ = 0.0f;
 		if (player_)
 		{
 			player_->SetReticleVisible(false);
 		}
-		// 1. レールカメラの動きを停止
+		// 1. レールカメラの自動進行を停止し、激突時の基準座標と進行方向ベクトルを記録
 		if (railCamera_)
 		{
 			railCamera_->SetIsPlaying(false);
+			clearImpactCamPos_ = railCamera_->GetWorldTransform()->translation;
+			clearForwardDir_ = railCamera_->GetEndTangent();
+		}
+		else if (camera_)
+		{
+			clearImpactCamPos_ = camera_->GetTranslate();
+			clearForwardDir_ = { 0.0f, 0.0f, 1.0f };
 		}
 		// 2. ヴィネットを確実に消去して通常描画に戻す
 		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kNormal);
-		// 3. クリアリザルトUI演出の開始
-		if (gameClearUI_)
+		// 3. ホログラムゲート激突瞬間のヒットストップ演出（ガラス亀裂＆高輝度フラッシュ）を開始！
 		{
-			gameClearUI_->Start(score_, killedEnemyCount_);
+			Vector3 impactPos = player_ ? player_->GetWorldPosition() : (goal_ ? goal_->GetWorldPosition() : Vector3{ 0.0f, 0.0f, 0.0f });
+			if (goal_)
+			{
+				goal_->StartImpactHitStop(impactPos);
+			}
+			// 激突瞬間のインパクトスパーク (24個)
+			for (int i = 0; i < 24; ++i)
+			{
+				float angle = (static_cast<float>(i) / 24.0f) * 6.2831853f;
+				float speed = 3.0f + (static_cast<float>(rand()) / RAND_MAX) * 5.0f;
+				Vector3 vel = {
+					std::cos(angle) * speed,
+					std::sin(angle) * speed,
+					-2.0f
+				};
+				Vector4 col = ((i % 2) == 0)
+					? Vector4{ 0.2f, 1.0f, 1.0f, 1.0f }
+					: Vector4{ 1.0f, 1.0f, 1.0f, 1.0f };
+				ParticleManager::GetInstance()->Emit("CircleParticle", impactPos, vel, col, { 0.20f, 0.20f, 0.20f }, 0.30f, 1);
+			}
+			if (shake_)
+			{
+				shake_->Start(0.10f, 0.28f);
+			}
 		}
 		fadeAlpha_ = 0.0f;
 		clearWaitTimer_ = 0.0f;
@@ -1517,12 +1778,25 @@ void GamePlayScene::UpdateImGui() {
 	ImGui::Text("Phase: %s", phaseStr);
 	ImGui::Text("Fade Alpha: %.2f", fadeAlpha_);
 	if (phase_ == Phase::kPlay) {
+		if (ImGui::Button("Debug: Warp Near Goal (Test Gate Appear)")) {
+			if (railCamera_ && !railCamera_->GetIsLoop())
+			{
+				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
+				railCamera_->SetSplineTime(maxTime * 0.65f);
+				railCamera_->Update(!useDebugCamera_);
+			}
+		}
+		ImGui::SameLine();
 		if (ImGui::Button("Debug: Trigger Goal (Clear)")) {
 			if (railCamera_ && !railCamera_->GetIsLoop())
 			{
 				float maxTime = static_cast<float>((std::max) (0ULL, railCamera_->GetControlPoints().size()) - 1);
 				railCamera_->SetSplineTime(maxTime);
 				railCamera_->Update(!useDebugCamera_);
+			}
+			if (player_)
+			{
+				player_->UpdateAnimationOnly();
 			}
 			ChangePhase(Phase::kClear);
 		}

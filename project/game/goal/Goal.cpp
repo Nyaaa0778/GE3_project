@@ -1,17 +1,35 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "Goal.h"
 #include "Camera.h"
 #include "TimeManager.h"
 #include "WireframeObject.h"
+#include "MathUtility.h"
 #include "Vector2.h"
 #ifdef USE_IMGUI
 #include <imgui.h>
 #endif
 #include <cmath>
 #include <numbers>
+#include <algorithm>
+#include <cstdlib>
 
 namespace {
 	constexpr float kPi = std::numbers::pi_v<float>;
 	constexpr float kTwoPi = 2.0f * kPi;
+
+	float RandRange(float minVal, float maxVal) {
+		float t = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+		return minVal + (maxVal - minVal) * t;
+	}
+
+	float EaseOutCubic(float t) {
+		t = (std::clamp)(t, 0.0f, 1.0f);
+		float inv = 1.0f - t;
+		return 1.0f - inv * inv * inv;
+	}
 }
 
 Goal::Goal() = default;
@@ -28,34 +46,51 @@ void Goal::Initialize(const Vector3& pos, Camera* camera) {
 	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
 	worldTransform_.UpdateMatrix();
 
-	// コライダーの初期設定（ゲート全体を包括する広大なAABB：幅18m、高さ12m、奥行き8m）
-	// 自機がゲート開口部のどの位置を飛行していても確実に検知する
+	// コライダーの初期設定（横長ワイドなゲート面の光の壁に合わせた判定：幅34m、高さ15m、奥行き2.2m）
+	// 自機がゲート壁面に激突した瞬間をジャスト検知する
 	SetShape(ColliderShape::kAABB);
-	SetAABB({ { 18.0f, 12.0f, 8.0f } });
+	SetAABB({ { 34.0f, 15.0f, 2.2f } });
 
-	// 1. 多重ワープトンネル（奥行き連続リング ＋ 縦梁レール ＋ トラス）
-	BuildTunnelMesh();
+	// 1. コースを塞ぐ巨大な光の壁（セキュリティゲート・ホログラムバリア）
+	BuildSecurityBarrierMesh();
 
-	// 2. メインゲート外枠（左右パイロントラス ＋ 上部ガントリーブリッジ）
-	BuildMainGateMesh();
+	// 2. コース中央を塞ぐ巨大ホログラム「GOAL」文字
+	BuildCenterGoalHologramMesh();
 
-	// 3. 対向回転アパーチャリング
-	BuildApertureMesh();
-
-	// 4. 頭上立体「GOAL」ネオンブロックサイン
-	BuildGoalSignMesh();
-
-	// 5. 進入誘導シェブロン（>>> 矢印）
-	BuildChevronMesh();
+	// 3. 破砕時ボクセル用インスタンシングメッシュの初期化
+	InitializeVoxelInstancing();
 
 	// 背景都市と同様の距離減衰フォグを設定
 	SetFog(fogNear_, fogFar_);
 
-	timer_ = 0.0f;
-	rotAngleOuter_ = 0.0f;
-	rotAngleInner_ = 0.0f;
-
+	Reset();
 	SetPosition(pos);
+}
+
+void Goal::Reset() {
+	timer_ = 0.0f;
+
+	isAppearing_ = false;
+	appearProgress_ = 0.0f;
+
+	isInHitStop_ = false;
+	hitStopTimer_ = 0.0f;
+	impactCrackObject_.reset();
+
+	isShattered_ = false;
+	shatterTimer_ = 0.0f;
+	voxels_.clear();
+}
+
+void Goal::TriggerAppear() {
+	if (!isAppearing_ && appearProgress_ < 1.0f) {
+		isAppearing_ = true;
+	}
+}
+
+void Goal::ForceAppearImmediate() {
+	isAppearing_ = true;
+	appearProgress_ = 1.0f;
 }
 
 void Goal::SetPosition(const Vector3& pos) {
@@ -63,302 +98,210 @@ void Goal::SetPosition(const Vector3& pos) {
 	worldTransform_.translation = pos;
 	worldTransform_.UpdateMatrix();
 
-	if (tunnelObject_) tunnelObject_->SetPosition(pos);
-	if (gateFrameObject_) gateFrameObject_->SetPosition(pos);
-	if (outerApertureObject_) outerApertureObject_->SetPosition(pos);
-	if (innerApertureObject_) innerApertureObject_->SetPosition(pos);
-	if (chevronObject_) chevronObject_->SetPosition(pos);
+	if (barrierWallObject_) barrierWallObject_->SetPosition(pos);
+	if (barrierCoreObject_) barrierCoreObject_->SetPosition(pos);
+	if (scanlineBeamObject_) scanlineBeamObject_->SetPosition(pos);
+	if (impactCrackObject_) impactCrackObject_->SetPosition(pos);
 
-	for (size_t i = 0; i < goalLetterObjects_.size(); ++i) {
-		if (goalLetterObjects_[i] && i < letterXOffsets_.size()) {
+	for (size_t i = 0; i < centerGoalLetterObjects_.size(); ++i) {
+		if (centerGoalLetterObjects_[i] && i < centerLetterXOffsets_.size()) {
 			Vector3 letterPos = pos;
-			letterPos.x += letterXOffsets_[i];
-			letterPos.y += 7.3f;
-			goalLetterObjects_[i]->SetPosition(letterPos);
+			letterPos.x += centerLetterXOffsets_[i];
+			letterPos.y += -1.35f;
+			centerGoalLetterObjects_[i]->SetPosition(letterPos);
 		}
 	}
 }
 
 // ----------------------------------------------------
-// 1. 多重ワープトンネルの構築
+// 1. 進行コースを塞ぐ巨大な光の壁（ホログラム・セキュリティゲート）の構築
 // ----------------------------------------------------
-void Goal::BuildTunnelMesh() {
-	tunnelObject_ = std::make_unique<WireframeObject>();
-	tunnelObject_->Initialize();
-	tunnelObject_->SetCamera(camera_);
-	tunnelObject_->SetBlendMode(BlendMode::kAdd);
-
-	// 5つの奥行き八角形リング（手前からゲート奥へ）
-	const float zOffsets[] = { -20.0f, -14.0f, -8.0f, -2.0f, +4.0f };
-	const float radii[]    = {   9.2f,   8.6f,  8.0f,  7.4f,  6.8f };
-	const int kNumRings = 5;
-	const int kNumCorners = 8;
-	const float xFactor = 1.15f; // 横長のフライト領域に合わせた比率
-	const float yFactor = 0.85f;
-
-	std::vector<Vector4> vertices;
-	std::vector<uint32_t> indices;
-
-	for (int k = 0; k < kNumRings; ++k) {
-		float z = zOffsets[k];
-		float r = radii[k];
-		uint32_t ringBase = static_cast<uint32_t>(vertices.size());
-
-		// 8頂点
-		for (int i = 0; i < kNumCorners; ++i) {
-			float angle = (static_cast<float>(i) * kTwoPi / static_cast<float>(kNumCorners)) + (kPi / static_cast<float>(kNumCorners));
-			float x = std::cos(angle) * r * xFactor;
-			float y = std::sin(angle) * r * yFactor;
-			vertices.push_back({ x, y, z, 1.0f });
-
-			// リング円周のエッジ
-			indices.push_back(ringBase + i);
-			indices.push_back(ringBase + ((i + 1) % kNumCorners));
-		}
-
-		// 直前のリングとの縦梁・トラス接続
-		if (k > 0) {
-			uint32_t prevBase = ringBase - kNumCorners;
-			for (int i = 0; i < kNumCorners; ++i) {
-				// 縦梁レール
-				indices.push_back(prevBase + i);
-				indices.push_back(ringBase + i);
-
-				// トラス対角線（偶数・奇数で交互に張る）
-				indices.push_back(prevBase + i);
-				indices.push_back(ringBase + ((i + 1) % kNumCorners));
-			}
-		}
-	}
-
-	tunnelObject_->CreateCustomMesh(vertices, indices);
-	tunnelObject_->SetColor({ 0.0f, 0.70f, 0.95f, 0.85f }); // ディープサイバーシアン
-}
-
-// ----------------------------------------------------
-// 2. メインゲート外枠の構築（左右パイロン ＋ ガントリートラス）
-// ----------------------------------------------------
-void Goal::BuildMainGateMesh() {
-	gateFrameObject_ = std::make_unique<WireframeObject>();
-	gateFrameObject_->Initialize();
-	gateFrameObject_->SetCamera(camera_);
-	gateFrameObject_->SetBlendMode(BlendMode::kAdd);
-
-	std::vector<Vector4> v;
-	std::vector<uint32_t> idx;
-
-	auto AddLine = [&](const Vector3& p1, const Vector3& p2) {
-		uint32_t base = static_cast<uint32_t>(v.size());
-		v.push_back({ p1.x, p1.y, p1.z, 1.0f });
-		v.push_back({ p2.x, p2.y, p2.z, 1.0f });
-		idx.push_back(base);
-		idx.push_back(base + 1);
-	};
-
-	// 奥行き2層（前面 Z = -0.3f, 背面 Z = +0.3f）で立体トラスを形成
-	const float depths[] = { -0.35f, 0.35f };
-
-	for (float z : depths) {
-		// --- 左パイロン (X: -8.8m 〜 -10.2m, Y: -5.2m 〜 +6.4m) ---
-		AddLine({ -8.8f, -5.2f, z }, { -8.8f,  6.4f, z });
-		AddLine({ -10.2f, -5.2f, z }, { -10.2f,  6.4f, z });
-		AddLine({ -8.8f, -5.2f, z }, { -10.2f, -5.2f, z });
-		AddLine({ -8.8f,  6.4f, z }, { -10.2f,  6.4f, z });
-		// パイロン内のXトラスラティス
-		for (float y = -4.5f; y < 6.0f; y += 1.8f) {
-			AddLine({ -8.8f, y, z }, { -10.2f, y + 1.8f, z });
-			AddLine({ -10.2f, y, z }, { -8.8f, y + 1.8f, z });
-			AddLine({ -8.8f, y, z }, { -10.2f, y, z });
-		}
-
-		// --- 右パイロン (X: +8.8m 〜 +10.2m, Y: -5.2m 〜 +6.4m) ---
-		AddLine({  8.8f, -5.2f, z }, {  8.8f,  6.4f, z });
-		AddLine({ 10.2f, -5.2f, z }, { 10.2f,  6.4f, z });
-		AddLine({  8.8f, -5.2f, z }, { 10.2f, -5.2f, z });
-		AddLine({  8.8f,  6.4f, z }, { 10.2f,  6.4f, z });
-		// パイロン内のXトラスラティス
-		for (float y = -4.5f; y < 6.0f; y += 1.8f) {
-			AddLine({ 8.8f, y, z }, { 10.2f, y + 1.8f, z });
-			AddLine({ 10.2f, y, z }, { 8.8f, y + 1.8f, z });
-			AddLine({ 8.8f, y, z }, { 10.2f, y, z });
-		}
-
-		// --- 上部ガントリーブリッジ (Y: 5.2m & 6.4m, X: -8.8m 〜 +8.8m) ---
-		AddLine({ -8.8f, 5.2f, z }, { 8.8f, 5.2f, z });
-		AddLine({ -8.8f, 6.4f, z }, { 8.8f, 6.4f, z });
-		// ガントリー内のジグザグトラス (/\/\/\)
-		const int gantryDivs = 10;
-		const float gantryStep = (8.8f * 2.0f) / static_cast<float>(gantryDivs);
-		for (int i = 0; i < gantryDivs; ++i) {
-			float x1 = -8.8f + static_cast<float>(i) * gantryStep;
-			float x2 = x1 + gantryStep;
-			float midX = (x1 + x2) * 0.5f;
-			AddLine({ x1, 5.2f, z }, { midX, 6.4f, z });
-			AddLine({ midX, 6.4f, z }, { x2, 5.2f, z });
-			AddLine({ x1, 5.2f, z }, { x1, 6.4f, z });
-		}
-
-		// 上部コーナー面取り補強ブラケット
-		AddLine({ -8.8f, 3.8f, z }, { -6.8f, 5.2f, z });
-		AddLine({  8.8f, 3.8f, z }, {  6.8f, 5.2f, z });
-
-		// サイン台座マウントレール (X: -3.8m 〜 +3.8m, Y: 6.4m 〜 7.0m)
-		AddLine({ -3.8f, 6.4f, z }, { -3.8f, 7.1f, z });
-		AddLine({  3.8f, 6.4f, z }, {  3.8f, 7.1f, z });
-		AddLine({ -3.8f, 7.1f, z }, {  3.8f, 7.1f, z });
-		AddLine({ -1.9f, 6.4f, z }, { -1.9f, 7.1f, z });
-		AddLine({  1.9f, 6.4f, z }, {  1.9f, 7.1f, z });
-	}
-
-	// 前面と背面のトラス結合梁（Z方向の奥行き連結）
-	const Vector2 connectPoints[] = {
-		{ -8.8f,  6.4f }, { -10.2f,  6.4f }, { -8.8f, -5.2f }, { -10.2f, -5.2f },
-		{  8.8f,  6.4f }, {  10.2f,  6.4f }, {  8.8f, -5.2f }, {  10.2f, -5.2f },
-		{ -4.0f,  6.4f }, {  0.0f,  6.4f }, {  4.0f,  6.4f },
-		{ -4.0f,  5.2f }, {  0.0f,  5.2f }, {  4.0f,  5.2f },
-		{ -3.8f,  7.1f }, {  3.8f,  7.1f }
-	};
-	for (const auto& pt : connectPoints) {
-		AddLine({ pt.x, pt.y, depths[0] }, { pt.x, pt.y, depths[1] });
-	}
-
-	gateFrameObject_->CreateCustomMesh(v, idx);
-	gateFrameObject_->SetColor({ 0.2f, 0.90f, 1.0f, 1.0f }); // エレクトリックシアン
-}
-
-// ----------------------------------------------------
-// 3. 対向回転アパーチャリングの構築
-// ----------------------------------------------------
-void Goal::BuildApertureMesh() {
-	// === 外周リング（時計回り回転・8セグメント円弧 ＋ カリパー） ===
-	outerApertureObject_ = std::make_unique<WireframeObject>();
-	outerApertureObject_->Initialize();
-	outerApertureObject_->SetCamera(camera_);
-	outerApertureObject_->SetBlendMode(BlendMode::kAdd);
+void Goal::BuildSecurityBarrierMesh() {
+	// === A. メイン・ホログラムレーザーグリッド＆ハニカム遮蔽壁 ===
+	barrierWallObject_ = std::make_unique<WireframeObject>();
+	barrierWallObject_->Initialize();
+	barrierWallObject_->SetCamera(camera_);
+	barrierWallObject_->SetBlendMode(BlendMode::kAdd);
 
 	{
 		std::vector<Vector4> v;
 		std::vector<uint32_t> idx;
-		const int segments = 8;
-		const int subdivPerSeg = 5;
-		const float segAngle = kTwoPi / static_cast<float>(segments);
-		const float arcAngle = segAngle * 0.72f;
-		const float r = 6.2f;
-		const float xf = 1.15f;
-		const float yf = 0.85f;
 
-		for (int s = 0; s < segments; ++s) {
-			float startA = static_cast<float>(s) * segAngle;
+		auto AddLine = [&](const Vector3& p1, const Vector3& p2) {
 			uint32_t base = static_cast<uint32_t>(v.size());
+			v.push_back({ p1.x, p1.y, p1.z, 1.0f });
+			v.push_back({ p2.x, p2.y, p2.z, 1.0f });
+			idx.push_back(base);
+			idx.push_back(base + 1);
+		};
 
-			for (int i = 0; i <= subdivPerSeg; ++i) {
-				float a = startA + arcAngle * (static_cast<float>(i) / static_cast<float>(subdivPerSeg));
-				float x = std::cos(a) * r * xf;
-				float y = std::sin(a) * r * yf;
-				v.push_back({ x, y, 0.0f, 1.0f });
+		const float halfW = 16.50f;
+		const float halfH = 5.00f;
 
-				if (i > 0) {
-					idx.push_back(base + i - 1);
-					idx.push_back(base + i);
-				}
+		// 1. 外周セキュリティシールド三重枠（面取りコーナー付きホログラムフレーム）
+		AddLine({ -halfW, -halfH, 0.0f }, {  halfW, -halfH, 0.0f });
+		AddLine({  halfW, -halfH, 0.0f }, {  halfW,  halfH, 0.0f });
+		AddLine({  halfW,  halfH, 0.0f }, { -halfW,  halfH, 0.0f });
+		AddLine({ -halfW,  halfH, 0.0f }, { -halfW, -halfH, 0.0f });
+
+		AddLine({ -halfW + 0.35f, -halfH + 0.35f, 0.0f }, {  halfW - 0.35f, -halfH + 0.35f, 0.0f });
+		AddLine({  halfW - 0.35f, -halfH + 0.35f, 0.0f }, {  halfW - 0.35f,  halfH - 0.35f, 0.0f });
+		AddLine({  halfW - 0.35f,  halfH - 0.35f, 0.0f }, { -halfW + 0.35f,  halfH - 0.35f, 0.0f });
+		AddLine({ -halfW + 0.35f,  halfH - 0.35f, 0.0f }, { -halfW + 0.35f, -halfH + 0.35f, 0.0f });
+
+		// 左右端のホログラムエミッターレール
+		AddLine({ -halfW - 0.30f, -halfH + 0.5f, -0.08f }, { -halfW - 0.30f,  halfH - 0.5f, -0.08f });
+		AddLine({  halfW + 0.30f, -halfH + 0.5f, -0.08f }, {  halfW + 0.30f,  halfH - 0.5f, -0.08f });
+
+		// 2. 垂直・水平セキュリティレーザーグリッド（コース全面を隙間なく塞ぐ横長ワイドな光の格子）
+		const int cols = 24;
+		const int rows = 10;
+		for (int c = 1; c < cols; ++c) {
+			float x = -halfW + (halfW * 2.0f) * (static_cast<float>(c) / static_cast<float>(cols));
+			// 中央のGOAL文字プレート領域(Y: -1.80 ~ +1.80, X: -8.6 ~ +8.6)は視認性のため上下で分割接続
+			if (std::abs(x) < 8.60f) {
+				AddLine({ x, -halfH, 0.0f }, { x, -1.82f, 0.0f });
+				AddLine({ x,  1.82f, 0.0f }, { x,  halfH, 0.0f });
+			} else {
+				AddLine({ x, -halfH, 0.0f }, { x,  halfH, 0.0f });
 			}
-
-			// セグメント先頭に外向きのサイバーカリパー爪を追加
-			float midA = startA + arcAngle * 0.5f;
-			float tipX = std::cos(midA) * (r + 0.65f) * xf;
-			float tipY = std::sin(midA) * (r + 0.65f) * yf;
-			float inX  = std::cos(midA) * r * xf;
-			float inY  = std::sin(midA) * r * yf;
-
-			uint32_t cBase = static_cast<uint32_t>(v.size());
-			v.push_back({ inX, inY, 0.0f, 1.0f });
-			v.push_back({ tipX, tipY, 0.0f, 1.0f });
-			idx.push_back(cBase);
-			idx.push_back(cBase + 1);
 		}
 
-		outerApertureObject_->CreateCustomMesh(v, idx);
-		outerApertureObject_->SetColor({ 0.0f, 1.0f, 0.65f, 0.90f }); // サイバーミントグリーン
+		for (int r = 1; r < rows; ++r) {
+			float y = -halfH + (halfH * 2.0f) * (static_cast<float>(r) / static_cast<float>(rows));
+			if (std::abs(y) < 1.80f) {
+				AddLine({ -halfW, y, 0.0f }, { -8.70f, y, 0.0f });
+				AddLine({  8.70f, y, 0.0f }, {  halfW, y, 0.0f });
+			} else {
+				AddLine({ -halfW, y, 0.0f }, {  halfW, y, 0.0f });
+			}
+		}
+
+		// 3. ダイヤ・ハニカム状のエネルギーバリア結晶格子（ガラス壁の質感）
+		const float cellW = (halfW * 2.0f) / 12.0f;
+		const float cellH = (halfH * 2.0f) / 5.0f;
+		for (int r = 0; r < 5; ++r) {
+			float y0 = -halfH + r * cellH;
+			float y1 = y0 + cellH;
+			float ym = (y0 + y1) * 0.5f;
+			for (int c = 0; c < 12; ++c) {
+				float x0 = -halfW + c * cellW;
+				float x1 = x0 + cellW;
+				float xm = (x0 + x1) * 0.5f;
+				if (std::abs(ym) < 1.65f && std::abs(xm) < 8.4f) continue;
+
+				AddLine({ xm, y0, 0.02f }, { x1, ym, 0.02f });
+				AddLine({ x1, ym, 0.02f }, { xm, y1, 0.02f });
+				AddLine({ xm, y1, 0.02f }, { x0, ym, 0.02f });
+				AddLine({ x0, ym, 0.02f }, { xm, y0, 0.02f });
+			}
+		}
+
+		// 4. 中央「GOAL」ホログラムプレートのセキュリティフレーム（上下の二重レーザーバー＆ブラケット）
+		const float plateW = 8.70f;
+		const float plateH = 1.84f;
+		AddLine({ -plateW,  plateH, -0.05f }, {  plateW,  plateH, -0.05f });
+		AddLine({ -plateW, -plateH, -0.05f }, {  plateW, -plateH, -0.05f });
+		AddLine({ -plateW,  plateH + 0.14f, -0.05f }, {  plateW,  plateH + 0.14f, -0.05f });
+		AddLine({ -plateW, -plateH - 0.14f, -0.05f }, {  plateW, -plateH - 0.14f, -0.05f });
+
+		AddLine({ -plateW, -plateH, -0.05f }, { -plateW - 0.55f, -plateH + 0.45f, -0.05f });
+		AddLine({ -plateW - 0.55f, -plateH + 0.45f, -0.05f }, { -plateW - 0.55f,  plateH - 0.45f, -0.05f });
+		AddLine({ -plateW - 0.55f,  plateH - 0.45f, -0.05f }, { -plateW,  plateH, -0.05f });
+
+		AddLine({  plateW, -plateH, -0.05f }, {  plateW + 0.55f, -plateH + 0.45f, -0.05f });
+		AddLine({  plateW + 0.55f, -plateH + 0.45f, -0.05f }, {  plateW + 0.55f,  plateH - 0.45f, -0.05f });
+		AddLine({  plateW + 0.55f,  plateH - 0.45f, -0.05f }, {  plateW,  plateH, -0.05f });
+
+		barrierWallObject_->CreateCustomMesh(v, idx);
+		barrierWallObject_->SetColor({ 0.05f, 0.92f, 1.0f, 0.85f });
 	}
 
-	// === 内周リング（反時計回り回転・ヘキサゴン ＋ 4隅照準ブラケット） ===
-	innerApertureObject_ = std::make_unique<WireframeObject>();
-	innerApertureObject_->Initialize();
-	innerApertureObject_->SetCamera(camera_);
-	innerApertureObject_->SetBlendMode(BlendMode::kAdd);
+	// === B. 内層エネルギーフィールド（高密度ホログラム走査線＆四隅セキュリティ警告ストライプ） ===
+	barrierCoreObject_ = std::make_unique<WireframeObject>();
+	barrierCoreObject_->Initialize();
+	barrierCoreObject_->SetCamera(camera_);
+	barrierCoreObject_->SetBlendMode(BlendMode::kAdd);
 
 	{
 		std::vector<Vector4> v;
 		std::vector<uint32_t> idx;
-		const int sides = 6;
-		const float r = 4.8f;
-		const float xf = 1.15f;
-		const float yf = 0.85f;
-		uint32_t hexBase = static_cast<uint32_t>(v.size());
 
-		for (int i = 0; i < sides; ++i) {
-			float a = static_cast<float>(i) * (kTwoPi / static_cast<float>(sides));
-			v.push_back({ std::cos(a) * r * xf, std::sin(a) * r * yf, 0.0f, 1.0f });
-			idx.push_back(hexBase + i);
-			idx.push_back(hexBase + ((i + 1) % sides));
-		}
-
-		// 4隅のサイバーブラケット（中心に向かう [ ] 状の爪）
-		const float bSize = 3.6f;
-		const float bLen = 1.0f;
-		const Vector2 bracketCorners[4] = {
-			{ -bSize * xf,  bSize * yf },
-			{  bSize * xf,  bSize * yf },
-			{  bSize * xf, -bSize * yf },
-			{ -bSize * xf, -bSize * yf }
-		};
-		const Vector2 bracketDirs[4] = {
-			{  1.0f, -1.0f },
-			{ -1.0f, -1.0f },
-			{ -1.0f,  1.0f },
-			{  1.0f,  1.0f }
+		auto AddLine = [&](const Vector3& p1, const Vector3& p2) {
+			uint32_t base = static_cast<uint32_t>(v.size());
+			v.push_back({ p1.x, p1.y, p1.z, 1.0f });
+			v.push_back({ p2.x, p2.y, p2.z, 1.0f });
+			idx.push_back(base);
+			idx.push_back(base + 1);
 		};
 
-		for (int c = 0; c < 4; ++c) {
-			Vector2 pt = bracketCorners[c];
-			Vector2 dir = bracketDirs[c];
-			uint32_t bBase = static_cast<uint32_t>(v.size());
+		const float halfW = 16.35f;
+		const float halfH = 4.85f;
 
-			v.push_back({ pt.x, pt.y, 0.0f, 1.0f });
-			v.push_back({ pt.x + dir.x * bLen, pt.y, 0.0f, 1.0f });
-			v.push_back({ pt.x, pt.y + dir.y * bLen, 0.0f, 1.0f });
-
-			idx.push_back(bBase);
-			idx.push_back(bBase + 1);
-			idx.push_back(bBase);
-			idx.push_back(bBase + 2);
+		// 38本の高密度ホログラム水平スキャンライン（光の壁の面感を強調）
+		const int scanCount = 38;
+		for (int i = 0; i <= scanCount; ++i) {
+			float y = -halfH + (halfH * 2.0f) * (static_cast<float>(i) / static_cast<float>(scanCount));
+			AddLine({ -halfW, y, 0.05f }, { halfW, y, 0.05f });
 		}
 
-		innerApertureObject_->CreateCustomMesh(v, idx);
-		innerApertureObject_->SetColor({ 1.0f, 0.85f, 0.20f, 0.90f }); // ヴィヴィッドゴールド
+		// 四隅のセキュリティ警告ストライプ
+		for (int i = 1; i <= 6; ++i) {
+			float offset = static_cast<float>(i) * 0.75f;
+			AddLine({ -halfW + offset,  halfH, -0.03f }, { -halfW,  halfH - offset, -0.03f });
+			AddLine({  halfW - offset,  halfH, -0.03f }, {  halfW,  halfH - offset, -0.03f });
+			AddLine({ -halfW + offset, -halfH, -0.03f }, { -halfW, -halfH + offset, -0.03f });
+			AddLine({  halfW - offset, -halfH, -0.03f }, {  halfW, -halfH + offset, -0.03f });
+		}
+
+		barrierCoreObject_->CreateCustomMesh(v, idx);
+		barrierCoreObject_->SetColor({ 0.20f, 0.98f, 1.0f, 0.42f });
+	}
+
+	// === C. 上下スイープ走査レーザービーム ===
+	scanlineBeamObject_ = std::make_unique<WireframeObject>();
+	scanlineBeamObject_->Initialize();
+	scanlineBeamObject_->SetCamera(camera_);
+	scanlineBeamObject_->SetBlendMode(BlendMode::kAdd);
+
+	{
+		std::vector<Vector4> v;
+		std::vector<uint32_t> idx;
+		const float halfW = 16.50f;
+		const float yOffsets[] = { -0.12f, -0.04f, 0.0f, 0.04f, 0.12f };
+		for (float yo : yOffsets) {
+			uint32_t base = static_cast<uint32_t>(v.size());
+			v.push_back({ -halfW, yo, -0.08f, 1.0f });
+			v.push_back({  halfW, yo, -0.08f, 1.0f });
+			idx.push_back(base);
+			idx.push_back(base + 1);
+		}
+		scanlineBeamObject_->CreateCustomMesh(v, idx);
+		scanlineBeamObject_->SetColor({ 0.85f, 1.0f, 1.0f, 0.95f });
 	}
 }
 
 // ----------------------------------------------------
-// 4. 頭上立体「GOAL」ネオンブロックサインの構築
+// 2. コース中央を塞ぐ巨大ホログラム「GOAL」文字の構築
 // ----------------------------------------------------
-void Goal::BuildGoalSignMesh() {
-	goalLetterObjects_.clear();
-	letterXOffsets_.clear();
+void Goal::BuildCenterGoalHologramMesh() {
+	centerGoalLetterObjects_.clear();
+	centerLetterXOffsets_.clear();
+	centerLetterSamplePoints_.clear();
 
 	const std::string text = "GOAL";
-	const float h = 1.55f;
-	const float t = 0.24f;
-	const float spacing = 0.32f;
-	const float depth = 0.32f;
+	const float h = 2.75f;
+	const float t = 0.45f;
+	const float spacing = 0.95f;
+	const float depth = 0.48f;
 	const float halfDepth = depth * 0.5f;
 
 	std::vector<LetterData> letters(text.size());
 	float totalWidth = 0.0f;
 
 	for (size_t i = 0; i < text.size(); ++i) {
-		float w = 1.30f;
-		if (text[i] == 'L') w = 1.10f;
+		float w = 2.95f;
+		if (text[i] == 'L') w = 2.50f;
 		GenerateCharMesh(text[i], w, h, t, letters[i]);
 		totalWidth += letters[i].width;
 		if (i + 1 < text.size()) totalWidth += spacing;
@@ -369,7 +312,7 @@ void Goal::BuildGoalSignMesh() {
 	for (size_t i = 0; i < letters.size(); ++i) {
 		auto& l = letters[i];
 		float xOffset = currentX + l.width * 0.5f;
-		letterXOffsets_.push_back(xOffset);
+		centerLetterXOffsets_.push_back(xOffset);
 		currentX += l.width + spacing;
 
 		if (l.localVertices.empty() || l.baseEdges.empty()) {
@@ -379,31 +322,46 @@ void Goal::BuildGoalSignMesh() {
 		const size_t N = l.localVertices.size();
 		std::vector<Vector4> v;
 		std::vector<uint32_t> idx;
-		v.reserve(N * 2);
+		v.reserve(N * 3);
 
-		// 前面頂点 (Z = -halfDepth)
+		// 前面・中間・背面の3層ホログラムで立体感を出す
 		for (const auto& pt : l.localVertices) {
 			v.push_back({ pt.x - l.width * 0.5f, pt.y, -halfDepth, 1.0f });
 		}
-		// 背面頂点 (Z = +halfDepth)
+		for (const auto& pt : l.localVertices) {
+			v.push_back({ pt.x - l.width * 0.5f, pt.y, 0.0f, 1.0f });
+		}
 		for (const auto& pt : l.localVertices) {
 			v.push_back({ pt.x - l.width * 0.5f, pt.y, halfDepth, 1.0f });
 		}
 
-		// 前面エッジ
 		for (const auto& edge : l.baseEdges) {
 			idx.push_back(edge.first);
 			idx.push_back(edge.second);
-		}
-		// 背面エッジ
-		for (const auto& edge : l.baseEdges) {
+
 			idx.push_back(static_cast<uint32_t>(edge.first + N));
 			idx.push_back(static_cast<uint32_t>(edge.second + N));
+
+			idx.push_back(static_cast<uint32_t>(edge.first + N * 2));
+			idx.push_back(static_cast<uint32_t>(edge.second + N * 2));
+
+			// 破砕時に「GOAL」文字のライン上からボクセルが弾け飛ぶようサンプル座標を記録
+			const Vector3& p0 = l.localVertices[edge.first];
+			const Vector3& p1 = l.localVertices[edge.second];
+			for (int s = 0; s < 3; ++s) {
+				float ratio = static_cast<float>(s) / 3.0f;
+				Vector3 sampleLocal = {
+					(p0.x + (p1.x - p0.x) * ratio) - l.width * 0.5f + xOffset,
+					(p0.y + (p1.y - p0.y) * ratio) - 1.35f,
+					0.0f
+				};
+				centerLetterSamplePoints_.push_back(sampleLocal);
+			}
 		}
-		// 奥行き結合梁（前面と背面を立体的に結ぶ）
+
 		for (size_t k = 0; k < N; ++k) {
 			idx.push_back(static_cast<uint32_t>(k));
-			idx.push_back(static_cast<uint32_t>(k + N));
+			idx.push_back(static_cast<uint32_t>(k + N * 2));
 		}
 
 		auto letterObj = std::make_unique<WireframeObject>();
@@ -411,20 +369,20 @@ void Goal::BuildGoalSignMesh() {
 		letterObj->SetCamera(camera_);
 		letterObj->SetBlendMode(BlendMode::kAdd);
 		letterObj->CreateCustomMesh(v, idx);
-		letterObj->SetColor({ 0.30f, 1.0f, 0.20f, 1.0f }); // 眩いエレクトリックライム
+		letterObj->SetColor({ 0.25f, 1.0f, 0.45f, 1.0f });
 
-		goalLetterObjects_.push_back(std::move(letterObj));
+		centerGoalLetterObjects_.push_back(std::move(letterObj));
 	}
 }
 
 // ----------------------------------------------------
-// 5. 進入誘導シェブロン（>>> 矢印）の構築
+// 3. ヒットストップ時のガラス亀裂（インパクトクラック）の構築
 // ----------------------------------------------------
-void Goal::BuildChevronMesh() {
-	chevronObject_ = std::make_unique<WireframeObject>();
-	chevronObject_->Initialize();
-	chevronObject_->SetCamera(camera_);
-	chevronObject_->SetBlendMode(BlendMode::kAdd);
+void Goal::BuildImpactCrackMesh(const Vector3& impactWorldPos) {
+	impactCrackObject_ = std::make_unique<WireframeObject>();
+	impactCrackObject_->Initialize();
+	impactCrackObject_->SetCamera(camera_);
+	impactCrackObject_->SetBlendMode(BlendMode::kAdd);
 
 	std::vector<Vector4> v;
 	std::vector<uint32_t> idx;
@@ -437,31 +395,230 @@ void Goal::BuildChevronMesh() {
 		idx.push_back(base + 1);
 	};
 
-	// トンネル床面を奥へ指し示す3連の巨大シェブロン矢印 (>>>)
-	const float chevronZ[] = { -16.0f, -10.0f, -4.0f };
-	const float floorY = -4.8f;
-	const float tipZOffset = 2.4f;
-	const float wingX = 3.2f;
+	float cx = (std::clamp)(impactWorldPos.x - basePosition_.x, -12.0f, 12.0f);
+	float cy = (std::clamp)(impactWorldPos.y - basePosition_.y, -3.8f, 3.8f);
+	const float cz = -0.12f;
 
-	for (float z : chevronZ) {
-		Vector3 tip   = {  0.0f, floorY, z + tipZOffset };
-		Vector3 left  = { -wingX, floorY, z - 0.8f };
-		Vector3 right = {  wingX, floorY, z - 0.8f };
+	const int numRays = 16;
+	const int stepsPerRay = 6;
 
-		// 外側メインライン
-		AddLine(tip, left);
-		AddLine(tip, right);
-
-		// 内側平行ライン（二重ラインでネオン感を強調）
-		Vector3 tipIn   = {  0.0f, floorY, z + tipZOffset - 0.5f };
-		Vector3 leftIn  = { -wingX + 0.6f, floorY, z - 0.8f };
-		Vector3 rightIn = {  wingX - 0.6f, floorY, z - 0.8f };
-		AddLine(tipIn, leftIn);
-		AddLine(tipIn, rightIn);
+	std::vector<std::vector<Vector3>> rayPoints(numRays, std::vector<Vector3>(stepsPerRay + 1));
+	for (int r = 0; r < numRays; ++r) {
+		float baseAngle = (static_cast<float>(r) / static_cast<float>(numRays)) * kTwoPi;
+		rayPoints[r][0] = { cx, cy, cz };
+		for (int s = 1; s <= stepsPerRay; ++s) {
+			float dist = (static_cast<float>(s) / static_cast<float>(stepsPerRay)) * 12.5f;
+			float jitterAngle = baseAngle + std::sin(static_cast<float>(r * 7 + s * 13)) * 0.14f;
+			float px = (std::clamp)(cx + std::cos(jitterAngle) * dist * 1.45f, -16.50f, 16.50f);
+			float py = (std::clamp)(cy + std::sin(jitterAngle) * dist * 0.80f, -5.00f, 5.00f);
+			rayPoints[r][s] = { px, py, cz };
+		}
 	}
 
-	chevronObject_->CreateCustomMesh(v, idx);
-	chevronObject_->SetColor({ 1.0f, 0.65f, 0.10f, 0.85f }); // 警戒色サイバーオレンジ
+	for (int s = 0; s < stepsPerRay; ++s) {
+		for (int r = 0; r < numRays; ++r) {
+			AddLine(rayPoints[r][s], rayPoints[r][s + 1]);
+
+			if (s >= 1 && ((r + s) % 2 == 0)) {
+				int nextR = (r + 1) % numRays;
+				AddLine(rayPoints[r][s], rayPoints[nextR][s]);
+			}
+
+			if (s >= 2) {
+				Vector3 dir = {
+					rayPoints[r][s + 1].x - rayPoints[r][s].x,
+					rayPoints[r][s + 1].y - rayPoints[r][s].y,
+					0.0f
+				};
+				Vector3 branchEnd = {
+					(std::clamp)(rayPoints[r][s].x + dir.x * 0.55f - dir.y * 0.42f, -16.50f, 16.50f),
+					(std::clamp)(rayPoints[r][s].y + dir.y * 0.55f + dir.x * 0.42f, -5.00f, 5.00f),
+					cz
+				};
+				AddLine(rayPoints[r][s], branchEnd);
+			}
+		}
+	}
+
+	impactCrackObject_->CreateCustomMesh(v, idx);
+	impactCrackObject_->SetPosition(basePosition_);
+	impactCrackObject_->SetFog(fogNear_, fogFar_);
+	impactCrackObject_->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+}
+
+// ----------------------------------------------------
+// 4. 破砕時ボクセル用インスタンシングの初期化
+// ----------------------------------------------------
+void Goal::InitializeVoxelInstancing() {
+	voxelOuterObject_ = std::make_unique<WireframeObject>();
+	voxelOuterObject_->Initialize();
+	voxelOuterObject_->SetCamera(camera_);
+	voxelOuterObject_->SetBlendMode(BlendMode::kAdd);
+	voxelOuterObject_->CreateBox({ 1.0f, 1.0f, 1.0f });
+	voxelOuterObject_->CreateInstanceBuffer(kMaxVoxels);
+
+	voxelInnerObject_ = std::make_unique<WireframeObject>();
+	voxelInnerObject_->Initialize();
+	voxelInnerObject_->SetCamera(camera_);
+	voxelInnerObject_->SetBlendMode(BlendMode::kAdd);
+	voxelInnerObject_->CreateOctahedron(0.52f);
+	voxelInnerObject_->CreateInstanceBuffer(kMaxVoxels);
+}
+
+// ----------------------------------------------------
+// 自機激突瞬間のヒットストップ演出開始
+// ----------------------------------------------------
+void Goal::StartImpactHitStop(const Vector3& impactWorldPos) {
+	if (isInHitStop_ || isShattered_) return;
+
+	ForceAppearImmediate();
+	isInHitStop_ = true;
+	hitStopTimer_ = 0.0f;
+	impactPos_ = impactWorldPos;
+
+	BuildImpactCrackMesh(impactWorldPos);
+	if (impactCrackObject_) {
+		impactCrackObject_->SetDrawRatio(0.25f);
+		impactCrackObject_->Update();
+	}
+}
+
+// ----------------------------------------------------
+// ゲート破砕・無数のサイバー発光ボクセル飛散開始
+// ----------------------------------------------------
+void Goal::Shatter(const Vector3& impactWorldPos, const Vector3& forwardDir) {
+	if (isShattered_) return;
+
+	isShattered_ = true;
+	isInHitStop_ = false;
+	shatterTimer_ = 0.0f;
+	impactPos_ = impactWorldPos;
+	voxels_.clear();
+	voxels_.reserve(kMaxVoxels);
+
+	Vector3 fwd = forwardDir;
+	float fwdLen = std::sqrt(fwd.x * fwd.x + fwd.y * fwd.y + fwd.z * fwd.z);
+	if (fwdLen > 0.0001f) {
+		fwd.x /= fwdLen;
+		fwd.y /= fwdLen;
+		fwd.z /= fwdLen;
+	} else {
+		fwd = { 0.0f, 0.0f, 1.0f };
+	}
+
+	auto AddVoxel = [&](const Vector3& worldPt, const Vector4& col, float scaleBase, float speedMultiplier) {
+		if (voxels_.size() >= kMaxVoxels) return;
+
+		VoxelPiece vp;
+		vp.position = worldPt;
+
+		float dx = worldPt.x - impactWorldPos.x;
+		float dy = worldPt.y - impactWorldPos.y;
+		float dist = std::sqrt(dx * dx + dy * dy);
+		float invDist = (dist > 0.05f) ? (1.0f / dist) : 1.0f;
+		float rx = (dist > 0.05f) ? (dx * invDist) : RandRange(-1.0f, 1.0f);
+		float ry = (dist > 0.05f) ? (dy * invDist) : RandRange(-1.0f, 1.0f);
+
+		float centerFactor = (std::max)(0.2f, 1.0f - (dist / 10.5f));
+		float forwardSpeed = (16.0f + centerFactor * 22.0f + RandRange(0.0f, 12.0f)) * speedMultiplier;
+		float radialSpeed  = (3.5f + (1.0f - centerFactor * 0.4f) * 14.0f + RandRange(0.0f, 6.0f)) * speedMultiplier;
+
+		vp.velocity = {
+			fwd.x * forwardSpeed + rx * radialSpeed + RandRange(-2.5f, 2.5f),
+			fwd.y * forwardSpeed + ry * radialSpeed + RandRange(-2.0f, 3.0f),
+			fwd.z * forwardSpeed + RandRange(-2.0f, 6.0f)
+		};
+
+		vp.rotation = {
+			RandRange(0.0f, kTwoPi),
+			RandRange(0.0f, kTwoPi),
+			RandRange(0.0f, kTwoPi)
+		};
+		vp.angularVelocity = {
+			RandRange(-11.0f, 11.0f),
+			RandRange(-11.0f, 11.0f),
+			RandRange(-11.0f, 11.0f)
+		};
+
+		float s = scaleBase * RandRange(0.75f, 1.30f);
+		if ((voxels_.size() % 5) == 0) {
+			vp.baseScale = { s * 1.45f, s * 0.75f, s * 0.75f };
+		} else {
+			vp.baseScale = { s, s, s };
+		}
+
+		vp.color = col;
+		vp.lifeTime = RandRange(1.45f, 2.35f);
+		vp.elapsed = 0.0f;
+
+		voxels_.push_back(vp);
+	};
+
+	// 1. コース中央の「GOAL」ホログラム文字がそのまま発光ボクセルになって弾け飛ぶ！
+	for (size_t i = 0; i < centerLetterSamplePoints_.size(); ++i) {
+		const Vector3& localPt = centerLetterSamplePoints_[i];
+		Vector3 worldPt = {
+			basePosition_.x + localPt.x + RandRange(-0.08f, 0.08f),
+			basePosition_.y + localPt.y + RandRange(-0.08f, 0.08f),
+			basePosition_.z + RandRange(-0.20f, 0.20f)
+		};
+
+		Vector4 col;
+		if (i % 3 == 0)      col = { 0.35f, 1.00f, 0.30f, 1.0f }; // エレクトリックライム
+		else if (i % 3 == 1) col = { 1.00f, 0.92f, 0.25f, 1.0f }; // ソーラーゴールド
+		else                 col = { 0.85f, 1.00f, 1.00f, 1.0f }; // ブリリアントホワイト
+
+		AddVoxel(worldPt, col, 0.34f, 1.15f);
+	}
+
+	// 2. 自機激突ポイント中心の高密度クリスタル・コアボクセル群
+	for (int i = 0; i < 65; ++i) {
+		float angle = RandRange(0.0f, kTwoPi);
+		float radius = RandRange(0.0f, 2.6f);
+		Vector3 worldPt = {
+			impactWorldPos.x + std::cos(angle) * radius,
+			impactWorldPos.y + std::sin(angle) * radius,
+			basePosition_.z + RandRange(-0.3f, 0.3f)
+		};
+
+		Vector4 col;
+		int cType = i % 4;
+		if (cType == 0)      col = { 1.00f, 1.00f, 1.00f, 1.0f }; // ホワイト
+		else if (cType == 1) col = { 0.10f, 0.98f, 1.00f, 1.0f }; // ネオンシアン
+		else if (cType == 2) col = { 1.00f, 0.20f, 0.88f, 1.0f }; // サイバーマゼンタ
+		else                 col = { 0.20f, 1.00f, 0.65f, 1.0f }; // サイバーミント
+
+		AddVoxel(worldPt, col, 0.30f, 1.25f);
+	}
+
+	// 3. 光の壁（横長ワイドなセキュリティゲート全面 X: -16.0〜+16.0, Y: -4.8〜+4.8）のガラス破砕ボクセル群
+	const int gridCols = 19;
+	const int gridRows = 10;
+	for (int r = 0; r < gridRows; ++r) {
+		float ny = (static_cast<float>(r) / static_cast<float>(gridRows - 1)) * 2.0f - 1.0f;
+		for (int c = 0; c < gridCols; ++c) {
+			if (voxels_.size() >= kMaxVoxels) break;
+			float nx = (static_cast<float>(c) / static_cast<float>(gridCols - 1)) * 2.0f - 1.0f;
+
+			Vector3 worldPt = {
+				basePosition_.x + nx * 15.8f + RandRange(-0.35f, 0.35f),
+				basePosition_.y + ny * 4.7f + RandRange(-0.22f, 0.22f),
+				basePosition_.z + RandRange(-0.25f, 0.25f)
+			};
+
+			Vector4 col;
+			int hash = (r * 7 + c * 13) % 5;
+			if (hash == 0 || hash == 1) col = { 0.05f, 0.92f, 1.00f, 1.0f }; // エレクトリックシアン
+			else if (hash == 2)         col = { 0.00f, 1.00f, 0.68f, 1.0f }; // サイバーミント
+			else if (hash == 3)         col = { 1.00f, 0.22f, 0.85f, 1.0f }; // ネオンマゼンタ
+			else                        col = { 1.00f, 0.88f, 0.25f, 1.0f }; // ヴィヴィッドゴールド
+
+			AddVoxel(worldPt, col, 0.36f, 1.0f);
+		}
+	}
+
+	// 初回フレーム用に即座にインスタンスバッファを更新
+	Update(0.0f);
 }
 
 // ----------------------------------------------------
@@ -494,10 +651,8 @@ void Goal::GenerateCharMesh(char c, float w, float h, float t, LetterData& l) {
 	}
 	case 'O': {
 		l.localVertices = {
-			// 外周
 			{cut, h, 0.0f}, {w - cut, h, 0.0f}, {w, h - cut, 0.0f}, {w, cut, 0.0f},
 			{w - cut, 0.0f, 0.0f}, {cut, 0.0f, 0.0f}, {0.0f, cut, 0.0f}, {0.0f, h - cut, 0.0f},
-			// 内窓
 			{cut + t * 0.2f, h - t, 0.0f}, {w - cut - t * 0.2f, h - t, 0.0f},
 			{w - t, h - cut - t * 0.2f, 0.0f}, {w - t, cut + t * 0.2f, 0.0f},
 			{w - cut - t * 0.2f, t, 0.0f}, {cut + t * 0.2f, t, 0.0f},
@@ -513,7 +668,6 @@ void Goal::GenerateCharMesh(char c, float w, float h, float t, LetterData& l) {
 		l.localVertices = {
 			{0.0f, 0.0f, 0.0f}, {w * 0.36f, h, 0.0f}, {w * 0.64f, h, 0.0f}, {w, 0.0f, 0.0f},
 			{w - t, 0.0f, 0.0f}, {w * 0.68f, h * 0.42f, 0.0f}, {w * 0.32f, h * 0.42f, 0.0f}, {t, 0.0f, 0.0f},
-			// 中窓
 			{w * 0.38f, h * 0.60f, 0.0f}, {w * 0.46f, h - t, 0.0f},
 			{w * 0.54f, h - t, 0.0f}, {w * 0.62f, h * 0.60f, 0.0f}
 		};
@@ -541,62 +695,182 @@ void Goal::GenerateCharMesh(char c, float w, float h, float t, LetterData& l) {
 // ----------------------------------------------------
 // 毎フレーム更新
 // ----------------------------------------------------
-void Goal::Update() {
-	float dt = TimeManager::GetInstance()->GetDeltaTime();
-	timer_ += dt;
+void Goal::Update(float timeScale) {
+	float rawDt = TimeManager::GetInstance()->GetDeltaTime();
+	float dt = rawDt * timeScale;
+	timer_ += rawDt;
 
-	// アパーチャの対向回転アニメーション
-	rotAngleOuter_ += dt * 0.45f;
-	rotAngleInner_ -= dt * 0.70f;
+	// 1. ゴール接近時のホログラムゲート出現アニメーション更新
+	if (isAppearing_ && appearProgress_ < 1.0f) {
+		appearProgress_ = (std::min)(1.0f, appearProgress_ + rawDt / kAppearDuration);
+	}
+
+	float barrierProg = (std::clamp)(appearProgress_ / 0.75f, 0.0f, 1.0f);
+	float signProg    = (std::clamp)((appearProgress_ - 0.15f) / 0.85f, 0.0f, 1.0f);
+	float barrierScaleY = EaseOutCubic(barrierProg);
 
 	// ネオンの呼吸パルス波（0.0 〜 1.0）
-	float pulse = (std::sin(timer_ * 3.6f) + 1.0f) * 0.5f;
+	float pulse = (std::sin(timer_ * 4.2f) + 1.0f) * 0.5f;
 
-	// 各パーツのカラー更新（加算ブレンドによる眩いネオングロー）
-	if (tunnelObject_) {
-		tunnelObject_->SetPosition(basePosition_);
-		tunnelObject_->SetColor({ 0.0f, 0.70f + 0.25f * pulse, 0.95f, 0.85f });
-		tunnelObject_->Update();
+	// ヒットストップ中の超高輝度フラッシュ＆微振動
+	float hitStopFlash = 0.0f;
+	Vector3 jitterOffset = { 0.0f, 0.0f, 0.0f };
+	if (isInHitStop_) {
+		hitStopTimer_ += rawDt;
+		hitStopFlash = (std::sin(timer_ * 65.0f) > 0.0f) ? 1.0f : 0.45f;
+		jitterOffset = {
+			RandRange(-0.12f, 0.12f),
+			RandRange(-0.12f, 0.12f),
+			0.0f
+		};
 	}
 
-	if (gateFrameObject_) {
-		gateFrameObject_->SetPosition(basePosition_);
-		gateFrameObject_->SetColor({ 0.20f, 0.88f + 0.12f * pulse, 1.0f, 1.0f });
-		gateFrameObject_->Update();
+	// 2. 光の壁（セキュリティゲート）・コース中央「GOAL」ホログラム（破砕前のみ更新）
+	if (!isShattered_) {
+		Vector3 barrierPos = {
+			basePosition_.x + jitterOffset.x,
+			basePosition_.y + jitterOffset.y,
+			basePosition_.z
+		};
+
+		if (barrierWallObject_) {
+			barrierWallObject_->SetPosition(barrierPos);
+			barrierWallObject_->SetScale({ 1.0f, (std::max)(0.02f, barrierScaleY), 1.0f });
+			barrierWallObject_->SetDrawRatio(barrierProg);
+			Vector4 wallCol = isInHitStop_
+				? Vector4{ 0.55f + 0.45f * hitStopFlash, 1.0f, 1.0f, 0.98f }
+				: Vector4{ 0.05f, 0.85f + 0.15f * pulse, 1.0f, 0.88f * barrierProg };
+			barrierWallObject_->SetColor(wallCol);
+			barrierWallObject_->Update();
+		}
+
+		if (barrierCoreObject_) {
+			barrierCoreObject_->SetPosition(barrierPos);
+			barrierCoreObject_->SetScale({ 1.0f, (std::max)(0.02f, barrierScaleY), 1.0f });
+			barrierCoreObject_->SetDrawRatio(barrierProg);
+			Vector4 coreCol = isInHitStop_
+				? Vector4{ 1.0f, 0.45f + 0.55f * hitStopFlash, 0.95f, 0.85f }
+				: Vector4{ 0.15f + 0.25f * pulse, 0.95f, 1.0f, (0.38f + 0.15f * pulse) * barrierProg };
+			barrierCoreObject_->SetColor(coreCol);
+			barrierCoreObject_->Update();
+		}
+
+		if (scanlineBeamObject_) {
+			float sweepY = std::sin(timer_ * 3.2f) * 5.05f * barrierScaleY;
+			scanlineBeamObject_->SetPosition({ barrierPos.x, barrierPos.y + sweepY, barrierPos.z });
+			scanlineBeamObject_->SetDrawRatio(barrierProg);
+			scanlineBeamObject_->SetColor({ 0.80f, 1.0f, 1.0f, 0.92f * barrierProg });
+			scanlineBeamObject_->Update();
+		}
+
+		// コース中央を塞ぐ巨大「GOAL」ホログラムの更新
+		float centerBounce = std::sin(timer_ * 3.0f) * 0.08f;
+		float holoFlicker = (appearProgress_ < 0.95f)
+			? ((std::sin(timer_ * 55.0f) > -0.3f) ? 1.0f : 0.35f)
+			: (0.92f + 0.08f * std::sin(timer_ * 18.0f));
+
+		Vector4 centerGoalColor = isInHitStop_
+			? Vector4{ 1.0f, 1.0f, 0.65f + 0.35f * hitStopFlash, 1.0f }
+			: Vector4{ 0.30f + 0.40f * pulse, 1.0f, 0.25f + 0.30f * (1.0f - pulse), signProg * holoFlicker };
+
+		for (size_t i = 0; i < centerGoalLetterObjects_.size(); ++i) {
+			if (centerGoalLetterObjects_[i] && i < centerLetterXOffsets_.size()) {
+				float letterDelay = static_cast<float>(i) * 0.08f;
+				float letterProg = (std::clamp)((signProg - letterDelay) / (1.0f - letterDelay), 0.0f, 1.0f);
+				float letterScale = EaseOutCubic(letterProg);
+
+				Vector3 letterPos = barrierPos;
+				letterPos.x += centerLetterXOffsets_[i];
+				letterPos.y += -1.35f + centerBounce;
+				centerGoalLetterObjects_[i]->SetPosition(letterPos);
+				centerGoalLetterObjects_[i]->SetScale({ 1.0f, (std::max)(0.01f, letterScale), 1.0f });
+				centerGoalLetterObjects_[i]->SetDrawRatio(letterProg);
+				centerGoalLetterObjects_[i]->SetColor(centerGoalColor);
+				centerGoalLetterObjects_[i]->Update();
+			}
+		}
+
+		// ヒットストップ中のガラス亀裂（クラック）伝播更新
+		if (isInHitStop_ && impactCrackObject_) {
+			float crackProgress = (std::clamp)(0.25f + (hitStopTimer_ / 0.26f) * 0.75f, 0.0f, 1.0f);
+			impactCrackObject_->SetPosition(barrierPos);
+			impactCrackObject_->SetDrawRatio(crackProgress);
+			impactCrackObject_->SetColor({ 0.90f, 1.0f, 1.0f, 1.0f });
+			impactCrackObject_->Update();
+		}
 	}
+	// 3. ゲート破砕後の3Dサイバー発光ボクセル群の物理・回転・GPUインスタンス更新
+	else {
+		shatterTimer_ += rawDt;
 
-	if (outerApertureObject_) {
-		outerApertureObject_->SetPosition(basePosition_);
-		outerApertureObject_->SetRotation({ 0.0f, 0.0f, rotAngleOuter_ });
-		outerApertureObject_->SetColor({ 0.0f, 1.0f, 0.60f + 0.35f * pulse, 0.90f });
-		outerApertureObject_->Update();
-	}
+		if (camera_ && !voxels_.empty()) {
+			Matrix4x4 vp = MathUtility::Multiply(camera_->GetViewMatrix(), camera_->GetProjectionMatrix());
 
-	if (innerApertureObject_) {
-		innerApertureObject_->SetPosition(basePosition_);
-		innerApertureObject_->SetRotation({ 0.0f, 0.0f, rotAngleInner_ });
-		innerApertureObject_->SetColor({ 1.0f, 0.80f + 0.20f * pulse, 0.20f, 0.90f });
-		innerApertureObject_->Update();
-	}
+			std::vector<WireframeObject::InstanceData> outerInstances;
+			std::vector<WireframeObject::InstanceData> innerInstances;
+			outerInstances.reserve(voxels_.size());
+			innerInstances.reserve(voxels_.size());
 
-	if (chevronObject_) {
-		chevronObject_->SetPosition(basePosition_);
-		chevronObject_->SetColor({ 1.0f, 0.65f + 0.30f * pulse, 0.10f, 0.85f });
-		chevronObject_->Update();
-	}
+			for (auto& vx : voxels_) {
+				vx.elapsed += dt;
+				if (vx.elapsed >= vx.lifeTime) {
+					continue;
+				}
 
-	// 「GOAL」サインの微細な浮遊バウンス
-	float signBounce = std::sin(timer_ * 2.5f) * 0.14f;
-	Vector4 signColor = { 0.25f + 0.35f * pulse, 1.0f, 0.15f + 0.25f * (1.0f - pulse), 1.0f };
+				float drag = std::pow(0.965f, dt * 60.0f);
+				vx.velocity.x *= drag;
+				vx.velocity.y = vx.velocity.y * drag - 1.8f * dt;
+				vx.velocity.z *= drag;
 
-	for (size_t i = 0; i < goalLetterObjects_.size(); ++i) {
-		if (goalLetterObjects_[i] && i < letterXOffsets_.size()) {
-			Vector3 letterPos = basePosition_;
-			letterPos.x += letterXOffsets_[i];
-			letterPos.y += 7.2f + signBounce;
-			goalLetterObjects_[i]->SetPosition(letterPos);
-			goalLetterObjects_[i]->SetColor(signColor);
-			goalLetterObjects_[i]->Update();
+				vx.position.x += vx.velocity.x * dt;
+				vx.position.y += vx.velocity.y * dt;
+				vx.position.z += vx.velocity.z * dt;
+
+				vx.rotation.x += vx.angularVelocity.x * dt;
+				vx.rotation.y += vx.angularVelocity.y * dt;
+				vx.rotation.z += vx.angularVelocity.z * dt;
+
+				float lifeRatio = vx.elapsed / vx.lifeTime;
+				float fade = 1.0f - lifeRatio * lifeRatio;
+				float sparkle = 0.78f + 0.22f * std::sin(vx.elapsed * 28.0f + vx.position.x * 3.0f);
+
+				Vector3 curScale = {
+					vx.baseScale.x * fade,
+					vx.baseScale.y * fade,
+					vx.baseScale.z * fade
+				};
+
+				Matrix4x4 S = MathUtility::MakeScaleMatrix(curScale);
+				Matrix4x4 R = MathUtility::MakeRotateMatrix(vx.rotation);
+				Matrix4x4 T = MathUtility::MakeTranslateMatrix(vx.position);
+				Matrix4x4 worldMat = MathUtility::Multiply(MathUtility::Multiply(S, R), T);
+
+				WireframeObject::InstanceData outInst;
+				outInst.WVP = MathUtility::Multiply(worldMat, vp);
+				outInst.color = {
+					vx.color.x * sparkle,
+					vx.color.y * sparkle,
+					vx.color.z * sparkle,
+					vx.color.w * fade
+				};
+				outerInstances.push_back(outInst);
+
+				Vector3 innerScale = { curScale.x * 0.52f, curScale.y * 0.52f, curScale.z * 0.52f };
+				Matrix4x4 S_in = MathUtility::MakeScaleMatrix(innerScale);
+				Matrix4x4 worldIn = MathUtility::Multiply(MathUtility::Multiply(S_in, R), T);
+
+				WireframeObject::InstanceData inInst;
+				inInst.WVP = MathUtility::Multiply(worldIn, vp);
+				inInst.color = { 1.0f, 1.0f, 1.0f, 0.90f * fade };
+				innerInstances.push_back(inInst);
+			}
+
+			if (voxelOuterObject_) {
+				voxelOuterObject_->UpdateInstances(outerInstances);
+			}
+			if (voxelInnerObject_) {
+				voxelInnerObject_->UpdateInstances(innerInstances);
+			}
 		}
 	}
 }
@@ -605,14 +879,27 @@ void Goal::Update() {
 // 描画
 // ----------------------------------------------------
 void Goal::Draw() {
-	if (tunnelObject_) tunnelObject_->Draw();
-	if (gateFrameObject_) gateFrameObject_->Draw();
-	if (outerApertureObject_) outerApertureObject_->Draw();
-	if (innerApertureObject_) innerApertureObject_->Draw();
-	if (chevronObject_) chevronObject_->Draw();
+	// まだゴールに接近しておらず未出現なら描画しない
+	if (appearProgress_ <= 0.001f && !isShattered_) {
+		return;
+	}
 
-	for (auto& letter : goalLetterObjects_) {
-		if (letter) letter->Draw();
+	if (!isShattered_) {
+		if (barrierCoreObject_) barrierCoreObject_->Draw();
+		if (barrierWallObject_) barrierWallObject_->Draw();
+		if (scanlineBeamObject_) scanlineBeamObject_->Draw();
+
+		for (auto& letter : centerGoalLetterObjects_) {
+			if (letter) letter->Draw();
+		}
+
+		if (isInHitStop_ && impactCrackObject_) {
+			impactCrackObject_->Draw();
+		}
+	} else {
+		// 破砕後はゲートそのものが完全に消滅し、無数の3Dサイバー発光ボクセルのみが前方へ飛び散る
+		if (voxelOuterObject_) voxelOuterObject_->Draw();
+		if (voxelInnerObject_) voxelInnerObject_->Draw();
 	}
 }
 
@@ -620,13 +907,14 @@ void Goal::SetFog(float fogNear, float fogFar) {
 	fogNear_ = fogNear;
 	fogFar_ = fogFar;
 
-	if (tunnelObject_) tunnelObject_->SetFog(fogNear, fogFar);
-	if (gateFrameObject_) gateFrameObject_->SetFog(fogNear, fogFar);
-	if (outerApertureObject_) outerApertureObject_->SetFog(fogNear, fogFar);
-	if (innerApertureObject_) innerApertureObject_->SetFog(fogNear, fogFar);
-	if (chevronObject_) chevronObject_->SetFog(fogNear, fogFar);
+	if (barrierWallObject_) barrierWallObject_->SetFog(fogNear, fogFar);
+	if (barrierCoreObject_) barrierCoreObject_->SetFog(fogNear, fogFar);
+	if (scanlineBeamObject_) scanlineBeamObject_->SetFog(fogNear, fogFar);
+	if (impactCrackObject_) impactCrackObject_->SetFog(fogNear, fogFar);
+	if (voxelOuterObject_) voxelOuterObject_->SetFog(fogNear, fogFar);
+	if (voxelInnerObject_) voxelInnerObject_->SetFog(fogNear, fogFar);
 
-	for (auto& letter : goalLetterObjects_) {
+	for (auto& letter : centerGoalLetterObjects_) {
 		if (letter) letter->SetFog(fogNear, fogFar);
 	}
 }
@@ -641,7 +929,11 @@ Vector3 Goal::GetWorldPosition() {
 void Goal::DrawImGui(const char* windowName) {
 #ifdef USE_IMGUI
 	if (ImGui::Begin(windowName)) {
-		ImGui::Text("Wireframe Cyber Goal Gate");
+		ImGui::Text("Hologram Cyber Security Goal Gate");
+		ImGui::Text("Appear Progress: %.2f | HitStop: %s | Shattered: %s",
+			appearProgress_,
+			isInHitStop_ ? "YES" : "NO",
+			isShattered_ ? "YES" : "NO");
 		ImGui::DragFloat3("Base Position", &basePosition_.x, 0.5f);
 		if (ImGui::Button("Sync Position")) {
 			SetPosition(basePosition_);
@@ -655,8 +947,6 @@ void Goal::DrawImGui(const char* windowName) {
 		if (fogChanged) {
 			SetFog(fNear, fFar);
 		}
-		ImGui::Separator();
-		ImGui::Text("Parts: Tunnel, Pylons, Gantry, Apertures, Sign, Chevrons");
 	}
 	ImGui::End();
 #endif
