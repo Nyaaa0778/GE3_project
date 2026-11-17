@@ -153,6 +153,12 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 		currentState_->Update(this);
 	}
 
+	// デモプレイ（オートパイロット）の更新
+	if (isDemoAutoPlay_)
+	{
+		UpdateDemoAI(enemies);
+	}
+
 	// トランスフォーム行列の更新と転送
 	worldTransform_.UpdateMatrix();
 
@@ -319,9 +325,10 @@ void Player::Attack() {
 		wasWeaponModeChanged_ = true;
 	}
 
-	// クールダウンが終了しており、キー入力があったら発射
+	// クールダウンが終了しており、キー入力またはデモ射撃要求があったら発射
 	// ※ロックオンモード時は1回押すごとに一斉発射（TriggerKey）、通常モード時は長押し連射（PushKey）
-	bool isShootInput = isLockOnMode_ ? input->TriggerKey(DIK_SPACE) : input->PushKey(DIK_SPACE);
+	bool isShootInput = (isLockOnMode_ ? input->TriggerKey(DIK_SPACE) : input->PushKey(DIK_SPACE)) || demoShootRequest_;
+	demoShootRequest_ = false;
 	if (isShootInput) {
 		if(cooldownTimer_ <= 0.0f)
 		{
@@ -417,8 +424,149 @@ void Player::Attack() {
 	}
 }
 
+void Player::UpdateDemoAI(const std::list<EnemyBase*>& enemies) {
+	auto* input = Input::GetInstance();
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+	demoShootRequest_ = false;
+	demoMoveInput_ = { 0.0f, 0.0f };
+
+	// ユーザーが手動で移動キーを押している間は手動操作を優先
+	bool isManualMove = input->PushKey(DIK_W) || input->PushKey(DIK_S) ||
+	                    input->PushKey(DIK_A) || input->PushKey(DIK_D);
+
+	// まず現在のワールド座標を計算
+	worldTransform_.UpdateMatrix();
+	Vector3 playerWorldPos = worldTransform_.GetWorldPosition();
+	Vector3 camPos = worldTransform_.parent
+		? Vector3{ worldTransform_.parent->matWorld.m[3][0], worldTransform_.parent->matWorld.m[3][1], worldTransform_.parent->matWorld.m[3][2] }
+		: Vector3{ playerWorldPos.x, playerWorldPos.y, playerWorldPos.z - 20.0f };
+
+	// 前方の生存敵を収集
+	std::vector<EnemyBase*> aheadEnemies;
+	int untargetedCount = 0;
+	for (EnemyBase* e : enemies) {
+		if (!e || !e->IsAlive()) continue;
+		Vector3 ePos = e->GetWorldPosition();
+		float dz = ePos.z - playerWorldPos.z;
+		if (dz > 3.0f && dz < 140.0f) {
+			aheadEnemies.push_back(e);
+			if (!IsTargetedByActiveHomingBullet(e)) {
+				untargetedCount++;
+			}
+		}
+	}
+
+	// 距離（Z）が近い順にソート
+	std::sort(aheadEnemies.begin(), aheadEnemies.end(), [&](EnemyBase* a, EnemyBase* b) {
+		return a->GetWorldPosition().z < b->GetWorldPosition().z;
+	});
+
+	float targetLocalX = 0.0f;
+	float targetLocalY = 0.0f;
+
+	if (!aheadEnemies.empty()) {
+		// 複数敵（ドローン編隊など）がいる＆ホーミング残弾がある場合はロックオンモードへ切り替え
+		bool wantLockOn = (untargetedCount >= 2 && homingAmmo_ >= 2) ||
+		                  (isLockOnMode_ && lockOn_ && !lockOn_->GetTargets().empty() && homingAmmo_ > 0);
+
+		if (wantLockOn != isLockOnMode_) {
+			isLockOnMode_ = wantLockOn;
+			wasWeaponModeChanged_ = true;
+			demoLockOnHoldTimer_ = 0.0f;
+		}
+
+		if (isLockOnMode_ && lockOn_) {
+			const auto& lockedTargets = lockOn_->GetTargets();
+			if (!lockedTargets.empty()) {
+				demoLockOnHoldTimer_ += dt;
+			} else {
+				demoLockOnHoldTimer_ = 0.0f;
+			}
+
+			// まだロックオンしていない敵を探して照準をスイープさせる
+			EnemyBase* aimEnemy = nullptr;
+			for (EnemyBase* e : aheadEnemies) {
+				if (IsTargetedByActiveHomingBullet(e)) continue;
+				bool alreadyLocked = (std::find(lockedTargets.begin(), lockedTargets.end(), e) != lockedTargets.end());
+				if (!alreadyLocked) {
+					aimEnemy = e;
+					break;
+				}
+			}
+			if (!aimEnemy) {
+				aimEnemy = aheadEnemies.front();
+			}
+
+			Vector3 ePos = aimEnemy->GetWorldPosition();
+			float distFromCam = (std::max)(10.0f, ePos.z - camPos.z);
+			// 2Dスクリーン上でレティクルが敵にピタリと重なるローカル座標
+			targetLocalX = ((ePos.x - camPos.x) * (70.0f / distFromCam)) / 2.5f;
+			targetLocalY = ((ePos.y - camPos.y) * (70.0f / distFromCam)) / 2.5f;
+
+			// 目標数ロックオン完了、または一定時間ロックオン保持したらホーミング弾を一斉発射！
+			size_t maxPossibleLocks = (std::min)(static_cast<size_t>(homingAmmo_), static_cast<size_t>(untargetedCount));
+			if (!lockedTargets.empty() &&
+			    ((lockedTargets.size() >= maxPossibleLocks && demoLockOnHoldTimer_ >= 0.22f) || demoLockOnHoldTimer_ >= 0.55f)) {
+				demoShootRequest_ = true;
+				demoLockOnHoldTimer_ = 0.0f;
+			}
+		} else {
+			// 通常弾モード：最も近い前方の敵を狙い撃つ
+			EnemyBase* target = aheadEnemies.front();
+			Vector3 ePos = target->GetWorldPosition();
+			float dz = (std::max)(5.0f, ePos.z - playerWorldPos.z);
+
+			// 3Dレティクルへの射線が敵の中心を通るローカル座標
+			targetLocalX = (ePos.x - camPos.x) / (1.0f + 0.03f * dz);
+			targetLocalY = (ePos.y - camPos.y) / (1.0f + 0.03f * dz);
+
+			float diffX = targetLocalX - worldTransform_.translation.x;
+			float diffY = targetLocalY - worldTransform_.translation.y;
+			if (std::sqrt(diffX * diffX + diffY * diffY) < 2.2f) {
+				demoShootRequest_ = true;
+			}
+		}
+	} else {
+		// 前方に敵がいない時：通常モードに戻しつつ、ゴール手前では中央(0,0)へ綺麗に収束
+		if (isLockOnMode_) {
+			isLockOnMode_ = false;
+			wasWeaponModeChanged_ = true;
+		}
+		if (playerWorldPos.z < 235.0f) {
+			targetLocalX = std::sin(visualTime_ * 1.6f) * 2.2f;
+			targetLocalY = std::cos(visualTime_ * 1.1f) * 1.0f;
+		} else {
+			// ゴール接近時はホログラムゲートの中央「GOAL」へ向けて真っ直ぐ突入！
+			targetLocalX = 0.0f;
+			targetLocalY = 0.0f;
+		}
+	}
+
+	targetLocalX = std::clamp(targetLocalX, -6.5f, 6.5f);
+	targetLocalY = std::clamp(targetLocalY, -3.2f, 3.2f);
+
+	if (!isManualMove) {
+		float dx = targetLocalX - worldTransform_.translation.x;
+		float dy = targetLocalY - worldTransform_.translation.y;
+		float maxStep = 0.24f;
+
+		float stepX = std::clamp(dx * 0.18f, -maxStep, maxStep);
+		float stepY = std::clamp(dy * 0.18f, -maxStep, maxStep);
+
+		worldTransform_.translation.x = std::clamp(worldTransform_.translation.x + stepX, -7.0f, 7.0f);
+		worldTransform_.translation.y = std::clamp(worldTransform_.translation.y + stepY, -3.5f, 3.5f);
+
+		demoMoveInput_.x = std::clamp(dx * 0.6f, -1.0f, 1.0f);
+		demoMoveInput_.y = std::clamp(dy * 0.6f, -1.0f, 1.0f);
+	}
+}
+
 void Player::OnCollision() {
 	if (!isAlive_) {
+		return;
+	}
+	// デモプレイ中はクリアシーンまで確実に進行させるためHPを減らさない
+	if (isDemoAutoPlay_) {
 		return;
 	}
 
@@ -547,6 +695,11 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	if (input->PushKey(DIK_A)) inputX -= 1.0f;
 	if (input->PushKey(DIK_W)) inputY += 1.0f;
 	if (input->PushKey(DIK_S)) inputY -= 1.0f;
+
+	if (isDemoAutoPlay_ && inputX == 0.0f && inputY == 0.0f) {
+		inputX = demoMoveInput_.x;
+		inputY = demoMoveInput_.y;
+	}
 
 	// 目標ティルト角（左右バンクロールZ、上下ピッチX）
 	targetTilt_.z = -inputX * 0.30f;

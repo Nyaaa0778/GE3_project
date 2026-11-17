@@ -86,5 +86,10 @@ private:
 	float glitchBurstTimer_ = 0.0f;
 	bool isGlitching_ = false;
 	int glitchSubBurstCount_ = 0;        // たまに「パパッ」と二連撃を起こす用
+
+	// デモプレイ用の自動ゲーム開始タイマー
+	bool enableDemoAutoStart_ = true;
+	float demoAutoStartTimer_ = 0.0f;
+	static constexpr float kDemoAutoStartDelay = 3.5f; // タイトル表示からデモプレイ開始までの秒数
 };
 

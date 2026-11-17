@@ -119,16 +119,9 @@ void Reticle::Update(const WorldTransform& playerWorldTransform) {
 	// ----------------------------------------------------
 	// アウターの動的変形（伸縮・回転・変形）
 	// ----------------------------------------------------
-	// 1. 伸縮（高速移動時は拡散・拡大、静止時は収束＋微細な呼吸）
-	float dynamicScale = (1.0f + lagIntensity * 0.45f) * breathe;
+	// 1. 伸縮（高速移動時は拡散・拡大、静止時は収束＋微細な呼吸、常に正円比率を維持）
+	float dynamicScale = (1.0f + lagIntensity * 0.35f) * breathe;
 	Vector3 outerScale = { dynamicScale, dynamicScale, 1.0f };
-
-	// 2. 変形（自機の移動方向に応じた扁平率のダイナミックストレッチ）
-	if (offsetDist > 0.02f) {
-		Vector3 dir = Normalize(offsetVec);
-		outerScale.x += std::abs(dir.x) * lagIntensity * 0.25f;
-		outerScale.y += std::abs(dir.y) * lagIntensity * 0.25f;
-	}
 
 	// 3. 回転（アイドル時は緩やか、移動時はスピン急加速、主枠とリングは逆回転ジャイロ）
 	float outerSpinSpeed = 0.45f + lagIntensity * 3.0f;

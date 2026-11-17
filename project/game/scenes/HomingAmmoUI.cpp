@@ -133,6 +133,12 @@ void PixelText::Initialize(const std::string& text, const Vector2& pos, float sc
 			AddSeg(ox + 2.0f, 10.0f, 3.0f, t);
 			AddSeg(ox + 5.0f, 2.0f, t, 8.0f);
 			break;
+		case 'Y':
+			AddSeg(ox, 0.0f, t, 5.0f);
+			AddSeg(ox + 6.0f, 0.0f, t, 5.0f);
+			AddSeg(ox + 2.0f, 4.0f, 4.0f, t);
+			AddSeg(ox + 3.0f, 6.0f, t, 6.0f);
+			break;
 		case '[':
 			AddSeg(ox + 2.0f, 0.0f, t, charH);
 			AddSeg(ox + 2.0f, 0.0f, 4.0f, t);

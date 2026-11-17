@@ -104,6 +104,10 @@ public:
 	// すでに飛行中のホーミング弾のターゲットになっているか
 	bool IsTargetedByActiveHomingBullet(const EnemyBase* enemy) const;
 
+	// デモプレイ（オートパイロット）設定
+	void SetDemoAutoPlay(bool enable) { isDemoAutoPlay_ = enable; }
+	bool IsDemoAutoPlay() const { return isDemoAutoPlay_; }
+
 private:
 	// ------------------------------------
 	// 本体
@@ -210,6 +214,16 @@ private:
 	/// 攻撃処理
 	/// </summary>
 	void Attack();
+
+	/// <summary>
+	/// デモプレイ用オートパイロット更新
+	/// </summary>
+	void UpdateDemoAI(const std::list<EnemyBase*>& enemies);
+
+	bool isDemoAutoPlay_ = true;
+	bool demoShootRequest_ = false;
+	float demoLockOnHoldTimer_ = 0.0f;
+	Vector2 demoMoveInput_ = { 0.0f, 0.0f };
 
 	// ------------------------------------
 	// 数式制御多面体ビジュアル専用関数

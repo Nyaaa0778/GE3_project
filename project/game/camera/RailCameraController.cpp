@@ -99,6 +99,8 @@ void RailCameraController::Update(bool activeController) {
 	worldTransform_.UpdateMatrix();
 
 	if (activeController) {
+		camera_->SetTranslate(worldTransform_.translation);
+		camera_->SetRotate(worldTransform_.rotation);
 		camera_->matWorld = worldTransform_.matWorld;
 		camera_->matView = MakeInverseMatrix(worldTransform_.matWorld);
 		camera_->UpdateViewProjection();

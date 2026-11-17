@@ -26,6 +26,7 @@ class CityBackground;
 class GameOverUI;
 class GameClearUI;
 class HomingAmmoUI;
+class PixelText;
 enum class DroneFlightPattern;
 
 class GamePlayScene : public IScene {
@@ -132,6 +133,7 @@ private:
 	static constexpr float kGoalAppearDistance = 95.0f;     // ホログラムゲートが出現開始する自機との距離（メートル）
 	static constexpr float kClearHitStopDuration = 0.30f;   // 激突時のスローモーション（ヒットストップ）時間（秒）
 	static constexpr float kClearShatterDuration = 1.35f;   // ゲート破砕・ボクセル飛散＆突破演出時間（秒）
+	static constexpr float kClearAutoReturnDelay = 3.0f;    // クリア演出終了後に自動でタイトルへ戻るまでの時間（秒）
 
 	// ------------------------------------
 	// UI
@@ -150,6 +152,14 @@ private:
 	// スコアUI
 	static constexpr int kMaxScoreDigits = 5;
 	std::vector<std::unique_ptr<Sprite>> uiScoreDigits_;
+
+	// DEMO PLAY 表示UI（画面上部中央のサイバーバナー）
+	std::unique_ptr<Sprite> demoBannerBgSprite_;
+	std::unique_ptr<Sprite> demoBannerTopLineSprite_;
+	std::unique_ptr<Sprite> demoBannerBottomLineSprite_;
+	std::unique_ptr<Sprite> demoBannerDotSprite_;
+	std::unique_ptr<PixelText> demoPlayText_;
+	float demoBannerBlinkTimer_ = 0.0f;
 
 	// ------------------------------------
 	// フェードアウト

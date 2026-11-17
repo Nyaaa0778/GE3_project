@@ -54,6 +54,8 @@ void TitleScene::Initialize() {
 	if (!CrtTransition::GetInstance()->IsTransitioning()) {
 		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kGlitch);
 	}
+
+	demoAutoStartTimer_ = 0.0f;
 }
 
 void TitleScene::Update() {
@@ -141,9 +143,14 @@ void TitleScene::Update() {
 
 	UpdateImGui();
 
-	// --- シーン遷移判定 (Space / Aボタン) ---
+	// --- シーン遷移判定 (Space / Aボタン または デモプレイ自動遷移) ---
 	if (!CrtTransition::GetInstance()->IsTransitioning()) {
-		if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
+		if (enableDemoAutoStart_) {
+			demoAutoStartTimer_ += TimeManager::GetInstance()->GetDeltaTime();
+		}
+
+		if ((enableDemoAutoStart_ && demoAutoStartTimer_ >= kDemoAutoStartDelay) ||
+			input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
 			input->SetShake(0.0f, 0.0f);
 			// CRTグリッチ画面遷移演出の開始（完了後はkNormalに戻す）
 			CrtTransition::GetInstance()->StartTransition("GAMEPLAY", PostProcessRenderer::PostProcessMode::kNormal);

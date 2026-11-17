@@ -48,7 +48,7 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	LevelLoader loader;
-	std::unique_ptr<LevelData> levelData(loader.Load("stage1"));
+	std::unique_ptr<LevelData> levelData(loader.Load("test"));
 
 	// レベルオブジェクトの初期化
 	level_ = std::make_unique<Level>();
@@ -59,13 +59,14 @@ void GamePlayScene::Initialize() {
 	// ------------------------------------
 
 	level_->ApplyCameraParameters(camera_.get());
+	camera_->SetRotate({ 0.0f, 0.0f, 0.0f });
 	camera_->SetFarClip(600.0f); // 奥行きを出すためファークリップを大幅拡張 (100m -> 600m)
 	camera_->CalculateMatrix();
 	camera_->CreateConstantBuffer();
 
 	// レールカメラ
 	railCamera_ = std::make_unique<RailCameraController>();
-	railCamera_->Initialize(camera_.get(), levelData->railSpline, "stage1");
+	railCamera_->Initialize(camera_.get(), levelData->railSpline, "test");
 
 	// デバッグカメラ
 	debugCamera_ = std::make_unique<DebugCamera>();
@@ -215,6 +216,37 @@ void GamePlayScene::Initialize() {
 		uiScoreDigits_[i]->SetSize({digitWidth, digitHeight});
 	}
 
+	// DEMO PLAY サイバーHUDバナーの初期化（画面上部中央）
+	const float bannerW = 246.0f;
+	const float bannerH = 36.0f;
+	const float bannerX = (static_cast<float>(WinApp::kClientWidth) - bannerW) * 0.5f;
+	const float bannerY = 14.0f;
+
+	demoBannerBgSprite_ = std::make_unique<Sprite>();
+	demoBannerBgSprite_->Initialize("white.png", { bannerX, bannerY }, { 0.0f, 0.0f });
+	demoBannerBgSprite_->SetSize({ bannerW, bannerH });
+	demoBannerBgSprite_->SetColor({ 0.02f, 0.05f, 0.10f, 0.72f });
+
+	demoBannerTopLineSprite_ = std::make_unique<Sprite>();
+	demoBannerTopLineSprite_->Initialize("white.png", { bannerX, bannerY }, { 0.0f, 0.0f });
+	demoBannerTopLineSprite_->SetSize({ bannerW, 2.0f });
+	demoBannerTopLineSprite_->SetColor({ 0.0f, 0.95f, 1.0f, 0.90f });
+
+	demoBannerBottomLineSprite_ = std::make_unique<Sprite>();
+	demoBannerBottomLineSprite_->Initialize("white.png", { bannerX, bannerY + bannerH - 2.0f }, { 0.0f, 0.0f });
+	demoBannerBottomLineSprite_->SetSize({ bannerW, 2.0f });
+	demoBannerBottomLineSprite_->SetColor({ 0.0f, 0.95f, 1.0f, 0.90f });
+
+	demoBannerDotSprite_ = std::make_unique<Sprite>();
+	demoBannerDotSprite_->Initialize("white.png", { bannerX + 16.0f, bannerY + 13.0f }, { 0.0f, 0.0f });
+	demoBannerDotSprite_->SetSize({ 10.0f, 10.0f });
+	demoBannerDotSprite_->SetColor({ 1.0f, 0.25f, 0.35f, 1.0f });
+
+	demoPlayText_ = std::make_unique<PixelText>();
+	demoPlayText_->Initialize("DEMO PLAY", { bannerX + 36.0f, bannerY + 8.0f }, 1.65f);
+	demoPlayText_->SetColor({ 0.15f, 0.98f, 1.0f, 0.95f });
+	demoBannerBlinkTimer_ = 0.0f;
+
 	// ------------------------------------
 	// フェードアウト用スプライト
 	// ------------------------------------
@@ -243,23 +275,12 @@ void GamePlayScene::Initialize() {
 	killedEnemyCount_ = 0;
 
 	// ------------------------------------
-	// ステージ開始演出の初期化 (Phase::kLeady)
+	// スタート演出をスキップして即座にゲームプレイ（Phase::kPlay）を開始
 	// ------------------------------------
-	introCameraTimer_ = 0.0f;
-	playerMaterializeTimer_ = 0.0f;
-	if (railCamera_)
-	{
-		railCamera_->SetIsPlaying(false);
-		railCamera_->SetSplineTime(0.0f);
-	}
-	if (player_)
-	{
-		player_->SetMaterializeProgress(0.0f);
-		player_->SetReticleVisible(false);
-	}
-	playerMaterializedEffectTriggered_ = false;
-	phase_ = Phase::kLeady;
-	UpdateIntroCamera();
+	introCameraTimer_ = introCameraDuration_;
+	playerMaterializeTimer_ = playerMaterializeDuration_;
+	playerMaterializedEffectTriggered_ = true;
+	ChangePhase(Phase::kPlay);
 }
 
 void GamePlayScene::Update() {
@@ -806,7 +827,7 @@ void GamePlayScene::Update() {
 			}
 		}
 		// ================================================================
-		// ステップ3: STAGE CLEAR リザルトUI表示＆操作受付
+		// ステップ3: STAGE CLEAR リザルトUI表示 ＆ 3秒後に自動でタイトルへ遷移
 		// ================================================================
 		else if (clearStep_ == ClearStep::kClearUI)
 		{
@@ -817,8 +838,8 @@ void GamePlayScene::Update() {
 			{
 				gameClearUI_->Update();
 
-				// タイトルへ戻る入力要求があったら画面遷移
-				if (gameClearUI_->IsTitleRequested())
+				// クリア演出終了から3秒経過、または手動入力があったらタイトルへ画面遷移
+				if (clearStepTimer_ >= kClearAutoReturnDelay || gameClearUI_->IsTitleRequested())
 				{
 					if (!CrtTransition::GetInstance()->IsTransitioning())
 					{
@@ -1149,6 +1170,29 @@ void GamePlayScene::Update() {
 	{
 		digitSprite->Update();
 	}
+
+	// DEMO PLAY バナーの点滅・更新
+	demoBannerBlinkTimer_ += TimeManager::GetInstance()->GetDeltaTime();
+	float textPulse = 0.65f + 0.35f * std::sin(demoBannerBlinkTimer_ * 4.2f);
+	float dotBlink  = (std::sin(demoBannerBlinkTimer_ * 6.5f) >= -0.1f) ? 1.0f : 0.15f;
+
+	if (demoBannerBgSprite_) demoBannerBgSprite_->Update();
+	if (demoBannerTopLineSprite_) {
+		demoBannerTopLineSprite_->SetColor({ 0.0f, 0.95f, 1.0f, 0.55f + 0.35f * textPulse });
+		demoBannerTopLineSprite_->Update();
+	}
+	if (demoBannerBottomLineSprite_) {
+		demoBannerBottomLineSprite_->SetColor({ 0.0f, 0.95f, 1.0f, 0.55f + 0.35f * textPulse });
+		demoBannerBottomLineSprite_->Update();
+	}
+	if (demoBannerDotSprite_) {
+		demoBannerDotSprite_->SetColor({ 1.0f, 0.25f, 0.35f, dotBlink });
+		demoBannerDotSprite_->Update();
+	}
+	if (demoPlayText_) {
+		demoPlayText_->SetColor({ 0.20f, 0.98f, 1.0f, textPulse });
+		demoPlayText_->Update();
+	}
 }
 
 void GamePlayScene::Draw() {
@@ -1232,6 +1276,16 @@ void GamePlayScene::Draw() {
 		for (auto& digitSprite : uiScoreDigits_)
 		{
 			digitSprite->Draw();
+		}
+
+		// DEMO PLAY バナーの描画
+		if (player_ && player_->IsDemoAutoPlay())
+		{
+			if (demoBannerBgSprite_) demoBannerBgSprite_->Draw();
+			if (demoBannerTopLineSprite_) demoBannerTopLineSprite_->Draw();
+			if (demoBannerBottomLineSprite_) demoBannerBottomLineSprite_->Draw();
+			if (demoBannerDotSprite_) demoBannerDotSprite_->Draw();
+			if (demoPlayText_) demoPlayText_->Draw();
 		}
 	}
 
@@ -1349,7 +1403,9 @@ void GamePlayScene::ChangePhase(Phase nextPhase) {
 		}
 		if (camera_)
 		{
+			camera_->SetRotate({ 0.0f, 0.0f, 0.0f });
 			camera_->SetFovY(introEndFov_);
+			camera_->CalculateMatrix();
 		}
 		if (player_)
 		{
