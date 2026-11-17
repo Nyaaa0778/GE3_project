@@ -16,6 +16,7 @@ struct ModelData;
 #include <wrl.h>
 
 #include "LightingType.h"
+#include "KeyframeAnimation.h"
 
 class Model;
 class Camera;
@@ -135,6 +136,22 @@ public:
 	void SetDissolveEdgeColor(const Vector4& color) { dissolveEdgeColor_ = color; }
 	void SetDissolveNoiseTexture(const std::string& filePath) { dissolveMaskTexturePath_ = filePath; }
 
+	// アニメーション設定
+	void SetAnimation(const Animation& animation) {
+		animation_ = animation;
+		hasAnimation_ = true;
+		animationTime_ = 0.0f;
+	}
+	void ClearAnimation() {
+		animation_ = Animation{};
+		hasAnimation_ = false;
+		animationTime_ = 0.0f;
+	}
+	void SetAnimationPlaying(bool playing) { isAnimationPlaying_ = playing; }
+	void SetAnimationLoop(bool loop) { isAnimationLoop_ = loop; }
+	void ResetAnimation() { animationTime_ = 0.0f; }
+	float GetAnimationTime() const { return animationTime_; }
+
 private:
 	//================================================================================
 	// 型エイリアス
@@ -178,5 +195,12 @@ private:
 	float dissolveEdgeWidth_ = 0.05f;
 	Vector4 dissolveEdgeColor_ = { 1.0f, 0.5f, 0.0f, 1.0f };
 	std::string dissolveMaskTexturePath_ = "";
+
+	// アニメーション再生状態
+	Animation animation_;
+	bool hasAnimation_ = false;
+	float animationTime_ = 0.0f;
+	bool isAnimationPlaying_ = true;
+	bool isAnimationLoop_ = true;
 
 };

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <Matrix4x4.h>
+#include <Quaternion.h>
 #include <Vector2.h>
 #include <Vector3.h>
 
@@ -205,6 +206,12 @@ namespace MathUtility {
 	/// <returns>XYZ順で合成された回転行列</returns>
 	Matrix4x4 MakeRotateMatrix(const Vector3& rotate);
 	/// <summary>
+	/// クォータニオンから回転行列を作成
+	/// </summary>
+	/// <param name="quaternion">回転を表すクォータニオン</param>
+	/// <returns>回転行列</returns>
+	Matrix4x4 MakeRotateMatrix(const Quaternion& quaternion);
+	/// <summary>
 	/// アフィン変換行列
 	/// </summary>
 	/// <param name="scale"> 各軸の拡縮量</param>
@@ -213,6 +220,29 @@ namespace MathUtility {
 	/// <returns>scale・rotate・translateを合成したアフィン変換行列</returns>
 	Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Vector3& rotate,
 							   const Vector3& translate);
+	/// <summary>
+	/// アフィン変換行列（クォータニオン版）
+	/// </summary>
+	/// <param name="scale">各軸の拡縮量</param>
+	/// <param name="rotate">回転クォータニオン</param>
+	/// <param name="translate">各軸方向の移動量</param>
+	/// <returns>scale・rotate・translateを合成したアフィン変換行列</returns>
+	Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Quaternion& rotate,
+							   const Vector3& translate);
+
+	//================================================================================
+	// 補間
+	//================================================================================
+
+	/// <summary>
+	/// Vector3の線形補間
+	/// </summary>
+	Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t);
+
+	/// <summary>
+	/// Quaternionの球面線形補間
+	/// </summary>
+	Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t);
 
 	//================================================================================
 	// 投影行列

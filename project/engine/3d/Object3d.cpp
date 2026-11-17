@@ -4,9 +4,13 @@
 #include "MathUtility.h"
 #include "Model.h"
 #include "ModelManager.h"
+#include "Quaternion.h"
 #include "TextureManager.h"
+#include "TimeManager.h"
 #include "LightManager.h"
 #include <RootParameter.h>
+#include <algorithm>
+#include <cmath>
 
 using namespace MathUtility;
 
@@ -52,11 +56,43 @@ void Object3d::Update(WorldTransform* worldTransform) {
 
 	if (wt->constMap) {
 		if (model_) {
-			wt->constMap->WVP = model_->GetModelData().rootNode.localMatrix * worldViewProjectionMatrix;
-			wt->constMap->World = model_->GetModelData().rootNode.localMatrix * wt->matWorld;
+			Matrix4x4 localMatrix = model_->GetModelData().rootNode.localMatrix;
+
+			if (hasAnimation_) {
+				if (isAnimationPlaying_) {
+					animationTime_ += TimeManager::GetInstance()->GetDeltaTime();
+				}
+				if (animation_.duration > 0.0f) {
+					if (isAnimationLoop_) {
+						animationTime_ = std::fmod(animationTime_, animation_.duration);
+					} else {
+						animationTime_ = std::min(animationTime_, animation_.duration);
+					}
+				}
+
+				auto it = animation_.nodeAnimations.find(model_->GetModelData().rootNode.name);
+				if (it != animation_.nodeAnimations.end()) {
+					const NodeAnimation& rootNodeAnimation = it->second;
+					Vector3 translate = rootNodeAnimation.translate.keyframes.empty()
+						? Vector3{ 0.0f, 0.0f, 0.0f }
+						: CalculateValue(rootNodeAnimation.translate, animationTime_);
+					Quaternion rotate = rootNodeAnimation.rotate.keyframes.empty()
+						? Quaternion{ 0.0f, 0.0f, 0.0f, 1.0f }
+						: CalculateValue(rootNodeAnimation.rotate, animationTime_);
+					Vector3 scale = rootNodeAnimation.scale.keyframes.empty()
+						? Vector3{ 1.0f, 1.0f, 1.0f }
+						: CalculateValue(rootNodeAnimation.scale, animationTime_);
+					localMatrix = MakeAffineMatrix(scale, rotate, translate);
+				}
+			}
+
+			wt->constMap->WVP = localMatrix * worldViewProjectionMatrix;
+			wt->constMap->World = localMatrix * wt->matWorld;
+			wt->constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(wt->constMap->World));
 		} else {
 			wt->constMap->WVP = worldViewProjectionMatrix;
 			wt->constMap->World = wt->matWorld;
+			wt->constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(wt->constMap->World));
 		}
 	}
 }
@@ -146,6 +182,7 @@ void Object3d::SetModel(const std::string& modelName, const std::string& extensi
 
 	// 読み込んだモデルを検索してセット
 	model_ = modelManager->FindModel(modelName);
+	animationTime_ = 0.0f;
 }
 
 void Object3d::SetEnvironmentCoefficient(float coeff) {

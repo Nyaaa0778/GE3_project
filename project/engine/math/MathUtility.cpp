@@ -1,5 +1,6 @@
 #include "MathUtility.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace MathUtility {
@@ -391,6 +392,26 @@ namespace MathUtility {
 		return Multiply(rotateZ, Multiply(rotateX, rotateY));
 	}
 	/// <summary>
+	/// クォータニオンから回転行列を作成
+	/// </summary>
+	Matrix4x4 MakeRotateMatrix(const Quaternion& quaternion) {
+		Matrix4x4 result = MakeIdentityMatrix();
+
+		result.m[0][0] = quaternion.w * quaternion.w + quaternion.x * quaternion.x - quaternion.y * quaternion.y - quaternion.z * quaternion.z;
+		result.m[0][1] = 2.0f * (quaternion.x * quaternion.y + quaternion.w * quaternion.z);
+		result.m[0][2] = 2.0f * (quaternion.x * quaternion.z - quaternion.w * quaternion.y);
+
+		result.m[1][0] = 2.0f * (quaternion.x * quaternion.y - quaternion.w * quaternion.z);
+		result.m[1][1] = quaternion.w * quaternion.w - quaternion.x * quaternion.x + quaternion.y * quaternion.y - quaternion.z * quaternion.z;
+		result.m[1][2] = 2.0f * (quaternion.y * quaternion.z + quaternion.w * quaternion.x);
+
+		result.m[2][0] = 2.0f * (quaternion.x * quaternion.z + quaternion.w * quaternion.y);
+		result.m[2][1] = 2.0f * (quaternion.y * quaternion.z - quaternion.w * quaternion.x);
+		result.m[2][2] = quaternion.w * quaternion.w - quaternion.x * quaternion.x - quaternion.y * quaternion.y + quaternion.z * quaternion.z;
+
+		return result;
+	}
+	/// <summary>
 	/// アフィン変換行列
 	/// </summary>
 	/// <param name="scale"> 各軸の拡縮量</param>
@@ -412,6 +433,66 @@ namespace MathUtility {
 			translateMatrix);
 
 		return worldMatrix;
+	}
+	/// <summary>
+	/// アフィン変換行列（クォータニオン版）
+	/// </summary>
+	Matrix4x4 MakeAffineMatrix(const Vector3& scale, const Quaternion& rotate,
+		const Vector3& translate) {
+		Matrix4x4 scaleMatrix = MakeScaleMatrix(scale);
+		Matrix4x4 rotateMatrix = MakeRotateMatrix(rotate);
+		Matrix4x4 translateMatrix = MakeTranslateMatrix(translate);
+
+		return Multiply(Multiply(scaleMatrix, rotateMatrix), translateMatrix);
+	}
+
+	Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t) {
+		return {
+			v1.x + (v2.x - v1.x) * t,
+			v1.y + (v2.y - v1.y) * t,
+			v1.z + (v2.z - v1.z) * t
+		};
+	}
+
+	Quaternion Slerp(const Quaternion& q0, const Quaternion& q1, float t) {
+		Quaternion q0Adjusted = q0;
+		float dot = q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w;
+
+		if (dot < 0.0f) {
+			q0Adjusted = { -q0.x, -q0.y, -q0.z, -q0.w };
+			dot = -dot;
+		}
+
+		dot = std::clamp(dot, -1.0f, 1.0f);
+
+		if (dot >= 1.0f - 0.0005f) {
+			Quaternion result = {
+				q0Adjusted.x * (1.0f - t) + q1.x * t,
+				q0Adjusted.y * (1.0f - t) + q1.y * t,
+				q0Adjusted.z * (1.0f - t) + q1.z * t,
+				q0Adjusted.w * (1.0f - t) + q1.w * t
+			};
+			float norm = std::sqrt(result.x * result.x + result.y * result.y + result.z * result.z + result.w * result.w);
+			if (norm > 0.0f) {
+				result.x /= norm;
+				result.y /= norm;
+				result.z /= norm;
+				result.w /= norm;
+			}
+			return result;
+		}
+
+		float theta = std::acos(dot);
+		float sinTheta = std::sin(theta);
+		float scale0 = std::sin((1.0f - t) * theta) / sinTheta;
+		float scale1 = std::sin(t * theta) / sinTheta;
+
+		return {
+			scale0 * q0Adjusted.x + scale1 * q1.x,
+			scale0 * q0Adjusted.y + scale1 * q1.y,
+			scale0 * q0Adjusted.z + scale1 * q1.z,
+			scale0 * q0Adjusted.w + scale1 * q1.w
+		};
 	}
 
 	//================================================================================

@@ -24,14 +24,20 @@ struct AnimationCurve {
 struct NodeAnimation {
 	AnimationCurve<Vector3> translate;
 	AnimationCurve<Quaternion> rotate;
-	AnimationCurve<Vector3> scalel;
+	AnimationCurve<Vector3> scale;
 };
 
 struct Animation {
-	float duration; // アニメーション全体の尺（秒単位）
+	float duration = 0.0f; // アニメーション全体の尺（秒単位）
 
 	// NodeAnimation の集合、Node 名でひけるようにしておく
 	std::map<std::string, NodeAnimation> nodeAnimations;
 };
 
 Animation LoadAnimationFile(const std::string& directoryPath, const std::string& filename);
+
+/// <summary>
+/// 指定時刻の tValue キーフレーム値を補間して取得する
+/// </summary>
+template <typename tValue>
+tValue CalculateValue(const AnimationCurve<tValue>& curve, float time);
