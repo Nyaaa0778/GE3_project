@@ -6,29 +6,6 @@
 #include <assimp/Importer.hpp>
 #include <cassert>
 
-namespace {
-
-template <typename T, typename InterpolateFn>
-T CalculateCurveValue(const std::vector<Keyframe<T>>& keyframes, float time, InterpolateFn interpolate) {
-	assert(!keyframes.empty());
-	if (keyframes.size() == 1 || time <= keyframes[0].time) {
-		return keyframes[0].value;
-	}
-
-	for (size_t index = 0; index < keyframes.size() - 1; ++index) {
-		size_t nextIndex = index + 1;
-		if (keyframes[index].time <= time && time <= keyframes[nextIndex].time) {
-			float duration = keyframes[nextIndex].time - keyframes[index].time;
-			float t = (duration > 0.0f) ? (time - keyframes[index].time) / duration : 0.0f;
-			return interpolate(keyframes[index].value, keyframes[nextIndex].value, t);
-		}
-	}
-
-	return keyframes.back().value;
-}
-
-} // namespace
-
 Animation LoadAnimationFile(const std::string& directoryPath, const std::string& filename) {
 
 	// 作るアニメーション
@@ -108,8 +85,8 @@ Vector3 CalculateValue(const AnimationCurve<Vector3>& curve, float time) {
 	{
 		size_t nextIndex = index + 1;
 
-		// index と nextIndex の2つの keydframe を取得して範囲内に時刻があるかを判定
-		if (curve.keyframes[index].time <= time && curve.keyframes[nextIndex].time)
+		// index と nextIndex の2つの keyframe を取得して範囲内に時刻があるかを判定
+		if (curve.keyframes[index].time <= time && time <= curve.keyframes[nextIndex].time)
 		{
 			// 範囲内を補間する
 			float t = (time - curve.keyframes[index].time) / (curve.keyframes[nextIndex].time - curve.keyframes[index].time);
@@ -122,4 +99,28 @@ Vector3 CalculateValue(const AnimationCurve<Vector3>& curve, float time) {
 }
 
 template <>
-Quaternion Ca
+Quaternion CalculateValue(const AnimationCurve<Quaternion>& curve, float time) {
+
+	assert(!curve.keyframes.empty());
+
+	if (curve.keyframes.size() == 1 || time <= curve.keyframes[0].time)
+	{
+		return curve.keyframes[0].value;
+	}
+
+	for (size_t index = 0; index < curve.keyframes.size() - 1; ++index)
+	{
+		size_t nextIndex = index + 1;
+
+		// index と nextIndex の2つの keyframe を取得して範囲内に時刻があるかを判定
+		if (curve.keyframes[index].time <= time && time <= curve.keyframes[nextIndex].time)
+		{
+			// 範囲内を補間する
+			float t = (time - curve.keyframes[index].time) / (curve.keyframes[nextIndex].time - curve.keyframes[index].time);
+
+			return MathUtility::Slerp(curve.keyframes[index].value, curve.keyframes[nextIndex].value, t);
+		}
+	}
+
+	return (*curve.keyframes.rbegin()).value;
+}
