@@ -17,7 +17,7 @@ public:
 	/// <param name="frequency">パーティクルの発生間隔（秒）</param>
 	/// <param name="count">1回の発生で生成するパーティクル数</param>
 	/// <param name="active">エミッタの有効／無効フラグ</param>
-	ParticleEmitter(const std::string& groupName, Transform* targetTransform,
+	ParticleEmitter(const std::string& groupName, EulerTransform* targetTransform,
 		float frequency, uint32_t count, bool active = true);
 
 	/// <summary>
@@ -39,7 +39,7 @@ private:
 	std::string groupName_;
 
 	// トランスフォーム
-	Transform* transform_ = nullptr;
+	EulerTransform* transform_ = nullptr;
 
 	// 秒
 	float frequency_ = 0.1f;

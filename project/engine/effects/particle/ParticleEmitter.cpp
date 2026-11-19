@@ -16,7 +16,7 @@
 /// <param name="count">1回の発生で生成するパーティクル数</param>
 /// <param name="active">エミッタの有効／無効フラグ</param>
 ParticleEmitter::ParticleEmitter(const std::string& groupName,
-	Transform* targetTransform, float frequency,
+	EulerTransform* targetTransform, float frequency,
 	uint32_t count, bool active)
 	: groupName_(groupName), transform_(targetTransform),
 	frequency_(frequency), count_(count), isActive_(active) {

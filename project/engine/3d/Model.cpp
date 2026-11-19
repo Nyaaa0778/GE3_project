@@ -171,14 +171,17 @@ void Model::LoadModelFile(const std::string& directoryPath,
 Model::Node Model::ReadNode(aiNode* node) {
 	Node result;
 
-	// ノードの localMatrix を取得
-	aiMatrix4x4 aiLocalMatrix = node->mTransformation;
-	aiLocalMatrix.Transpose(); // 列ベクトル形式を行ベクトル形式に転置
-	for (int i = 0; i < 4; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			result.localMatrix.m[i][j] = aiLocalMatrix[i][j];
-		}
-	}
+	aiVector3D scale;
+	aiVector3D translate;
+
+	aiQuaternion rotate;
+
+	node->mTransformation.Decompose(scale, rotate, translate); // assimp の行列から SRT を抽出する
+	result.transform.scale = {scale.x, scale.y, scale.z};
+	result.transform.rotate = {rotate.x, -rotate.y, -rotate.z, rotate.w}; // x 軸を反転、回転方向も逆なので軸を反転
+	result.transform.translate = {-translate.x, translate.y, translate.z}; // x 軸を反転
+
+	result.localMatrix = MakeAffineMatrix(result.transform.scale, result.transform.rotate, result.transform.translate);
 
 	result.name = node->mName.C_Str(); // Node名を格納
 	result.children.resize(node->mNumChildren); // 子どもの数だけ確保

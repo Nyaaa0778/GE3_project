@@ -54,7 +54,7 @@ private:
 	// Transform と行列 / 投影パラメータ
 	//================================================================================
 
-	Transform transform_;
+	EulerTransform transform_;
 
 	// 水平方向視野角
 	float fovY_ = 0.45f;
