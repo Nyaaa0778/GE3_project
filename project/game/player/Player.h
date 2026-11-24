@@ -246,6 +246,15 @@ private:
 	Vector3 currentTilt_ = {0.0f, 0.0f, 0.0f};
 	Vector3 targetTilt_ = {0.0f, 0.0f, 0.0f};
 
+	// 移動入力・スラスター＆ダッシュエフェクト用パラメータ
+	Vector3 lastMoveInput_ = { 0.0f, 0.0f, 0.0f };
+	float moveInputLength_ = 0.0f;
+	float dashTimer_ = 0.0f;
+	bool isDashing_ = false;
+	float thrusterTimer_ = 0.0f;
+
+	void UpdateThrusterEffects(float deltaTime);
+
 	// ビジュアル用経過時間タイマー
 	float visualTime_ = 0.0f;
 };

@@ -19,6 +19,7 @@
 #include "EnemyBase.h"
 #include "Logger.h"
 #include "Random.h"
+#include "ParticleManager.h"
 #include "TextureManager.h"
 #include "WireframeObject.h"
 #include "TimeManager.h"
@@ -164,6 +165,11 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 	UpdateGeometricVisual(dt);
+
+	// ------------------------------------
+	// スラスター・ダッシュ軌跡エフェクトの更新
+	// ------------------------------------
+	UpdateThrusterEffects(dt);
 
 	// ------------------------------------
 	// 照準
@@ -870,6 +876,146 @@ void Player::DrawGeometricVisual() {
 		if (outerShell_) outerShell_->Draw();
 		if (forwardPointer_) forwardPointer_->Draw();
 	}
+}
+
+/// <summary>
+/// スラスター噴射＆ダッシュ・クイック移動時の軌跡エフェクト
+/// </summary>
+void Player::UpdateThrusterEffects(float deltaTime) {
+	if (!isAlive_ || materializeProgress_ < 0.95f) {
+		return;
+	}
+
+	auto* input = Input::GetInstance();
+	Vector3 currentInput = { 0.0f, 0.0f, 0.0f };
+	if (input->PushKey(DIK_D)) currentInput.x += 1.0f;
+	if (input->PushKey(DIK_A)) currentInput.x -= 1.0f;
+	if (input->PushKey(DIK_W)) currentInput.y += 1.0f;
+	if (input->PushKey(DIK_S)) currentInput.y -= 1.0f;
+
+	float currentInputLen = std::sqrt(currentInput.x * currentInput.x + currentInput.y * currentInput.y);
+
+	// 急加速・切り返し判定（停止状態からの移動開始、または進行方向の急変）
+	bool triggerDash = false;
+	if (currentInputLen > 0.1f) {
+		if (moveInputLength_ <= 0.1f) {
+			triggerDash = true; // 停止からの踏み込み
+		} else {
+			// 方向の反転・急激な切り返し（内積が小さい、またはマイナス）
+			float dot = (currentInput.x * lastMoveInput_.x + currentInput.y * lastMoveInput_.y) / (currentInputLen * moveInputLength_);
+			if (dot < 0.2f) {
+				triggerDash = true;
+			}
+		}
+	}
+
+	if (triggerDash) {
+		isDashing_ = true;
+		dashTimer_ = 0.22f; // ダッシュバースト持続時間
+	}
+
+	if (dashTimer_ > 0.0f) {
+		dashTimer_ -= deltaTime;
+		if (dashTimer_ <= 0.0f) {
+			isDashing_ = false;
+		}
+	}
+
+	Vector3 playerPos = worldTransform_.GetWorldPosition();
+
+	// 1. 常時スラスター噴射（ネオンシアン & マゼンタの二重螺旋スラスター）
+	// 自機の中心核で公転している Cyan/Magenta ツインコアのエネルギーが後方へ渦巻いて放出されるイメージ
+	thrusterTimer_ += deltaTime;
+	// 螺旋の滑らかな軌跡を描くため、高頻度(約0.016秒=毎フレーム)で螺旋上の位置を計算して配置
+	const float thrusterInterval = (currentInputLen > 0.1f) ? 0.014f : 0.020f;
+
+	auto* particleMgr = ParticleManager::GetInstance();
+	while (thrusterTimer_ >= thrusterInterval) {
+		thrusterTimer_ -= thrusterInterval;
+
+		// 螺旋の回転角（visualTime_ をベースに高速回転）
+		// 移動中は回転速度が加速し、より引き締まった高速スクリューになる
+		const float helixRotSpeed = (currentInputLen > 0.1f) ? 22.0f : 15.0f;
+		float helixAngle = visualTime_ * helixRotSpeed;
+
+		// 螺旋の半径（機体中央後方から細身のビームのように絡み合う）
+		const float helixRadius = (currentInputLen > 0.1f) ? 0.22f : 0.16f;
+
+		// 後方への推進初速
+		float fwdThrust = (currentInputLen > 0.1f) ? -13.0f : -9.0f;
+
+		// 移動入力の逆方向へのわずかな慣性
+		Vector3 baseMoveVel = {
+			-currentInput.x * 1.8f,
+			-currentInput.y * 1.8f,
+			fwdThrust
+		};
+
+		// 2つの螺旋鎖（ストランド0: シアン、ストランド1: マゼンタ は180度反転）
+		for (int strand = 0; strand < 2; ++strand) {
+			float strandAngle = helixAngle + (strand == 0 ? 0.0f : 3.14159265f);
+
+			// 螺旋円周上のオフセット座標 (XY平面上の円運動)
+			float cosA = std::cos(strandAngle);
+			float sinA = std::sin(strandAngle);
+
+			// 発生位置: 機体後方（Z = -0.75m）の螺旋円周上
+			Vector3 helixPos = playerPos + Vector3{
+				cosA * helixRadius,
+				sinA * helixRadius,
+				-0.75f
+			};
+
+			// 接線方向の回転速度ベクトル（渦巻くような速度成分）
+			// 半径方向の外向き速度はゼロにし、綺麗に螺旋を描きながら後方へ吹き飛ぶ
+			const float swirlSpeed = 2.5f;
+			Vector3 swirlVel = {
+				-sinA * swirlSpeed,
+				 cosA * swirlSpeed,
+				 0.0f
+			};
+
+			Vector3 finalVel = baseMoveVel + swirlVel;
+
+			// カラー（ストランド0: 鮮烈なネオンシアン, ストランド1: 鮮烈なネオンマゼンタ）
+			Vector4 helixColor = (strand == 0)
+				? Vector4{ 0.05f, 0.95f, 1.0f, 0.85f }   // シアン
+				: Vector4{ 1.00f, 0.15f, 0.85f, 0.85f }; // マゼンタ
+
+			// 寿命を0.10秒前後に抑えて後方へ飛び去るため、視界を塞がずくっきりと二重螺旋が見える
+			float pScale = (currentInputLen > 0.1f) ? 0.17f : 0.13f;
+			particleMgr->Emit("CircleParticle", helixPos, finalVel, helixColor, { pScale, pScale, pScale }, 0.11f, 1);
+		}
+	}
+
+	// 2. ダッシュ／クイック回避時のバースト軌跡（DigitalGlitchBox）
+	// 移動開始時や切り返し時のみ、自機の後方に小さく綺麗なデジタルボクセルがシュッと流れる
+	if (isDashing_) {
+		Vector3 dashEmitPos = playerPos + Vector3{
+			Random::RangeFloat(-0.25f, 0.25f),
+			Random::RangeFloat(-0.25f, 0.25f),
+			-0.85f
+		};
+
+		Vector3 dashBoxVel = {
+			-currentInput.x * 3.5f + Random::RangeFloat(-0.5f, 0.5f),
+			-currentInput.y * 3.5f + Random::RangeFloat(-0.5f, 0.5f),
+			-14.0f
+		};
+
+		static const std::array<Vector4, 3> kDashColors = {
+			Vector4{ 0.2f, 1.0f, 1.0f, 0.85f },  // シアン
+			Vector4{ 1.0f, 0.3f, 0.9f, 0.85f },  // マゼンタ
+			Vector4{ 1.0f, 0.95f, 0.4f, 0.85f }  // ゴールド
+		};
+		Vector4 boxCol = kDashColors[Random::RangeInt(0, static_cast<int>(kDashColors.size()) - 1)];
+		float boxScale = Random::RangeFloat(0.12f, 0.18f);
+		// 短寿命(0.12秒)で後方へ高速で飛び去るため、視界を邪魔しない
+		particleMgr->Emit("DigitalGlitchBox", dashEmitPos, dashBoxVel, boxCol, { boxScale, boxScale, boxScale }, 0.12f, 1);
+	}
+
+	lastMoveInput_ = currentInput;
+	moveInputLength_ = currentInputLen;
 }
 
 
