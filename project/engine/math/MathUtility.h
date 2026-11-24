@@ -93,6 +93,7 @@ namespace MathUtility {
 	}
 
 	//---------- Vector3 ----------
+	inline Vector3 operator-(const Vector3& v) { return {-v.x, -v.y, -v.z}; }
 	inline Vector3 operator+(const Vector3& v1, const Vector3& v2) { return Add(v1, v2); }
 	inline Vector3 operator-(const Vector3& v1, const Vector3& v2) { return Subtract(v1, v2); }
 	inline Vector3 operator*(const Vector3& v1, const Vector3& v2) { return Multiply(v1, v2); }

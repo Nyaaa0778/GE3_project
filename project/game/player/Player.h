@@ -257,5 +257,9 @@ private:
 
 	// ビジュアル用経過時間タイマー
 	float visualTime_ = 0.0f;
+
+	// 空間浮遊塵（Space Dust）スピード演出
+	float spaceDustTimer_ = 0.0f;
+	void UpdateSpaceDust(float deltaTime);
 };
 

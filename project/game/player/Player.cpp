@@ -172,6 +172,11 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	UpdateThrusterEffects(dt);
 
 	// ------------------------------------
+	// 空間浮遊塵（Space Dust）スピード演出の更新
+	// ------------------------------------
+	UpdateSpaceDust(dt);
+
+	// ------------------------------------
 	// 照準
 	// ------------------------------------
 
@@ -209,6 +214,9 @@ void Player::UpdateAnimationOnly() {
 	// 多面体ビジュアルの更新（回転アニメーション継続）
 	float dt = TimeManager::GetInstance()->GetDeltaTime();
 	UpdateGeometricVisual(dt);
+
+	// 空間浮遊塵（Space Dust）の更新
+	UpdateSpaceDust(dt);
 
 	// 前フレームのワールド座標を保存
 	prevWorldPos_ = worldTransform_.GetWorldPosition();
@@ -1017,6 +1025,88 @@ void Player::UpdateThrusterEffects(float deltaTime) {
 	lastMoveInput_ = currentInput;
 	moveInputLength_ = currentInputLen;
 }
+
+/// <summary>
+/// 空間浮遊塵（Space Dust）／スピードライン演出
+/// 自機の前方に粒子を散布し、猛スピードで後方（すれ違う位置）へ流す
+/// </summary>
+void Player::UpdateSpaceDust(float deltaTime) {
+	if (!isAlive_ || materializeProgress_ < 0.95f || !camera_) {
+		return;
+	}
+
+	spaceDustTimer_ += deltaTime;
+
+	// 生成インターバル（通常時 0.016秒 ≒ 毎フレーム1個、高速移動/ダッシュ時は2倍の頻度）
+	const float spawnInterval = isDashing_ ? 0.008f : (moveInputLength_ > 0.1f ? 0.012f : 0.016f);
+
+	auto* particleMgr = ParticleManager::GetInstance();
+
+	// カメラのワールド姿勢行列から基底ベクトル（ワールド方向）を取得
+	// 行列の行0: Right, 行1: Up, 行2: Forward
+	Vector3 forward = { camera_->matWorld.m[2][0], camera_->matWorld.m[2][1], camera_->matWorld.m[2][2] };
+	Vector3 right   = { camera_->matWorld.m[0][0], camera_->matWorld.m[0][1], camera_->matWorld.m[0][2] };
+	Vector3 up      = { camera_->matWorld.m[1][0], camera_->matWorld.m[1][1], camera_->matWorld.m[1][2] };
+	forward = Normalize(forward);
+	right   = Normalize(right);
+	up      = Normalize(up);
+
+	Vector3 playerPos = worldTransform_.GetWorldPosition();
+
+	while (spaceDustTimer_ >= spawnInterval) {
+		spaceDustTimer_ -= spawnInterval;
+
+		// 1. スポーン位置：自機・カメラの前方空間（距離 35m 〜 70m）
+		float spawnDist = Random::RangeFloat(35.0f, 70.0f);
+
+		// 画面の視界（錐台）に合わせて左右・上下に散布（距離が遠いほど広く分布）
+		float spreadScale = spawnDist * 0.32f;
+		float offsetX = Random::RangeFloat(-spreadScale * 1.5f, spreadScale * 1.5f);
+		float offsetY = Random::RangeFloat(-spreadScale * 0.9f, spreadScale * 0.9f);
+
+		// 自機の直前中央（照準・レティクルエリア）は適度に空けて視認性を確保（トンネル効果）
+		if (std::abs(offsetX) < 1.8f && std::abs(offsetY) < 1.4f) {
+			offsetX += (offsetX >= 0.0f ? 2.5f : -2.5f);
+		}
+
+		Vector3 spawnPos = playerPos + forward * spawnDist + right * offsetX + up * offsetY;
+
+		// 2. 速度設定：後方へ猛スピードで流す
+		float baseSpeed = isDashing_ ? 130.0f : (moveInputLength_ > 0.1f ? 95.0f : 80.0f);
+		float dustSpeed = baseSpeed + Random::RangeFloat(-10.0f, 15.0f);
+
+		Vector3 dustVel = forward * (-dustSpeed);
+
+		// 自機の移動入力に応じた視差・慣性（自機が右に動けば塵は左にわずかに流れる）
+		if (moveInputLength_ > 0.1f) {
+			dustVel -= right * (lastMoveInput_.x * 4.5f);
+			dustVel -= up * (lastMoveInput_.y * 4.5f);
+		}
+
+		// 3. 寿命：自機とカメラを通り抜けて背後に消えるまでの時間
+		float lifeTime = (spawnDist + 20.0f) / dustSpeed;
+
+		// 4. パーティクルのバリエーション
+		// 80%：微小な星屑（淡いシアン〜ホワイト）
+		// 15%：スピード粒子（輝度の高い純白光）
+		// 5%：サイバー空間の微小グリッチボクセル
+		float typeRoll = Random::RangeFloat(0.0f, 1.0f);
+		if (typeRoll < 0.80f) {
+			Vector4 color = { 0.60f, 0.90f, 1.0f, Random::RangeFloat(0.40f, 0.70f) };
+			float pScale = Random::RangeFloat(0.04f, 0.07f);
+			particleMgr->Emit("CircleParticle", spawnPos, dustVel, color, { pScale, pScale, pScale }, lifeTime, 1);
+		} else if (typeRoll < 0.95f) {
+			Vector4 color = { 0.95f, 0.98f, 1.0f, Random::RangeFloat(0.70f, 0.95f) };
+			float pScale = Random::RangeFloat(0.08f, 0.12f);
+			particleMgr->Emit("CircleParticle", spawnPos, dustVel, color, { pScale, pScale, pScale }, lifeTime, 1);
+		} else {
+			Vector4 color = { 0.30f, 1.0f, 1.0f, 0.75f };
+			float pScale = Random::RangeFloat(0.06f, 0.09f);
+			particleMgr->Emit("DigitalGlitchBox", spawnPos, dustVel, color, { pScale, pScale, pScale }, lifeTime, 1);
+		}
+	}
+}
+
 
 
 
