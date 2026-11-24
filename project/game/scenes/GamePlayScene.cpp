@@ -817,8 +817,8 @@ void GamePlayScene::Update() {
 			{
 				gameClearUI_->Update();
 
-				// タイトルへ戻る入力要求があったら画面遷移
-				if (gameClearUI_->IsTitleRequested())
+				// タイトルへ戻る入力要求があったら画面遷移（またはクリア後3.5秒経過で自動遷移）
+				if (gameClearUI_->IsTitleRequested() || clearStepTimer_ >= 3.5f)
 				{
 					if (!CrtTransition::GetInstance()->IsTransitioning())
 					{

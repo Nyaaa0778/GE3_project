@@ -86,5 +86,9 @@ private:
 	float glitchBurstTimer_ = 0.0f;
 	bool isGlitching_ = false;
 	int glitchSubBurstCount_ = 0;        // たまに「パパッ」と二連撃を起こす用
+
+	// デモプレイ自動遷移タイマー（タイトル放置でGamePlayへ自動遷移）
+	float autoTransitionTimer_ = 0.0f;
+	float autoTransitionDuration_ = 3.5f;
 };
 

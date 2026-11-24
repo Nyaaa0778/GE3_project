@@ -9,6 +9,7 @@
 #include "PostProcessRenderer.h"
 #include "PostProcessEffects.h"
 #include "CrtTransition.h"
+#include "TimeManager.h"
 
 #ifdef USE_IMGUI
 #include "imgui.h"
@@ -54,6 +55,9 @@ void TitleScene::Initialize() {
 	if (!CrtTransition::GetInstance()->IsTransitioning()) {
 		PostProcessRenderer::GetInstance()->SetMode(PostProcessRenderer::PostProcessMode::kGlitch);
 	}
+
+	// デモプレイ自動遷移タイマーの初期化
+	autoTransitionTimer_ = 0.0f;
 }
 
 void TitleScene::Update() {
@@ -141,9 +145,19 @@ void TitleScene::Update() {
 
 	UpdateImGui();
 
-	// --- シーン遷移判定 (Space / Aボタン) ---
+	// --- シーン遷移判定 (デモプレイ自動遷移 / Space / Aボタン) ---
 	if (!CrtTransition::GetInstance()->IsTransitioning()) {
-		if (input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
+		float dt = 0.016f;
+		if (auto* tm = TimeManager::GetInstance()) {
+			float actualDt = tm->GetDeltaTime();
+			if (actualDt > 0.0f && actualDt < 0.1f) {
+				dt = actualDt;
+			}
+		}
+		autoTransitionTimer_ += dt;
+
+		if (autoTransitionTimer_ >= autoTransitionDuration_ ||
+			input->TriggerKey(DIK_SPACE) || input->TriggerButton(XINPUT_GAMEPAD_A)) {
 			input->SetShake(0.0f, 0.0f);
 			// CRTグリッチ画面遷移演出の開始（完了後はkNormalに戻す）
 			CrtTransition::GetInstance()->StartTransition("GAMEPLAY", PostProcessRenderer::PostProcessMode::kNormal);

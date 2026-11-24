@@ -261,6 +261,11 @@ void GameOverUI::Update() {
 			input->TriggerButton(XINPUT_GAMEPAD_B) || input->TriggerButton(XINPUT_GAMEPAD_START)) {
 			isTitleRequested_ = true;
 		}
+
+		// デモプレイ仕様：ゲームオーバー時も一定時間経過で自動的にタイトルへ戻る
+		if (timer_ >= 3.5f) {
+			isTitleRequested_ = true;
+		}
 	}
 }
 

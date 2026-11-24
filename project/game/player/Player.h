@@ -104,6 +104,10 @@ public:
 	// すでに飛行中のホーミング弾のターゲットになっているか
 	bool IsTargetedByActiveHomingBullet(const EnemyBase* enemy) const;
 
+	// デモプレイ設定
+	void SetDemoMode(bool enable) { isDemoMode_ = enable; }
+	bool IsDemoMode() const { return isDemoMode_; }
+
 private:
 	// ------------------------------------
 	// 本体
@@ -188,7 +192,7 @@ public:
 	// ホーミング弾のリチャージシステム
 	static constexpr int kMaxHomingAmmo = 5;
 	int homingAmmo_ = kMaxHomingAmmo;
-	float kHomingRechargeTime = 2.0f; // 1発回復するのに要する時間（秒）
+	float kHomingRechargeTime = 1.5f; // 1発回復するのに要する時間（秒）
 	float homingRechargeTimer_ = 0.0f;
 
 	// 前フレームのワールド座標（速度計算用）
@@ -261,5 +265,12 @@ private:
 	// 空間浮遊塵（Space Dust）スピード演出
 	float spaceDustTimer_ = 0.0f;
 	void UpdateSpaceDust(float deltaTime);
+
+	// デモプレイ自動操作
+	bool isDemoMode_ = true;
+	float demoTimer_ = 0.0f;
+	float autoFireTimer_ = 0.0f;
+	Vector3 demoMoveInput_ = { 0.0f, 0.0f, 0.0f };
+	void UpdateDemoMovement(const std::list<EnemyBase*>& enemies, float deltaTime);
 };
 

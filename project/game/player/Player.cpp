@@ -105,6 +105,14 @@ void Player::Initialize(const Vector3& InitialPos, Object3d* model, Camera* came
 
 	// 数式制御多面体ビジュアルの初期化
 	InitializeGeometricVisual();
+
+	// デモプレイ設定（自動移動・追尾弾モード・高速リチャージ）
+	isDemoMode_ = true;
+	isLockOnMode_ = true;
+	kHomingRechargeTime = 1.5f;
+	demoTimer_ = 0.0f;
+	autoFireTimer_ = 0.0f;
+	demoMoveInput_ = { 0.0f, 0.0f, 0.0f };
 }
 
 void Player::Update(const std::list<EnemyBase*>& enemies) {
@@ -148,10 +156,18 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// プレイヤーの回転を常に(0, 0, 0)にする（親であるレールカメラの向きに平行にする）
 	worldTransform_.rotation = { 0.0f, 0.0f, 0.0f };
 
+	float dt = TimeManager::GetInstance()->GetDeltaTime();
+
 	// ステートの更新
 	if (currentState_)
 	{
 		currentState_->Update(this);
+	}
+
+	// デモプレイ時の自動移動更新
+	if (isDemoMode_)
+	{
+		UpdateDemoMovement(enemies, dt);
 	}
 
 	// トランスフォーム行列の更新と転送
@@ -163,7 +179,6 @@ void Player::Update(const std::list<EnemyBase*>& enemies) {
 	// ------------------------------------
 	// 幾何学多面体ビジュアルの更新
 	// ------------------------------------
-	float dt = TimeManager::GetInstance()->GetDeltaTime();
 	UpdateGeometricVisual(dt);
 
 	// ------------------------------------
@@ -328,7 +343,9 @@ bool Player::IsTargetedByActiveHomingBullet(const EnemyBase* enemy) const {
 void Player::Attack() {
 	auto* input = Input::GetInstance();
 
-	if (input->TriggerKey(DIK_E)) {
+	if (isDemoMode_) {
+		isLockOnMode_ = true; // デモプレイ中は常に追尾弾（ロックオン）モード
+	} else if (input->TriggerKey(DIK_E)) {
 		isLockOnMode_ = !isLockOnMode_; // 通常弾とホーミング弾を切り替え
 		wasWeaponModeChanged_ = true;
 	}
@@ -336,6 +353,41 @@ void Player::Attack() {
 	// クールダウンが終了しており、キー入力があったら発射
 	// ※ロックオンモード時は1回押すごとに一斉発射（TriggerKey）、通常モード時は長押し連射（PushKey）
 	bool isShootInput = isLockOnMode_ ? input->TriggerKey(DIK_SPACE) : input->PushKey(DIK_SPACE);
+
+	// デモプレイ時の自動射撃判定
+	if (isDemoMode_ && isLockOnMode_) {
+		float dt = TimeManager::GetInstance()->GetDeltaTime();
+		if (lockOn_ && !lockOn_->GetTargets().empty() && homingAmmo_ > 0 && cooldownTimer_ <= 0.0f) {
+			autoFireTimer_ += dt;
+
+			// 複数ターゲットが溜まるか、0.16秒経過で自動一斉発射
+			bool targetThreshold = lockOn_->GetTargets().size() >= 3 ||
+			                       lockOn_->GetTargets().size() >= static_cast<size_t>(homingAmmo_);
+
+			// 敵が至近距離まで迫っている場合は即座に迎撃
+			bool enemyImminent = false;
+			Vector3 pPos = worldTransform_.GetWorldPosition();
+			for (EnemyBase* target : lockOn_->GetTargets()) {
+				if (target && target->IsAlive()) {
+					if (camera_) {
+						Vector3 tView = TransformCoord(target->GetWorldPosition(), camera_->matView);
+						Vector3 pView = TransformCoord(pPos, camera_->matView);
+						if (tView.z - pView.z < 35.0f) {
+							enemyImminent = true;
+							break;
+						}
+					}
+				}
+			}
+
+			if (autoFireTimer_ >= 0.16f || targetThreshold || enemyImminent) {
+				isShootInput = true;
+				autoFireTimer_ = 0.0f;
+			}
+		} else {
+			autoFireTimer_ = 0.0f;
+		}
+	}
 	if (isShootInput) {
 		if(cooldownTimer_ <= 0.0f)
 		{
@@ -436,8 +488,8 @@ void Player::OnCollision() {
 		return;
 	}
 
-	// 被弾時にHPを減らす
-	hp_ -= 100.0f;
+	// 被弾時にHPを減らす（デモプレイ仕様：敵から受けるダメージを5にする）
+	hp_ -= 5.0f;
 	if (hp_ <= 0.0f) {
 		hp_ = 0.0f;
 		isAlive_ = false;
@@ -561,6 +613,12 @@ void Player::UpdateGeometricVisual(float deltaTime) {
 	if (input->PushKey(DIK_A)) inputX -= 1.0f;
 	if (input->PushKey(DIK_W)) inputY += 1.0f;
 	if (input->PushKey(DIK_S)) inputY -= 1.0f;
+
+	// デモプレイ時は自動移動入力でバンク・ティルト角を駆動
+	if (isDemoMode_ && inputX == 0.0f && inputY == 0.0f) {
+		inputX = demoMoveInput_.x;
+		inputY = demoMoveInput_.y;
+	}
 
 	// 目標ティルト角（左右バンクロールZ、上下ピッチX）
 	targetTilt_.z = -inputX * 0.30f;
@@ -901,6 +959,11 @@ void Player::UpdateThrusterEffects(float deltaTime) {
 	if (input->PushKey(DIK_W)) currentInput.y += 1.0f;
 	if (input->PushKey(DIK_S)) currentInput.y -= 1.0f;
 
+	// デモプレイ時は自動移動入力でスラスターを駆動
+	if (isDemoMode_ && currentInput.x == 0.0f && currentInput.y == 0.0f) {
+		currentInput = demoMoveInput_;
+	}
+
 	float currentInputLen = std::sqrt(currentInput.x * currentInput.x + currentInput.y * currentInput.y);
 
 	// 急加速・切り返し判定（停止状態からの移動開始、または進行方向の急変）
@@ -1105,6 +1168,107 @@ void Player::UpdateSpaceDust(float deltaTime) {
 			particleMgr->Emit("DigitalGlitchBox", spawnPos, dustVel, color, { pScale, pScale, pScale }, lifeTime, 1);
 		}
 	}
+}
+
+void Player::UpdateDemoMovement(const std::list<EnemyBase*>& enemies, float deltaTime) {
+	demoTimer_ += deltaTime;
+
+	// 1. ゆっくりとした優雅なリサージュ巡航軌道（穏やかな低周波）
+	const float kMoveLimitX = 5.5f;
+	const float kMoveLimitY = 2.8f;
+	float wanderX = std::sin(demoTimer_ * 0.45f) * 3.2f + std::cos(demoTimer_ * 0.22f) * 1.0f;
+	float wanderY = std::sin(demoTimer_ * 0.65f) * 1.4f + std::cos(demoTimer_ * 0.32f) * 0.5f;
+
+	// 2. 前方にいる生存中かつ「射程内（自機から65m以内）」の敵のみを探索
+	Vector3 playerPos = worldTransform_.GetWorldPosition();
+	Vector3 playerPosView = camera_ ? TransformCoord(playerPos, camera_->matView) : playerPos;
+
+	EnemyBase* bestTarget = nullptr;
+	float nearestDistSq = 1e9f;
+	int activeCount = 0;
+	Vector3 activeCenter = { 0.0f, 0.0f, 0.0f };
+
+	for (EnemyBase* enemy : enemies) {
+		if (!enemy || !enemy->IsAlive()) continue;
+
+		Vector3 ePos = enemy->GetWorldPosition();
+		if (camera_) {
+			Vector3 ePosView = TransformCoord(ePos, camera_->matView);
+			// 自機より手前または真横すぎる敵はスキップ
+			if (ePosView.z <= playerPosView.z + 1.0f) {
+				continue;
+			}
+		}
+
+		// 自機からの実距離を計算（65m以内の射程内に入った敵のみロックオン対象とする）
+		float distToPlayer = Length(ePos - playerPos);
+		if (distToPlayer > 65.0f) {
+			continue; // 遠すぎる敵はまだ狙わない
+		}
+
+		activeCount++;
+		activeCenter.x += ePos.x;
+		activeCenter.y += ePos.y;
+		activeCenter.z += ePos.z;
+
+		// 飛行中のホーミング弾が向かっていない敵を最優先
+		bool alreadyTargeted = IsTargetedByActiveHomingBullet(enemy);
+		float dSq = distToPlayer * distToPlayer;
+		if (alreadyTargeted) {
+			dSq += 1000.0f; // 既に狙われている敵の優先度を下げる
+		}
+
+		if (dSq < nearestDistSq) {
+			nearestDistSq = dSq;
+			bestTarget = enemy;
+		}
+	}
+
+	float targetX = wanderX;
+	float targetY = wanderY;
+
+	if (activeCount > 0 && worldTransform_.parent) {
+		// 射程内の優先ターゲットに向かってゆっくり照準を合わせる
+		Vector3 targetWorld = (bestTarget != nullptr)
+			? bestTarget->GetWorldPosition()
+			: Vector3{ activeCenter.x / activeCount, activeCenter.y / activeCount, activeCenter.z / activeCount };
+
+		Matrix4x4 invParent = MathUtility::MakeInverseMatrix(worldTransform_.parent->matWorld);
+		Vector3 enemyLocal = TransformCoord(targetWorld, invParent);
+
+		// レティクル倍率 (kReticleScaleX = 2.5f, kReticleScaleY = 2.5f) を考慮した自機の目標座標
+		float aimX = std::clamp(enemyLocal.x / 2.5f, -kMoveLimitX * 0.95f, kMoveLimitX * 0.95f);
+		float aimY = std::clamp(enemyLocal.y / 2.5f, -kMoveLimitY * 0.95f, kMoveLimitY * 0.95f);
+
+		targetX = aimX;
+		targetY = aimY;
+	}
+
+	targetX = std::clamp(targetX, -kMoveLimitX, kMoveLimitX);
+	targetY = std::clamp(targetY, -kMoveLimitY, kMoveLimitY);
+
+	// 自機位置を目標位置へゆっくり・穏やかに追従（最大秒速2.2mでリラックスした動き）
+	float dx = targetX - worldTransform_.translation.x;
+	float dy = targetY - worldTransform_.translation.y;
+	float dist = std::sqrt(dx * dx + dy * dy);
+
+	if (dist > 0.0001f) {
+		const float maxSpeed = 2.2f; // 上品で落ち着いた低速移動
+		float speed = (std::min)(dist * 1.8f, maxSpeed);
+		float step = speed * deltaTime;
+		if (step > dist) step = dist;
+
+		worldTransform_.translation.x += (dx / dist) * step;
+		worldTransform_.translation.y += (dy / dist) * step;
+	}
+
+	worldTransform_.translation.x = std::clamp(worldTransform_.translation.x, -kMoveLimitX, kMoveLimitX);
+	worldTransform_.translation.y = std::clamp(worldTransform_.translation.y, -kMoveLimitY, kMoveLimitY);
+
+	// 仮想移動入力ベクトル（ゆっくり動くためバンク・ティルト角も穏やかに反映）
+	demoMoveInput_.x = std::clamp(dx * 0.6f, -0.6f, 0.6f);
+	demoMoveInput_.y = std::clamp(dy * 0.6f, -0.6f, 0.6f);
+	demoMoveInput_.z = 0.0f;
 }
 
 

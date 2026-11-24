@@ -330,6 +330,11 @@ void GameClearUI::Update() {
 		}
 	}
 
+	// デモプレイ仕様：クリア演出後、一定時間（timer_ >= 3.5秒）経過で自動的にTitle画面へ遷移
+	if (isCountUpFinished_ && timer_ >= 3.5f) {
+		isTitleRequested_ = true;
+	}
+
 	// 5. 3D立体タイトル文字「STAGE CLEAR」の更新
 	Vector4 titleColor = {0.10f, 0.95f, 1.0f, titleAppear * 1.0f};
 

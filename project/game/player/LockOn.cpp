@@ -116,7 +116,7 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 	// 生存している敵、プレイヤーより前方、かつ「まだホーミング弾が向かっていない敵」だけに絞り込む
 	targetInfos_.erase(
 		std::remove_if(targetInfos_.begin(), targetInfos_.end(),
-			[&enemies, camera, &playerPositionView, player](const TargetInfo& info) {
+			[&enemies, camera, &playerPositionView, &playerPositionWorld, player](const TargetInfo& info) {
 				// 敵がすでに存在しない、または死亡している場合
 				if (std::find(enemies.begin(), enemies.end(), info.enemy) == enemies.end() ||
 					!info.enemy->IsAlive()) {
@@ -131,6 +131,11 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 				Vector3 positionView = TransformCoord(positionWorld, camera->matView);
 				// 自機より手前（ビュー空間でZが自機以下）にいる場合は除外
 				if (positionView.z <= playerPositionView.z) {
+					return true;
+				}
+				// 自機からの距離が届かないほど遠い場合は除外
+				float distToPlayer = Length(positionWorld - playerPositionWorld);
+				if (distToPlayer > kMaxLockOnDistance + 15.0f) {
 					return true;
 				}
 				return false;
@@ -179,6 +184,12 @@ void LockOn::Update(Player* player, std::list<EnemyBase*>& enemies, const Camera
 
 		// 敵のビュー座標.z が 自機のビュー座標.z 以下なら除外
 		if (positionView.z <= playerPositionView.z) {
+			continue;
+		}
+
+		// 自機からの距離が届かないほど遠い場合は除外（最大射程外）
+		float distToPlayer = Length(positionWorld - playerPositionWorld);
+		if (distToPlayer > kMaxLockOnDistance) {
 			continue;
 		}
 

@@ -49,6 +49,8 @@ public:
 private:
 	// ロックオンの限界値（スクリーン上のピクセル距離）
 	static constexpr float kDistanceLockOn = 60.0f;
+	// ロックオン可能な最大距離（自機からのワールド空間距離：レティクル距離50m基準）
+	static constexpr float kMaxLockOnDistance = 65.0f;
 	// 基準スケール（引き締まったコンパクトサイズ）
 	static constexpr float kBaseWireframeSize = 0.95f;
 	// 最大ロックオン数
