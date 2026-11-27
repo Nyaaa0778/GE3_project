@@ -35,6 +35,8 @@ void Model::Initialize(const std::string& directoryPath,
 
 	// 頂点データの作成
 	CreateVertexData();
+	// インデックスデータの作成
+	CreateIndexData();
 	// マテリアルデータの作成
 	CreateMaterialData();
 }
@@ -54,6 +56,9 @@ void Model::Draw() {
 	// vertexBufferViewを設定
 	modelCommon_->GetDxCommon()->GetCommandList()->IASetVertexBuffers(
 		0, 1, &vertexBufferView_);
+	// indexBufferViewを設定
+	modelCommon_->GetDxCommon()->GetCommandList()->IASetIndexBuffer(
+		&indexBufferView_);
 
 	// マテリアルのCBufferの場所を設定
 	modelCommon_->GetDxCommon()
@@ -66,9 +71,9 @@ void Model::Draw() {
 		kRootParamMainTexture, TextureManager::GetInstance()->GetSrvHandleGPU(
 			modelData_.material.textureFilePath));
 
-	// 描画
-	modelCommon_->GetDxCommon()->GetCommandList()->DrawInstanced(
-		static_cast<UINT>(modelData_.vertices.size()), 1, 0, 0);
+	// 描画（インデックス描画）
+	modelCommon_->GetDxCommon()->GetCommandList()->DrawIndexedInstanced(
+		static_cast<UINT>(modelData_.indices.size()), 1, 0, 0, 0);
 }
 
 //================================================================================
@@ -130,26 +135,30 @@ void Model::LoadModelFile(const std::string& directoryPath,
 		assert(mesh->HasNormals()); // 法線がないメッシュは非対応
 		assert(mesh->HasTextureCoords(0)); // Texcoord がないメッシュは非対応
 
-		// メッシュの中身(Face)の解析
+		// 複数メッシュ対応のための頂点オフセット
+		uint32_t vertexOffset = static_cast<uint32_t>(modelData_.vertices.size());
+		modelData_.vertices.resize(vertexOffset + mesh->mNumVertices);
+
+		// 頂点データの解析
+		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
+			aiVector3D& position = mesh->mVertices[vertexIndex];
+			aiVector3D& normal = mesh->mNormals[vertexIndex];
+			aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
+
+			VertexData& vertex = modelData_.vertices[vertexOffset + vertexIndex];
+			vertex.position = {-position.x, position.y, position.z, 1.0f};
+			vertex.normal = {-normal.x, normal.y, normal.z};
+			vertex.texcoord = {texcoord.x, texcoord.y};
+		}
+
+		// インデックス(Face)の解析
 		for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 			aiFace& face = mesh->mFaces[faceIndex];
 			assert(face.mNumIndices == 3); // 三角形のみサポート
 
-			// Face の中身(Vertex)の解析
 			for (uint32_t element = 0; element < face.mNumIndices; ++element) {
 				uint32_t vertexIndex = face.mIndices[element];
-				aiVector3D& position = mesh->mVertices[vertexIndex];
-				aiVector3D& normal = mesh->mNormals[vertexIndex];
-				aiVector3D& texcoord = mesh->mTextureCoords[0][vertexIndex];
-
-				VertexData vertex;
-				vertex.position = {position.x, position.y, position.z, 1.0f};
-				vertex.normal = {normal.x, normal.y, normal.z};
-				vertex.texcoord = {texcoord.x, texcoord.y};
-
-				vertex.position.x *= -1.0f;
-				vertex.normal.x *= -1.0f;
-				modelData_.vertices.push_back(vertex);
+				modelData_.indices.push_back(vertexOffset + vertexIndex);
 			}
 		}
 	}
@@ -216,6 +225,25 @@ void Model::CreateVertexData() {
 	vertexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&vertexData_));
 	std::memcpy(vertexData_, modelData_.vertices.data(),
 		sizeof(VertexData) * modelData_.vertices.size());
+}
+/// <summary>
+/// インデックスデータの作成
+/// </summary>
+void Model::CreateIndexData() {
+	// indexResourceを作成
+	indexBuffer_ = modelCommon_->GetDxCommon()->CreateBufferResource(
+		sizeof(uint32_t) * modelData_.indices.size());
+
+	// indexBufferViewを作成
+	indexBufferView_.BufferLocation = indexBuffer_->GetGPUVirtualAddress();
+	indexBufferView_.SizeInBytes =
+		UINT(sizeof(uint32_t) * modelData_.indices.size());
+	indexBufferView_.Format = DXGI_FORMAT_R32_UINT;
+
+	// indexResourceにインデックスデータを書き込む
+	indexBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&indexData_));
+	std::memcpy(indexData_, modelData_.indices.data(),
+		sizeof(uint32_t) * modelData_.indices.size());
 }
 /// <summary>
 /// マテリアルデータの作成
