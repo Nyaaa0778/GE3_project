@@ -96,6 +96,30 @@ void Object3d::Update(WorldTransform* worldTransform) {
 		}
 	}
 }
+
+/// <summary>
+/// スケルトン付き更新
+/// </summary>
+void Object3d::Update(SkeltonData& skeltonData, WorldTransform* worldTransform) {
+	Update(worldTransform);
+
+	// スキン付きメッシュは glTF 仕様上 rootNode.localMatrix（例: Armature の 0.01 スケール等）を適用しない
+	WorldTransform* wt = worldTransform;
+	if (!wt) {
+		wt = externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_;
+	}
+	if (wt->constMap) {
+		Matrix4x4 viewProjectionMatrix = camera_ ? camera_->GetViewProjectionMatrix() : MakeIdentityMatrix();
+		wt->constMap->WVP = wt->matWorld * viewProjectionMatrix;
+		wt->constMap->World = wt->matWorld;
+		wt->constMap->WorldInverseTranspose = MakeTransposeMatrix(MakeInverseMatrix(wt->constMap->World));
+	}
+
+	if (hasAnimation_) {
+		Skelton::ApplyAnimation(skeltonData, animation_, animationTime_);
+	}
+	Skelton::Update(skeltonData);
+}
 /// <summary>
 /// 描画
 /// </summary>
@@ -165,6 +189,10 @@ const Vector4& Object3d::GetColor() const { return model_->GetColor(); }
 
 float Object3d::GetEnvironmentCoefficient() {
 	return model_->GetEnvironmentCofficient();
+}
+
+const Node* Object3d::GetRootNode() const {
+	return model_ ? &model_->GetModelData().rootNode : nullptr;
 }
 
 //================================================================================

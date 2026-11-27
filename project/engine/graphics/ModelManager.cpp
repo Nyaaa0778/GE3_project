@@ -35,22 +35,30 @@ void ModelManager::Finalize() { instance.reset(); }
 /// <param name="modelName">モデル名</param>
 /// <param name="extension">拡張子（デフォルトは "obj"）</param>
 void ModelManager::LoadModel(const std::string& modelName, const std::string& extension) {
-	// 読み込み済みのモデルを検索
-	if (models_.contains(modelName)) {
-		// 読み込み済みなら早期に return
+	if (models_.contains(modelName))
+	{
 		return;
 	}
 
-	std::string directoryPath = "resources/models/" + modelName;
+	std::string directoryPath;
+	std::string fileName;
 
-	// 拡張子を指定
-	std::string fileName = modelName + "." + extension;
+	size_t slashPos = modelName.find_last_of('/');
+	if (slashPos != std::string::npos)
+	{
+		// 例: "human/walk" -> directoryPath = "resources/models/human", fileName = "walk.gltf"
+		directoryPath = "resources/models/" + modelName.substr(0, slashPos);
+		fileName = modelName.substr(slashPos + 1) + "." + extension;
+	} else
+	{
+		// 従来通り: "simpleSkin" -> "resources/models/simpleSkin", "simpleSkin.gltf"
+		directoryPath = "resources/models/" + modelName;
+		fileName = modelName + "." + extension;
+	}
 
-	// モデルの生成とファイル読み込み、初期化
 	std::unique_ptr<Model> model = std::make_unique<Model>();
 	model->Initialize(directoryPath, fileName);
 
-	// モデルを mapコンテナ に格納する
 	models_.insert(std::make_pair(modelName, std::move(model)));
 }
 

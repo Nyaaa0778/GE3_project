@@ -248,6 +248,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="engine\3d\WireframeObject.cpp" />
     <ClCompile Include="engine\3d\WireframeRenderer.cpp" />
     <ClCompile Include="engine\graphics\PipelineStateCache.cpp" />
+    <ClCompile Include="Skelton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\finalBlit\BoxFilter.PS.hlsl">
@@ -502,6 +503,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="engine\3d\WireframeRenderer.h" />
     <ClInclude Include="engine\graphics\PipelineStateCache.h" />
     <ClInclude Include="KeyframeAnimation.h" />
+    <ClInclude Include="Node.h" />
+    <ClInclude Include="Skelton.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

@@ -11,6 +11,9 @@
 #include <wrl.h>
 
 #include "LightingType.h"
+#include <Transform.h>
+#include <Node.h>
+
 #include <assimp/scene.h>
 
 class ModelCommon;
@@ -58,14 +61,6 @@ private:
 	struct MaterialData {
 		std::string textureFilePath;
 		uint32_t textureIndex = 0;
-	};
-
-	// ノード
-	struct Node {
-		QuaternionTransform transform;
-		Matrix4x4 localMatrix;
-		std::string name;
-		std::vector<Node> children;
 	};
 
 	// モデルデータ

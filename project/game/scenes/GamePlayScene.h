@@ -2,6 +2,7 @@
 
 #include "IScene.h"
 #include "KeyframeAnimation.h"
+#include "Skelton.h"
 
 #include <memory>
 
@@ -27,10 +28,12 @@ private:
 	std::unique_ptr<DebugCamera> debugCamera_;
 	bool useDebugCamera_ = false;
 
-	std::unique_ptr<Object3d> animatedCube_;
-	Animation cubeAnimation_;
+	std::unique_ptr<Object3d> simpleSkin_;
+	Animation simpleSkinAnimation_;
+	Skelton simpleSkinSkelton_;
 	bool isAnimationPlaying_ = true;
 	bool isAnimationLoop_ = true;
+	bool drawSkelton_ = true;
 };
 
 

@@ -33,30 +33,37 @@ void GamePlayScene::Initialize() {
 	lightManager->SetDirectionalLightIntensity(1.0f);
 
 	// AnimatedCube の生成・初期化
-	animatedCube_ = std::make_unique<Object3d>();
-	animatedCube_->Initialize("AnimatedCube", "gltf");
-	animatedCube_->SetCamera(camera_.get());
-	animatedCube_->SetLightingType(LightingType::kHalfLambert);
+	simpleSkin_ = std::make_unique<Object3d>();
+	simpleSkin_->Initialize("human/walk", "gltf");
+	simpleSkin_->SetCamera(camera_.get());
+	simpleSkin_->SetLightingType(LightingType::kHalfLambert);
 
 	// アニメーションの読み込み・セット
-	cubeAnimation_ = LoadAnimationFile("resources/models/AnimatedCube", "AnimatedCube.gltf");
-	animatedCube_->SetAnimation(cubeAnimation_);
+	simpleSkinAnimation_ = LoadAnimationFile("resources/models/human", "walk.gltf");
+	simpleSkin_->SetAnimation(simpleSkinAnimation_);
+	simpleSkin_->SetRotation({0.0f, 3.14159265f, 0.0f});
+
+	// スケルトンの初期化
+	if (const Node* rootNode = simpleSkin_->GetRootNode()) {
+		simpleSkinSkelton_.Initialize(*rootNode);
+	}
 }
 
 void GamePlayScene::Update() {
 #ifdef USE_IMGUI
-	ImGui::Begin("AnimatedCube");
+	ImGui::Begin("simpleSkin");
 	ImGui::Checkbox("Use Debug Camera", &useDebugCamera_);
+	ImGui::Checkbox("Draw Skelton", &drawSkelton_);
 	if (ImGui::Checkbox("Playing", &isAnimationPlaying_)) {
-		animatedCube_->SetAnimationPlaying(isAnimationPlaying_);
+		simpleSkin_->SetAnimationPlaying(isAnimationPlaying_);
 	}
 	if (ImGui::Checkbox("Loop", &isAnimationLoop_)) {
-		animatedCube_->SetAnimationLoop(isAnimationLoop_);
+		simpleSkin_->SetAnimationLoop(isAnimationLoop_);
 	}
 	if (ImGui::Button("Reset Animation")) {
-		animatedCube_->ResetAnimation();
+		simpleSkin_->ResetAnimation();
 	}
-	ImGui::Text("Animation Time: %.2f / %.2f sec", animatedCube_->GetAnimationTime(), cubeAnimation_.duration);
+	ImGui::Text("Animation Time: %.2f / %.2f sec", simpleSkin_->GetAnimationTime(), simpleSkinAnimation_.duration);
 	ImGui::End();
 #endif
 
@@ -66,14 +73,17 @@ void GamePlayScene::Update() {
 		camera_->CalculateMatrix();
 	}
 
-	if (animatedCube_) {
-		animatedCube_->Update();
+	if (simpleSkin_) {
+		simpleSkin_->Update(simpleSkinSkelton_.GetSkeltonData());
 	}
 }
 
 void GamePlayScene::Draw() {
-	if (animatedCube_) {
-		animatedCube_->Draw();
+	if (simpleSkin_) {
+		simpleSkin_->Draw();
+		if (drawSkelton_) {
+			simpleSkinSkelton_.Draw(camera_.get(), simpleSkin_->GetWorldTransform()->matWorld);
+		}
 	}
 }
 

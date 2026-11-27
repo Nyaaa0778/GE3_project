@@ -17,6 +17,7 @@ struct ModelData;
 
 #include "LightingType.h"
 #include "KeyframeAnimation.h"
+#include "Skelton.h"
 
 class Model;
 class Camera;
@@ -37,10 +38,11 @@ public:
 	/// <summary>
 	/// 更新
 	/// </summary>
-	/// <summary>
-	/// 更新
-	/// </summary>
 	void Update(WorldTransform* worldTransform = nullptr);
+	/// <summary>
+	/// スケルトン付き更新
+	/// </summary>
+	void Update(SkeltonData& skeltonData, WorldTransform* worldTransform = nullptr);
 	/// <summary>
 	/// 描画
 	/// </summary>
@@ -73,9 +75,11 @@ public:
 	// 親子関係の設定
 	const WorldTransform* GetWorldTransform() const { return externalWorldTransform_ ? externalWorldTransform_ : &worldTransform_; }
 	void SetParent(const WorldTransform* parent) {
-		if (externalWorldTransform_) {
+		if (externalWorldTransform_)
+		{
 			const_cast<WorldTransform*>(externalWorldTransform_)->parent = parent;
-		} else {
+		} else
+		{
 			worldTransform_.parent = parent;
 		}
 	}
@@ -88,25 +92,31 @@ public:
 
 	// 位置
 	void SetPosition(const Vector3& position) {
-		if (externalWorldTransform_) {
+		if (externalWorldTransform_)
+		{
 			externalWorldTransform_->translation = position;
-		} else {
+		} else
+		{
 			worldTransform_.translation = position;
 		}
 	}
 	// 回転
 	void SetRotation(Vector3 rotation) {
-		if (externalWorldTransform_) {
+		if (externalWorldTransform_)
+		{
 			externalWorldTransform_->rotation = rotation;
-		} else {
+		} else
+		{
 			worldTransform_.rotation = rotation;
 		}
 	}
 	// 拡縮
 	void SetScale(const Vector3& scale) {
-		if (externalWorldTransform_) {
+		if (externalWorldTransform_)
+		{
 			externalWorldTransform_->scale = scale;
-		} else {
+		} else
+		{
 			worldTransform_.scale = scale;
 		}
 	}
@@ -117,6 +127,8 @@ public:
 		blendMode_ = blendMode;
 	}
 	// モデル
+	Model* GetModel() const { return model_; }
+	const Node* GetRootNode() const;
 	void SetModel(const std::string& modelName, const std::string& extension = "obj");
 
 	float GetEnvironmentCoefficient();
@@ -187,13 +199,13 @@ private:
 	// BlendMode
 	BlendMode blendMode_ = BlendMode::kNone;
 
-	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_ {};
+	D3D12_GPU_DESCRIPTOR_HANDLE environmentTextureSrvHandleGPU_{};
 
 	// ディゾルブ用パラメータ
 	bool isDissolveEnabled_ = false;
 	float dissolveThreshold_ = 0.0f;
 	float dissolveEdgeWidth_ = 0.05f;
-	Vector4 dissolveEdgeColor_ = { 1.0f, 0.5f, 0.0f, 1.0f };
+	Vector4 dissolveEdgeColor_ = {1.0f, 0.5f, 0.0f, 1.0f};
 	std::string dissolveMaskTexturePath_ = "";
 
 	// アニメーション再生状態
@@ -202,5 +214,4 @@ private:
 	float animationTime_ = 0.0f;
 	bool isAnimationPlaying_ = true;
 	bool isAnimationLoop_ = true;
-
 };

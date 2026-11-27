@@ -168,7 +168,7 @@ void Model::LoadModelFile(const std::string& directoryPath,
 	modelData_.rootNode = ReadNode(scene->mRootNode);
 }
 
-Model::Node Model::ReadNode(aiNode* node) {
+Node Model::ReadNode(aiNode* node) {
 	Node result;
 
 	aiVector3D scale;
@@ -178,10 +178,10 @@ Model::Node Model::ReadNode(aiNode* node) {
 
 	node->mTransformation.Decompose(scale, rotate, translate); // assimp の行列から SRT を抽出する
 	result.transform.scale = {scale.x, scale.y, scale.z};
-	result.transform.rotate = {rotate.x, -rotate.y, -rotate.z, rotate.w}; // x 軸を反転、回転方向も逆なので軸を反転
-	result.transform.translate = {-translate.x, translate.y, translate.z}; // x 軸を反転
+	result.transform.rotation = {rotate.x, -rotate.y, -rotate.z, rotate.w}; // x 軸を反転、回転方向も逆なので軸を反転
+	result.transform.translation = {-translate.x, translate.y, translate.z}; // x 軸を反転
 
-	result.localMatrix = MakeAffineMatrix(result.transform.scale, result.transform.rotate, result.transform.translate);
+	result.localMatrix = MakeAffineMatrix(result.transform.scale, result.transform.rotation, result.transform.translation);
 
 	result.name = node->mName.C_Str(); // Node名を格納
 	result.children.resize(node->mNumChildren); // 子どもの数だけ確保
